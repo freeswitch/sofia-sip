@@ -1,6 +1,8 @@
 #ifndef _WS_H
 #define _WS_H
 
+#include "tport_internal.h"
+
 //#define WSS_STANDALONE 1
 
 #define WEBSOCKET_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -24,6 +26,7 @@
 #include <errno.h>
 //#include "sha1.h"
 #include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #if defined(_MSC_VER) || defined(__APPLE__) || defined(__FreeBSD__) || (defined(__SVR4) && defined(__sun)) 
 #define __bswap_64(x) \
@@ -131,6 +134,7 @@ void init_ssl(void);
 void deinit_ssl(void);
 int xp_errno(void);
 int xp_is_blocking(int errcode);
+void wss_log_errors(unsigned level, char const *s, unsigned long e);
 
 
 
