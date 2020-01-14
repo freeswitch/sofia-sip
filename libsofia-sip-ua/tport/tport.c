@@ -995,28 +995,11 @@ tport_t *tport_base_connect(tport_primary_t *pri,
 		  __func__, (void *)self, su_strerror(su_errno())));
     }
     else {
-
-#if defined(__linux__)
-		/* Linux does not allow reusing TCP port while this one is open,
-		   so we can safely call su_setreuseaddr() before bind(). */
-		su_setreuseaddr(socket, 1);
-#endif
-
-		susa.su_port = pri->pri_primary->tp_addr->su_sin.sin_port;
-
+      susa.su_port = 0;
       if (bind(s, &susa.su_sa, susalen) < 0) {
 	SU_DEBUG_3(("%s(%p): bind(local-ip): %s\n",
 		    __func__, (void *)self, su_strerror(su_errno())));
       }
-
-#if !defined(__linux__)
-  /* Allow reusing TCP sockets
-   *
-   * On Solaris & BSD, call setreuseaddr() after bind in order to avoid
-   * binding to a port owned by an existing server.
-   */
-  su_setreuseaddr(socket, 1);
-#endif
     }
   }
 
