@@ -611,6 +611,7 @@ int stun_obtain_shared_secret(stun_handle_t *sh,
 
   if ((sd->sd_index =
        su_root_register(sh->sh_root, wait, stun_tls_callback, (su_wakeup_arg_t *) sd, 0)) == -1) {
+    su_wait_destroy(wait);
     return STUN_ERROR(errno, su_root_register);
   }
 
@@ -834,6 +835,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
   if ((sd->sd_index = su_root_register(sh->sh_root,
 				       wait, stun_bind_callback,
 				       (su_wakeup_arg_t *) sd, 0)) < 0) {
+    su_wait_destroy(wait);
     return STUN_ERROR(errno, su_root_register);
   }
 

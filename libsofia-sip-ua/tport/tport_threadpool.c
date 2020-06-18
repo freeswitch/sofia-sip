@@ -274,8 +274,10 @@ static int thrp_udp_init(su_root_t *root, threadpool_t *thrp)
 
   thrp->thrp_reg = su_root_register(root, wait, thrp_udp_event, tp, 0);
 
-  if (thrp->thrp_reg  == -1)
+  if (thrp->thrp_reg  == -1) {
+    su_wait_destroy(wait);
     return -1;
+  }
 
   return 0;
 }

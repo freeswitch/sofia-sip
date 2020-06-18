@@ -1020,15 +1020,19 @@ int tls_connect(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
         if ( status == X509_V_OK ) {
           su_wait_t wait[1] = {SU_WAIT_INIT};
           tport_master_t *mr = self->tp_master;
+          int su_wait_create_ret;
 
           su_root_deregister(mr->mr_root, self->tp_index);
           self->tp_index = -1;
           self->tp_events = SU_WAIT_IN | SU_WAIT_ERR | SU_WAIT_HUP;
 
-          if ((su_wait_create(wait, self->tp_socket, self->tp_events) == -1) ||
+          if (((su_wait_create_ret = su_wait_create(wait, self->tp_socket, self->tp_events)) == -1) ||
              ((self->tp_index = su_root_register(mr->mr_root, wait, tport_wakeup,
                                                            self, 0)) == -1)) {
 
+            if (su_wait_create_ret == 0) {
+              su_wait_destroy(wait);
+            }
             tls_log_errors(3, "TLS post handshake error", status);
             tport_close(self);
             tport_set_secondary_timer(self);

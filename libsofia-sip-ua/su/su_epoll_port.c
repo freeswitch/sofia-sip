@@ -553,8 +553,10 @@ su_port_t *su_epoll_port_create(void)
   self->sup_epoll = epoll;
   self->sup_multishot = SU_ENABLE_MULTISHOT_POLL;
 
-  if (su_socket_port_init(self->sup_base, su_epoll_port_vtable) < 0)
+  if (su_socket_port_init(self->sup_base, su_epoll_port_vtable) < 0) {
+    close(epoll);
     return su_home_unref(su_port_home(self)), NULL;
+  }
 
   return self;
 }

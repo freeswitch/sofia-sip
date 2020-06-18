@@ -2698,6 +2698,7 @@ static int tport_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
   int events = su_wait_events(w, self->tp_socket);
   tport_master_t *mr = self->tp_master;
   su_wait_t wait[1] =  { SU_WAIT_INIT };
+  int su_wait_create_ret;
 
   int error;
 
@@ -2728,10 +2729,13 @@ static int tport_connected(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
   self->tp_index = -1;
   self->tp_events = SU_WAIT_IN | SU_WAIT_ERR | SU_WAIT_HUP;
 
-  if (su_wait_create(wait, self->tp_socket, self->tp_events) == -1 ||
+  if ((su_wait_create_ret = su_wait_create(wait, self->tp_socket, self->tp_events)) == -1 ||
       (self->tp_index = su_root_register(mr->mr_root,
 					 wait, tport_wakeup, self, 0))
       == -1) {
+    if (su_wait_create_ret == 0) {
+      su_wait_destroy(wait);
+    }
     tport_close(self);
     tport_set_secondary_timer(self);
     return 0;
