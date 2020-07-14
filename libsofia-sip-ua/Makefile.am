@@ -35,7 +35,7 @@ DIST_SUBDIRS = su features bnf sresolv ipt sdp url msg sip http \
 
 DOXYGEN = doxygen
 
-noinst_LTLIBRARIES = libsofia-sip-ua.la
+lib_LTLIBRARIES = libsofia-sip-ua.la
 
 libsofia_sip_ua_la_SOURCES =
 libsofia_sip_ua_la_LIBADD = 	bnf/libbnf.la \
