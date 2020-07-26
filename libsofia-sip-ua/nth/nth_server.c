@@ -844,7 +844,7 @@ void server_request(server_t *srv,
   if (path == NULL)
     path = "";
 
-  if (path[0])
+  if (path[0] && site)
     subsite = site_get_subdir(site, path, &subpath);
 
   if (subsite)
