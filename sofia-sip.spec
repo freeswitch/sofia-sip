@@ -50,6 +50,9 @@ make %{?_smp_mflags}
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
+cp -a libsofia-sip-ua/nua/*.h %{buildroot}/usr/include/sofia-sip-1.12/
+cp -a config.h.in %{buildroot}/usr/include/sofia-sip-1.12/sofia-sip/
+cp -a config.h %{buildroot}/usr/include/sofia-sip-1.12/sofia-sip/
 find %{buildroot} -name \*.la -delete
 find %{buildroot} -name \*.h.in -delete
 find . -name installdox -delete
@@ -64,6 +67,7 @@ find . -name installdox -delete
 %dir %{_includedir}/sofia-sip-1.12
 %dir %{_includedir}/sofia-sip-1.12/sofia-sip
 %{_includedir}/sofia-sip-1.12/sofia-sip/*.h
+%{_includedir}/sofia-sip-1.12/*.h
 %dir %{_includedir}/sofia-sip-1.12/sofia-resolv
 %{_includedir}/sofia-sip-1.12/sofia-resolv/*.h
 %{_libdir}/libsofia-sip-ua.so
