@@ -57,6 +57,7 @@ char const
   sip_401_Unauthorized[] =             "Unauthorized",
   sip_402_Payment_required[] =         "Payment Required",
   sip_403_Forbidden[] =                "Forbidden",
+  sip_403_Stale_date[] =               "Stale Date",
   sip_404_Not_found[] =                "Not Found",
   sip_405_Method_not_allowed[] =       "Method Not Allowed",
   sip_406_Not_acceptable[] =           "Not Acceptable",
@@ -75,6 +76,12 @@ char const
   sip_421_Extension_required[] =       "Extension Required",
   sip_422_Session_timer[] =            "Session Interval Too Small",
   sip_423_Interval_too_brief[] =       "Interval Too Brief",
+
+  sip_428_Use_identity_header[] =      "Use Identity Header",
+  sip_436_Bad_identity_info[] =        "Bad Identity Info",
+  sip_437_Unsupported_credential[] =   "Unsupported Credential",
+  sip_438_Invalid_identity_header[] =  "Invalid Identity Header",
+  sip_439_Stale_date[] =               "Stale Date",
 
   sip_480_Temporarily_unavailable[] =  "Temporarily Unavailable",
   sip_481_No_transaction[] =           "Call/Transaction Does Not Exist",
