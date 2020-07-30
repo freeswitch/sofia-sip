@@ -76,6 +76,8 @@ SOFIAPUBFUN char const *sip_status_phrase(int status);
 #define SIP_402_PAYMENT_REQUIRED        402, sip_402_Payment_required
 /** 403 Forbidden @HIDE */
 #define SIP_403_FORBIDDEN               403, sip_403_Forbidden
+/** 403 Stale Date (in STIR-Shaken) @HIDE */
+#define SIP_403_STALE_DATE              403, sip_403_Stale_date
 /** 404 Not Found @HIDE */
 #define SIP_404_NOT_FOUND               404, sip_404_Not_found
 /** 405 Method Not Allowed @HIDE */
@@ -113,6 +115,14 @@ SOFIAPUBFUN char const *sip_status_phrase(int status);
 /** 423 Interval Too Brief @HIDE */
 #define SIP_423_INTERVAL_TOO_BRIEF      423, sip_423_Interval_too_brief
 #define SIP_423_REGISTRATION_TOO_BRIEF  423, sip_423_Interval_too_brief
+/** 428 Use Identity Header (in STIR-Shaken) @HIDE */
+#define SIP_428_USE_IDENTITY_HEADER     428, sip_428_Use_identity_header
+/** 436 Bad Identity Info (in STIR-Shaken) @HIDE */
+#define SIP_436_BAD_IDENTITY_INFO       436, sip_436_Bad_identity_info
+/** 437 Unsupported Credential (in STIR-Shaken) @HIDE */
+#define SIP_437_UNSUPPORTED_CREDENTIAL  437, sip_437_Unsupported_credential
+/** 438 Invalid Identity Header (in STIR-Shaken) @HIDE */
+#define SIP_438_INVALID_IDENTITY_HEADER 438, sip_438_Invalid_identity_header
 /** 480 Temporarily Unavailable @HIDE */
 #define SIP_480_TEMPORARILY_UNAVAILABLE 480, sip_480_Temporarily_unavailable
 /** 481 Call/Transaction Does Not Exist @HIDE */
@@ -194,6 +204,7 @@ SOFIAPUBVAR char const sip_400_Bad_request[];
 SOFIAPUBVAR char const sip_401_Unauthorized[];
 SOFIAPUBVAR char const sip_402_Payment_required[];
 SOFIAPUBVAR char const sip_403_Forbidden[];
+SOFIAPUBVAR char const sip_403_Stale_date[];
 SOFIAPUBVAR char const sip_404_Not_found[];
 SOFIAPUBVAR char const sip_405_Method_not_allowed[];
 SOFIAPUBVAR char const sip_406_Not_acceptable[];
@@ -212,6 +223,10 @@ SOFIAPUBVAR char const sip_420_Bad_extension[];
 SOFIAPUBVAR char const sip_421_Extension_required[];
 SOFIAPUBVAR char const sip_422_Session_timer[];
 SOFIAPUBVAR char const sip_423_Interval_too_brief[];
+SOFIAPUBVAR char const sip_428_Use_identity_header[];
+SOFIAPUBVAR char const sip_436_Bad_identity_info[];
+SOFIAPUBVAR char const sip_437_Unsupported_credential[];
+SOFIAPUBVAR char const sip_438_Invalid_identity_header[];
 SOFIAPUBVAR char const sip_480_Temporarily_unavailable[];
 SOFIAPUBVAR char const sip_481_No_transaction[];
 SOFIAPUBVAR char const sip_482_Loop_detected[];
