@@ -11,10 +11,3 @@ override_dh_auto_configure:
 	  --disable-stun
 
 override_dh_auto_test:
-
-override_dh_auto_install:
-	dh_auto_install
-	cp -a libsofia-sip-ua/nua/*.h debian/tmp/usr/include/sofia-sip-1.12/
-	cp -a ./config.h.in debian/tmp/usr/include/sofia-sip-1.12/sofia-sip/
-	cp -a ./config.h debian/tmp/usr/include/sofia-sip-1.12/sofia-sip/
-

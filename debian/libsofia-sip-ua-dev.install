@@ -1,4 +1,3 @@
-usr/include/*/*.h
 usr/include/*/*/*.h
 usr/include/*/*/*.h.in
 usr/lib/libsofia-sip-ua.a
