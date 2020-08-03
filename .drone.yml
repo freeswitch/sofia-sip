@@ -4,23 +4,24 @@ name: scan-build
 
 steps:
     - name: bootstrap
-      image: signalwire/freeswitch-public-base:stretch
+      image: signalwire/freeswitch-public-base
       pull: true
       commands:
       - ./autogen.sh
 
     - name: configure
-      image: signalwire/freeswitch-public-base:stretch
+      image: signalwire/freeswitch-public-base
       pull: true
       commands:
       - ./configure --with-pic --with-glib=no --disable-shared --without-doxygen --disable-stun
 
     - name: scan-build
-      image: signalwire/freeswitch-public-base:stretch
+      image: signalwire/freeswitch-public-base
       pull: true
       commands:
+      - apt-get update && apt-get install -y clang-tools-7 
       - mkdir -p scan-build
-      - echo '#!/bin/bash\nscan-build-4.0 -o ./scan-build/ make -j`nproc --all` |& tee ./scan-build-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./scan-build-status.txt\n' > scan.sh
+      - echo '#!/bin/bash\nscan-build-7 -o ./scan-build/ make -j`nproc --all` |& tee ./scan-build-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./scan-build-status.txt\n' > scan.sh
       - chmod +x scan.sh
       - ./scan.sh
       - exitstatus=`cat ./scan-build-status.txt`
@@ -49,6 +50,6 @@ trigger:
 
 ---
 kind: signature
-hmac: f30e2e1a1da7d64e1ae76d79516b528cf9fa03bf2e7a7315fedd8b6e6631f771
+hmac: 3eb27f13c4a3d8dfb0f343d0b83675a06b754e50ad7b094a3381dea8b0017267
 
 ...
