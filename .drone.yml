@@ -4,23 +4,24 @@ name: scan-build
 
 steps:
     - name: bootstrap
-      image: signalwire/freeswitch-public-base:stretch
+      image: signalwire/freeswitch-public-base
       pull: always
       commands:
       - ./autogen.sh
 
     - name: configure
-      image: signalwire/freeswitch-public-base:stretch
+      image: signalwire/freeswitch-public-base
       pull: always
       commands:
       - ./configure --with-pic --without-doxygen --disable-stun
 
     - name: scan-build
-      image: signalwire/freeswitch-public-base:stretch
+      image: signalwire/freeswitch-public-base
       pull: always
       commands:
+      - apt-get update && apt-get install -y clang-tools-7 
       - mkdir -p scan-build
-      - echo '#!/bin/bash\nscan-build-4.0 -o ./scan-build/ make -j`nproc --all` |& tee ./scan-build-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./scan-build-status.txt\n' > scan.sh
+      - echo '#!/bin/bash\nscan-build-7 -o ./scan-build/ make -j`nproc --all` |& tee ./scan-build-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./scan-build-status.txt\n' > scan.sh
       - chmod +x scan.sh
       - ./scan.sh
       - exitstatus=`cat ./scan-build-status.txt`
