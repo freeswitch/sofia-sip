@@ -13,7 +13,7 @@ steps:
       image: signalwire/freeswitch-public-base:stretch
       pull: true
       commands:
-      - ./configure --with-pic --with-glib=no --disable-shared --without-doxygen --disable-stun
+      - ./configure --with-pic --without-doxygen --disable-stun
 
     - name: scan-build
       image: signalwire/freeswitch-public-base:stretch
@@ -49,6 +49,6 @@ trigger:
 
 ---
 kind: signature
-hmac: f30e2e1a1da7d64e1ae76d79516b528cf9fa03bf2e7a7315fedd8b6e6631f771
+hmac: f256693f291fd7adee787a026f384ac6ef792affd5003a00d0f6ae0a354c94a2
 
 ...
