@@ -1,5 +1,5 @@
 Name:           sofia-sip
-Version:        1.12.12
+Version:        1.13.0
 Release:        1%{?dist}
 Summary:        Sofia SIP User-Agent library
 
@@ -61,11 +61,11 @@ find . -name installdox -delete
 
 %files devel
 #%doc libsofia-sip-ua/docs/html
-%dir %{_includedir}/sofia-sip-1.12
-%dir %{_includedir}/sofia-sip-1.12/sofia-sip
-%{_includedir}/sofia-sip-1.12/sofia-sip/*.h
-%dir %{_includedir}/sofia-sip-1.12/sofia-resolv
-%{_includedir}/sofia-sip-1.12/sofia-resolv/*.h
+%dir %{_includedir}/sofia-sip-1.13
+%dir %{_includedir}/sofia-sip-1.13/sofia-sip
+%{_includedir}/sofia-sip-1.13/sofia-sip/*.h
+%dir %{_includedir}/sofia-sip-1.13/sofia-resolv
+%{_includedir}/sofia-sip-1.13/sofia-resolv/*.h
 %{_libdir}/libsofia-sip-ua.so
 %{_libdir}/pkgconfig/sofia-sip-ua.pc
 %{_datadir}/sofia-sip
@@ -75,5 +75,5 @@ find . -name installdox -delete
 #%{_mandir}/man1/*.1*
 
 %changelog
-* Tue Jul 28 2020 FreeSWITCH Project <andrey@freeswitch.com> - 1.12.12-1
+* Tue Jul 28 2020 FreeSWITCH Project <andrey@freeswitch.com> - 1.13.1-1
 - Initial release for the FreeSWITCH Project
