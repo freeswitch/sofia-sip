@@ -9,6 +9,7 @@ Source0:        https://files.freeswitch.org/downloads/libs/%{name}-%{version}.t
 
 BuildRequires:  gcc-c++
 BuildRequires:  openssl-devel >= 0.9.7
+BuildRequires:  glib2-devel >=  2.4
 BuildRequires:  lksctp-tools-devel
 
 %description
@@ -27,6 +28,24 @@ Requires:       pkgconfig
 %description devel
 Development package for Sofia SIP UA library.
 
+%package glib
+Summary:        Glib bindings for Sofia-SIP 
+Requires:       sofia-sip = %{version}-%{release}
+
+%description glib
+GLib interface to Sofia SIP User Agent library.
+
+%package glib-devel
+Summary:        Glib bindings for Sofia SIP development files
+Requires:       sofia-sip-glib = %{version}-%{release}
+Requires:       sofia-sip-devel = %{version}-%{release}
+Requires:       pkgconfig
+
+%description  glib-devel
+Development package for Sofia SIP UA Glib library. This package
+includes libraries and include files for developing glib programs
+using Sofia SIP.
+
 %package utils
 Summary:        Sofia-SIP Command Line Utilities
 Requires:       sofia-sip = %{version}-%{release}
@@ -40,7 +59,7 @@ Command line utilities for the Sofia SIP UA library.
 
 %build
 ./autogen.sh
-%configure --disable-rpath --disable-static --with-glib=no --without-doxygen --disable-stun
+%configure --disable-rpath --disable-static --without-doxygen --disable-stun
 make %{?_smp_mflags}
 #make doxygen
 
@@ -70,10 +89,21 @@ find . -name installdox -delete
 %{_libdir}/pkgconfig/sofia-sip-ua.pc
 %{_datadir}/sofia-sip
 
+%files glib
+%{_libdir}/libsofia-sip-ua-glib.so.*
+
+%files glib-devel
+#%doc libsofia-sip-ua-glib/docs/html
+%{_includedir}/sofia-sip-1.13/sofia-sip/su_source.h
+%{_libdir}/libsofia-sip-ua-glib.so
+%{_libdir}/pkgconfig/sofia-sip-ua-glib.pc
+
 %files utils
 %{_bindir}/*
 #%{_mandir}/man1/*.1*
 
 %changelog
-* Tue Jul 28 2020 FreeSWITCH Project <andrey@freeswitch.com> - 1.13.1-1
+* Wed Aug 12 2020 FreeSWITCH Project <andrey@freeswitch.com> - 1.13.0-2
+- Fix packaging with glib
+* Tue Jul 28 2020 FreeSWITCH Project <andrey@freeswitch.com> - 1.13.0-1
 - Initial release for the FreeSWITCH Project
