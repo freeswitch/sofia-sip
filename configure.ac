@@ -11,7 +11,7 @@ dnl information on the package
 dnl ---------------------------
 
 dnl update both the version for AC_INIT and the LIBSOFIA_SIP_UA_MAJOR_MINOR
-AC_INIT([sofia-sip], [1.12.12])
+AC_INIT([sofia-sip], [1.13.0])
 
 CFLAGS="$CFLAGS $CONFIGURE_CFLAGS"
 CXXFLAGS="$CXXFLAGS $CONFIGURE_CXXFLAGS"
@@ -19,9 +19,9 @@ LDFLAGS="$LDFLAGS $CONFIGURE_LDFLAGS"
 
 AC_CONFIG_SRCDIR([libsofia-sip-ua/sip/sofia-sip/sip.h])
 AC_CONFIG_MACRO_DIR([m4])
-AC_SUBST(VER_LIBSOFIA_SIP_UA_MAJOR_MINOR, [1.12])
+AC_SUBST(VER_LIBSOFIA_SIP_UA_MAJOR_MINOR, [1.13])
 dnl Includedir specific to this sofia version
-AC_SUBST(include_sofiadir, '${includedir}/sofia-sip-1.12')
+AC_SUBST(include_sofiadir, '${includedir}/sofia-sip-1.13')
 AC_SUBST(LIBVER_SOFIA_SIP_UA_CUR, [6])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_REV, [0])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_AGE, [6])
