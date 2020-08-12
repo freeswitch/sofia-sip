@@ -7,7 +7,6 @@ override_dh_auto_configure:
 	./configure \
 	  --prefix=/usr \
 	  --with-pic \
-	  --with-glib=no \
 	  --disable-stun
 
 override_dh_auto_test:
