@@ -130,7 +130,7 @@ SOFIAPUBVAR tag_typedef_t soatag_local_sdp_ref;
 SOFIAPUBVAR tag_typedef_t soatag_local_sdp_str;
 #define SOATAG_LOCAL_SDP_STR_REF(x) \
   soatag_local_sdp_str_ref, tag_str_vr(&(x))
-SOFIAPUBVAR tag_typedef_t soatag_session_sdp_str_ref;
+SOFIAPUBVAR tag_typedef_t soatag_local_sdp_str_ref;
 
 #define SOATAG_AF(x)             soatag_af, tag_int_v((x))
 SOFIAPUBVAR tag_typedef_t soatag_af;
