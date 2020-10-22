@@ -72,10 +72,33 @@ msg_mclass_t const *sip_default_mclass(void)
   return _default;
 }
 
+/** Restore default SIP parser to non-extended */
+void sip_default_mclass_restore() {
+	_default = sip_mclass;
+}
+
+/** Destroy SIP parser object */
+void sip_destroy_mclass(msg_mclass_t *mclass) {
+	if (mclass && mclass != sip_mclass) {
+		if (mclass == _default_parser_cloned) {
+			sip_cloned_parser_destroy();
+		} else {
+			if (mclass == _default) {
+				sip_default_mclass_restore();
+			}
+			free(mclass);
+		}
+	}
+}
+
 /** Release SIP parser object if it was cloned. */
 void sip_cloned_parser_destroy(void)
 {
 	if (_default_parser_cloned) {
+		if (_default_parser_cloned == _default) {
+			sip_default_mclass_restore();
+		}
+
 		free(_default_parser_cloned);
 		_default_parser_cloned = NULL;
 	}
@@ -94,6 +117,11 @@ void sip_cloned_parser_destroy(void)
  *     exit(2);
  *   }
  * @endcode
+ * When finish don't forget to call 
+ * @code
+ *   sip_destroy_mclass(sip_default_mclass());
+ * @endcode
+ * as return of sip_extend_mclass(NULL) requires to be freed.
  *
  * The default parser is not extended because it may break the old
  * applications looking for extension headers from sip_unknown list.
@@ -155,11 +183,10 @@ msg_mclass_t *sip_extend_mclass(msg_mclass_t *input)
 	continue;
 
       if (msg_mclass_insert_header(mclass, hclass, 0) < 0) {
-	if (input != mclass) {
-	  free(mclass);
-	  _default_parser_cloned = NULL;
-	}
-	return mclass = NULL;
+        if (input != mclass) {
+          sip_destroy_mclass(mclass);
+        }
+        return mclass = NULL;
       }
     }
   }
