@@ -225,6 +225,8 @@ issize_t sip_error_info_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
  * @NEW_1_12_7. In order to use @b Alert-Info header, initialize the SIP
  * parser before calling nta_agent_create() or nua_create() with, e.g.,
  * sip_update_default_mclass(sip_extend_mclass(NULL)).
+ * When finish don't forget to call sip_destroy_mclass(sip_default_mclass());
+ * as return of sip_extend_mclass(NULL) requires to be freed.
  *
  * The #sip_t structure does not contain a @a sip_alert_info field, but
  * sip_alert_info() function should be used for accessing the @b Alert-Info
@@ -292,6 +294,8 @@ issize_t sip_alert_info_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
  * initialize the SIP parser before calling nta_agent_create() or
  * nua_create() with, e.g.,
  * sip_update_default_mclass(sip_extend_mclass(NULL)).
+ * When finish don't forget to call sip_destroy_mclass(sip_default_mclass());
+ * as return of sip_extend_mclass(NULL) requires to be freed.
  *
  * @note
  * The #sip_t structure does not contain a @a sip_reply_to field, but
@@ -952,6 +956,8 @@ char *sip_info_dup_one(sip_header_t *dst,
  * In order to use @b Suppress-Body-If-Match header,
  * initialize the SIP parser with, e.g.,
  * sip_update_default_mclass(sip_extend_mclass(NULL)).
+ * When finish don't forget to call sip_destroy_mclass(sip_default_mclass());
+ * as return of sip_extend_mclass(NULL) requires to be freed.
  *
  * @note
  * The #sip_t structure does not contain a @a
@@ -1024,6 +1030,8 @@ issize_t sip_suppress_body_if_match_e(char b[], isize_t bsiz,
  * In order to use @b Suppress-Notify-If-Match header,
  * initialize the SIP parser with, e.g.,
  * sip_update_default_mclass(sip_extend_mclass(NULL)).
+ * When finish don't forget to call sip_destroy_mclass(sip_default_mclass());
+ * as return of sip_extend_mclass(NULL) requires to be freed.
  *
  * @note
  * The #sip_t struct does not contain @a sip_suppress_notify_if_match field,
@@ -1114,6 +1122,8 @@ issize_t sip_suppress_notify_if_match_e(char b[], isize_t bsiz,
  * initialize the SIP parser before calling nta_agent_create() or
  * nua_create() with, e.g.,
  * sip_update_default_mclass(sip_extend_mclass(NULL)).
+ * When finish don't forget to call sip_destroy_mclass(sip_default_mclass());
+ * as return of sip_extend_mclass(NULL) requires to be freed.
  *
  * @note
  * The #sip_t structure does not contain @a sip_remote_party_id field, but
@@ -1262,6 +1272,8 @@ static int sip_remote_party_id_update(msg_common_t *h,
  * initialize the SIP parser before calling nta_agent_create() or
  * nua_create() with, e.g.,
  * sip_update_default_mclass(sip_extend_mclass(NULL)).
+ * When finish don't forget to call sip_destroy_mclass(sip_default_mclass());
+ * as return of sip_extend_mclass(NULL) requires to be freed.
  *
  * @note
  * The #sip_t structure does not contain @a sip_p_asserted_identity field,
@@ -1375,6 +1387,8 @@ char *sip_p_asserted_identity_dup_one(sip_header_t *dst,
  * initialize the SIP parser before calling nta_agent_create() or
  * nua_create() with, e.g.,
  * sip_update_default_mclass(sip_extend_mclass(NULL)).
+ * When finish don't forget to call sip_destroy_mclass(sip_default_mclass());
+ * as return of sip_extend_mclass(NULL) requires to be freed.
  *
  * @note
  * The #sip_t structure does not contain @a sip_p_preferred_identity field,
