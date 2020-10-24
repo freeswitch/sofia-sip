@@ -175,6 +175,7 @@ struct tport_s {
   tp_magic_t         *tp_magic; 	/**< Context provided by consumer */
 
   su_timer_t         *tp_timer;	        /**< Timer object */
+  su_timer_t         *tp_connect_timer;	/**< Connection check timer object */
 
   su_time_t           tp_ktime;	        /**< Keepalive timer updated */
   su_time_t           tp_ptime;	        /**< Ping sent */

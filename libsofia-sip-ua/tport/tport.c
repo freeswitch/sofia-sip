@@ -875,6 +875,7 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri,
     self->tp_socket = socket;
 
     self->tp_timer = su_timer_create(su_root_task(mr->mr_root), 0);
+    self->tp_connect_timer = su_timer_create(su_root_task(mr->mr_root), 0);
     self->tp_stime = self->tp_ktime = self->tp_rtime = su_now();
 
     if (pri->pri_vtable->vtp_init_secondary &&
@@ -885,6 +886,7 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri,
 			pri->pri_vtable->vtp_deinit_secondary(self);
 		}
 		su_timer_destroy(self->tp_timer);
+		su_timer_destroy(self->tp_connect_timer);
 		su_home_zap(self->tp_home);
 
 		return NULL;
@@ -1089,6 +1091,9 @@ void tport_zap_secondary(tport_t *self)
 
   if (self->tp_timer)
     su_timer_destroy(self->tp_timer), self->tp_timer = NULL;
+
+  if (self->tp_connect_timer)
+    su_timer_destroy(self->tp_connect_timer), self->tp_connect_timer = NULL;
 
   /* Do not deinit primary as secondary! */
   if (tport_is_secondary(self) &&

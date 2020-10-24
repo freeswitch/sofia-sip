@@ -625,6 +625,34 @@ int tport_tls_accept(tport_primary_t *pri, int events)
   return 0;
 }
 
+/**
+ * Agent timer routine.
+ */
+static
+void tls_connect_timer(su_root_magic_t *rm, su_timer_t *timer, tport_t *self)
+{
+	/* Re try invite here */
+
+        /* ... */
+	tport_set_secondary_timer(self);
+}
+
+/** Add uin32_t milliseconds to the time. */
+static su_time_t add_milliseconds(su_time_t t0, uint32_t ms)
+{
+	unsigned long sec = ms / 1000, usec = (ms % 1000) * 1000;
+
+	t0.tv_usec += usec;
+	t0.tv_sec += sec;
+
+	if (t0.tv_usec >= 1000000) {
+		t0.tv_sec += 1;
+		t0.tv_usec -= 1000000;
+	}
+
+	return t0;
+}
+
 static
 tport_t *tport_tls_connect(tport_primary_t *pri,
                            su_addrinfo_t *ai,
@@ -639,6 +667,8 @@ tport_t *tport_tls_connect(tport_primary_t *pri,
   unsigned errlevel = 3;
   char buf[TPORT_HOSTPORTSIZE];
   char const *what;
+  su_time_t now;
+  uint32_t connection_timeout = 1000; /* ms */
 
   what = "su_socket";
   s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
@@ -673,6 +703,10 @@ tport_t *tport_tls_connect(tport_primary_t *pri,
     if (!su_is_blocking(err))
       goto sys_error;
   }
+
+  now = su_now();
+  su_timer_set_at(self->tp_connect_timer, tls_connect_timer, self,
+	  add_milliseconds(now, connection_timeout));
 
   what = "tport_setname";
   if (tport_setname(self, tpn->tpn_proto, ai, tpn->tpn_canon) == -1)

@@ -1015,6 +1015,7 @@ int tls_connect(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
         return 0;
 
       case SSL_ERROR_NONE:
+        su_timer_reset(self->tp_connect_timer);
         /* TLS Handshake complete */
 	status = tls_post_connection_check(self, tls);
         if ( status == X509_V_OK ) {
