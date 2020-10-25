@@ -375,6 +375,12 @@ NTA_DLL extern tag_typedef_t ntatag_tls_rport;
 NTA_DLL extern tag_typedef_t ntatag_tls_rport_ref;
 #define NTATAG_TLS_RPORT_REF(x) ntatag_tls_rport_ref, tag_bool_vr(&(x))
 
+NTA_DLL extern tag_typedef_t ntatag_tls_orq_connect_timeout;
+#define NTATAG_TLS_ORQ_CONNECT_TIMEOUT(x) ntatag_tls_orq_connect_timeout, tag_uint_v((x))
+
+NTA_DLL extern tag_typedef_t ntatag_tls_orq_connect_timeout_ref;
+#define NTATAG_TLS_ORQ_CONNECT_TIMEOUT_REF(x) ntatag_tls_orq_connect_timeout_ref, tag_uint_vr(&(x))
+
 NTA_DLL extern tag_typedef_t ntatag_preload;
 #define NTATAG_PRELOAD(x) ntatag_preload, tag_uint_v((x))
 

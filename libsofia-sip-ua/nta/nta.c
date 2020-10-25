@@ -189,6 +189,8 @@ struct nta_agent_s
 
   unsigned sa_t1x64; /**< SIP T1X64 - transaction lifetime (32 s) */
 
+  unsigned sa_tls_orq_connect_timeout;  /**< Connect Timeout for outgoing requests using TLS (ms) */
+
   unsigned sa_progress;		/**< Progress timer.
 				   Interval between retransmitting
 				   provisional responses. */
@@ -537,6 +539,7 @@ struct nta_outgoing_s
   unsigned orq_try_tcp_instead:1;
   unsigned orq_try_udp_instead:1;
   unsigned orq_reliable:1; /**< Transport is reliable */
+  unsigned orq_call_tls_connect_timeout_is_set:1; /** Per Call connect timeout for outgoing requests using TLS set flag*/
 
   unsigned orq_forked:1;	/**< Tagged fork  */
 
@@ -574,6 +577,7 @@ struct nta_outgoing_s
   nta_outgoing_t       *orq_forks;	/**< Tagged transactions */
   uint32_t              orq_rseq;       /**< Latest incoming rseq */
   int                   orq_pending;    /**< Request is pending in tport */
+  uint32_t              orq_call_tls_connect_timeout; /** Per Call connect timeout for outgoing requests using TLS */
 };
 
 /* ------------------------------------------------------------------------- */
@@ -844,7 +848,7 @@ su_log_t nta_log[] = { SU_LOG_INIT("nta", "NTA_DEBUG", SU_DEBUG) };
  * NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4(),
  * NTATAG_STATELESS(),
  * NTATAG_TAG_3261(), NTATAG_TCP_RPORT(), NTATAG_TIMEOUT_408(),
- * NTATAG_TLS_RPORT(),
+ * NTATAG_TLS_RPORT(), NTATAG_TLS_ORQ_CONNECT_TIMEOUT(),
  * NTATAG_TIMER_C(), NTATAG_MAX_PROCEEDING(),
  * NTATAG_UA(), NTATAG_UDP_MTU(), NTATAG_USER_VIA(),
  * NTATAG_USE_NAPTR(), NTATAG_USE_SRV() and NTATAG_USE_TIMESTAMP().
@@ -1417,7 +1421,7 @@ void agent_kill_terminator(nta_agent_t *agent)
  * NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4(),
  * NTATAG_STATELESS(),
  * NTATAG_TAG_3261(), NTATAG_TCP_RPORT(), NTATAG_TIMEOUT_408(),
- * NTATAG_TLS_RPORT(),
+ * NTATAG_TLS_RPORT(), NTATAG_TLS_ORQ_CONNECT_TIMEOUT(),
  * NTATAG_TIMER_C(), NTATAG_MAX_PROCEEDING(),
  * NTATAG_UA(), NTATAG_UDP_MTU(), NTATAG_USER_VIA(),
  * NTATAG_USE_NAPTR(), NTATAG_USE_SRV() and NTATAG_USE_TIMESTAMP().
@@ -1458,6 +1462,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned sip_t2     = agent->sa_t2;
   unsigned sip_t4     = agent->sa_t4;
   unsigned sip_t1x64  = agent->sa_t1x64;
+  unsigned tls_orq_connect_timeout = agent->sa_tls_orq_connect_timeout;
   unsigned timer_c    = agent->sa_timer_c;
   unsigned timer_d    = 32000;
   unsigned graylist   = agent->sa_graylist;
@@ -1532,6 +1537,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	      NTATAG_STATELESS_REF(stateless),
 	      NTATAG_TCP_RPORT_REF(tcp_rport),
 	      NTATAG_TLS_RPORT_REF(tls_rport),
+	      NTATAG_TLS_ORQ_CONNECT_TIMEOUT_REF(tls_orq_connect_timeout),
 	      NTATAG_TIMEOUT_408_REF(timeout_408),
 	      NTATAG_UA_REF(ua),
 	      NTATAG_UDP_MTU_REF(udp_mtu),
@@ -1665,6 +1671,9 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   if (timer_d < sip_t1x64)
     timer_d = sip_t1x64;
   outgoing_queue_adjust(agent, agent->sa_out.inv_completed, timer_d);
+
+  if (tls_orq_connect_timeout > NTA_TIME_MAX) tls_orq_connect_timeout = NTA_TIME_MAX;
+  agent->sa_tls_orq_connect_timeout = tls_orq_connect_timeout;
 
   if (graylist > 24 * 60 * 60)
     graylist = 24 * 60 * 60;
@@ -7843,6 +7852,8 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   int invalid, resolved = 0, stateless = 0, user_via = agent->sa_user_via;
   int invite_100rel = agent->sa_invite_100rel;
   int explicit_transport = 1;
+  int call_tls_orq_connect_timeout_is_set = 0;
+  int call_tls_orq_connect_timeout = 0;
 
   tagi_t const *t;
   tport_t *override_tport = NULL;
@@ -7915,6 +7926,11 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
     else if (ntatag_rel100 == tt) {
       invite_100rel = t->t_value != 0;
     }
+    else if (ntatag_tls_orq_connect_timeout == tt) {
+      call_tls_orq_connect_timeout_is_set = 1;
+      call_tls_orq_connect_timeout = t->t_value;
+      if (call_tls_orq_connect_timeout > NTA_TIME_MAX) call_tls_orq_connect_timeout = NTA_TIME_MAX;
+    }
   }
 
   orq->orq_agent    = agent;
@@ -7937,6 +7953,8 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   orq->orq_user_via  = user_via != 0 && sip->sip_via;
   orq->orq_100rel    = invite_100rel;
   orq->orq_uas       = !stateless && agent->sa_is_a_uas;
+  orq->orq_call_tls_connect_timeout_is_set = call_tls_orq_connect_timeout_is_set;
+  orq->orq_call_tls_connect_timeout = (call_tls_orq_connect_timeout > 0) ? call_tls_orq_connect_timeout : 0;
 
   if (cc)
     orq->orq_cc = nta_compartment_ref(cc);
@@ -8358,8 +8376,16 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
 	unsigned t1_timer = agent->sa_t1;
 	if (t1_timer < 1000) t1_timer = 1000;
     outgoing_set_timer(orq, t1_timer); /* Timer A/E */
-  } else if (orq->orq_try_tcp_instead && !tport_is_connected(tp))
+  } else if (orq->orq_try_tcp_instead && !tport_is_connected(tp)) {
     outgoing_set_timer(orq, agent->sa_t4); /* Timer N3 */
+  } else if (su_casenmatch(orq->orq_tpn->tpn_proto, "tls", 3) && !tport_is_connected(tp)) {
+    unsigned tls_reconect_interval = (orq->orq_call_tls_connect_timeout_is_set) ? 
+                                      orq->orq_call_tls_connect_timeout : agent->sa_tls_orq_connect_timeout;
+    if (tls_reconect_interval) {
+      if (tls_reconect_interval < 1000) tls_reconect_interval = 1000;
+      outgoing_set_timer(orq, tls_reconect_interval); /* Timer N3 set to (min 1000 ms if set) */
+    }
+  }
 }
 
 static void
@@ -8884,16 +8910,33 @@ _nta_outgoing_timer(nta_agent_t *sa)
       outgoing_reset_timer(orq);
 
       if (!tport_is_connected(orq->orq_tport)) {
-	/*
-	 * Timer N3: try to use UDP if trying to send via TCP
-	 * but no connection is established within SIP T4
-	 */
-	SU_DEBUG_5(("nta: timer %s fired, %s %s (%u)\n", "N3",
-		    "try UDP instead for",
-		    orq->orq_method_name, orq->orq_cseq->cs_seq));
-	outgoing_try_udp_instead(orq, 1);
-	outgoing_remove(orq);	/* Reset state - this is no resend! */
-	outgoing_send(orq, 0);	/* Send */
+        uint32_t tls_connect_timeout = (orq->orq_call_tls_connect_timeout_is_set) ?
+                                        orq->orq_call_tls_connect_timeout : sa->sa_tls_orq_connect_timeout;
+        if (su_casenmatch(orq->orq_tpn->tpn_proto, "tls", 3) && tls_connect_timeout) {
+          outgoing_remove(orq);	/* Reset state - this is no resend! */
+          if (outgoing_other_destinations(orq)) {
+            SU_DEBUG_5(("nta: timer %s fired (proto: %s), %s %s (%u)\n", "N3",
+                orq->orq_tpn->tpn_proto, "trying alternative server for",
+                orq->orq_method_name, orq->orq_cseq->cs_seq));
+            outgoing_try_another(orq);
+          } else {
+            SU_DEBUG_5(("nta: timer %s fired (proto: %s), %s %s (%u)\n", "N3",
+                orq->orq_tpn->tpn_proto, "retrying for",
+                orq->orq_method_name, orq->orq_cseq->cs_seq));
+            outgoing_send(orq, 0);	/* Send */
+          }
+        } else {
+           /*
+            * Timer N3: try to use UDP if trying to send via TCP
+            * but no connection is established within SIP T4
+            */
+           SU_DEBUG_5(("nta: timer %s fired, %s %s (%u)\n", "N3",
+               "try UDP instead for",
+               orq->orq_method_name, orq->orq_cseq->cs_seq));
+           outgoing_try_udp_instead(orq, 1);
+           outgoing_remove(orq);	/* Reset state - this is no resend! */
+           outgoing_send(orq, 0);	/* Send */
+        }
       }
       continue;
     }
