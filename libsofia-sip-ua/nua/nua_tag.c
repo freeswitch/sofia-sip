@@ -638,6 +638,40 @@ tag_typedef_t nutag_retry_count = UINTTAG_TYPEDEF(retry_count);
  * Reference tag for NUTAG_RETRY_COUNT().
  */
 
+/**@def NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT(x)
+ *
+ * Per Call Connect Timeout for outgoing requests using TLS.
+ *
+ * Overrides NTATAG_TLS_ORQ_CONNECT_TIMEOUT()
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params(), nua_handle(), nua_set_hparams(),
+ *    nua_get_params(), nua_get_hparams(),
+ *    nua_register(), nua_unregister(),
+ *    nua_options(), nua_invite(), nua_ack(), nua_cancel(), nua_bye(),
+ *    nua_prack(), nua_update(), nua_info(),
+ *    nua_message(), nua_publish(), nua_unpublish(), nua_notifier(),
+ *    nua_subscribe(), nua_unsubscribe(), nua_notify(), nua_refer(),
+ *    nua_method(), nua_respond()
+ *    nua_authenticate().
+ *
+ * @par Parameter type
+ *    unsigned
+ *
+ * @par Values
+ * - 0 - Disabled
+ * - value - Milliseconds
+ *
+ * @NEW_1_13_2.
+ *
+ * Corresponding tag taking reference parameter is NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT_REF().
+ */
+tag_typedef_t nutag_call_tls_orq_connect_timeout = UINTTAG_TYPEDEF(call_tls_orq_connect_timeout);
+
+/**@def NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT_REF(x)
+ *
+ * Reference tag for NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT().
+ */
 
 /**@def NUTAG_MAX_SUBSCRIPTIONS(x)
  *

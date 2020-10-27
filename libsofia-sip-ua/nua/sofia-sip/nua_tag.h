@@ -123,6 +123,11 @@ SOFIAPUBVAR tag_typedef_t nutag_retry_count;
 #define NUTAG_RETRY_COUNT_REF(x)  nutag_retry_count_ref, tag_uint_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_retry_count_ref;
 
+#define NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT(x)      nutag_call_tls_orq_connect_timeout, tag_uint_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_call_tls_orq_connect_timeout;
+#define NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT_REF(x)  nutag_call_tls_orq_connect_timeout_ref, tag_uint_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_call_tls_orq_connect_timeout_ref;
+
 #define NUTAG_SOA_NAME(x)  nutag_soa_name, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_soa_name;
 #define NUTAG_SOA_NAME_REF(x) \

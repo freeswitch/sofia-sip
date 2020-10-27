@@ -944,6 +944,8 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
   nua_handle_t *nh = cr->cr_owner;
   int proxy_is_set = NH_PISSET(nh, proxy);
   url_string_t * proxy = NH_PGET(nh, proxy);
+  int call_tls_orq_connect_timeout_is_set = NH_PISSET(nh, call_tls_orq_connect_timeout);
+  uint32_t call_tls_orq_connect_timeout = NH_PGET(nh, call_tls_orq_connect_timeout);
 
   if (nh->nh_auth) {
     if (cr->cr_challenged ||
@@ -964,6 +966,8 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
 				    msg,
 				    TAG_IF(proxy_is_set,
 					   NTATAG_DEFAULT_PROXY(proxy)),
+				    TAG_IF(call_tls_orq_connect_timeout_is_set,
+					   NTATAG_TLS_ORQ_CONNECT_TIMEOUT(call_tls_orq_connect_timeout)),
 				    TAG_NEXT(tags));
 
   if (cr->cr_orq == NULL) {

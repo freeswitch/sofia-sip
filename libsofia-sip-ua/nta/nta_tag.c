@@ -1397,6 +1397,25 @@ tag_typedef_t ntatag_tcp_rport = BOOLTAG_TYPEDEF(tcp_rport);
  */
 tag_typedef_t ntatag_tls_rport = BOOLTAG_TYPEDEF(tls_rport);
 
+/**@def NTATAG_TLS_ORQ_CONNECT_TIMEOUT(x)
+ *
+ * Connect Timeout for outgoing requests using TLS.
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
+ *
+ * @par Parameter type
+ *    unsigned
+ *
+ * @par Values
+ * - 0 - Disabled
+ * - value - Milliseconds
+ *
+ * @NEW_1_13_2
+ */
+tag_typedef_t ntatag_tls_orq_connect_timeout = UINTTAG_TYPEDEF(tls_orq_connect_timeout);
+
 /**@def NTATAG_PRELOAD(x)
  *
  * Preload by N bytes.

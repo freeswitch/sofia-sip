@@ -1,3 +1,9 @@
+sofia-sip (1.13.2-1) unstable; urgency=medium
+
+  * New Release.
+
+ -- FreeSWITCH Solutions <packages@freeswitch.com>  Tue, 27 Oct 2020 21:32:37 +0200
+
 sofia-sip (1.13.1-1) unstable; urgency=medium
 
   * New Release.
