@@ -926,6 +926,10 @@ static void parse_bandwidth(sdp_parser_t *p, char *r, sdp_bandwidth_t **result)
     modifier = sdp_bw_tias, name = "TIAS";
   else if (su_casematch(name, "AS") == 1)
     modifier = sdp_bw_as, name = "AS";
+  else if (su_casematch(name, "RS") == 1)
+    modifier = sdp_bw_rs, name = "RS";
+  else if (su_casematch(name, "RR") == 1)
+    modifier = sdp_bw_rr, name = "RR";
   else
 	modifier = sdp_bw_x, name = "BW-X";
 
