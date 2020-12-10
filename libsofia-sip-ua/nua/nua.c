@@ -1005,6 +1005,12 @@ static int nua_stack_handle_by_replaces_call(void *arg)
   struct nua_stack_handle_by_replaces_args *a = arg;
 
   a->retval = nua_stack_handle_by_replaces(a->nua, a->r);
+  if (!NH_IS_VALID(a->retval) || NH_IS_DEFAULT(a->retval)) {
+    a->retval = NULL;
+    return 1;
+  }
+
+  nua_handle_ref(a->retval);
 
   return 0;
 }
@@ -1020,6 +1026,12 @@ static int nua_stack_handle_by_call_id_call(void *arg)
   struct nua_stack_handle_by_call_id_args *a = arg;
 
   a->retval = nua_stack_handle_by_call_id(a->nua, a->call_id);
+  if (!NH_IS_VALID(a->retval) || NH_IS_DEFAULT(a->retval)) {
+    a->retval = NULL;
+    return 1;
+  }
+  
+  nua_handle_ref(a->retval);
 
   return 0;
 }
@@ -1050,10 +1062,7 @@ nua_handle_t *nua_handle_by_replaces(nua_t *nua, sip_replaces_t const *r)
     if (su_task_execute(nua->nua_server,
 			nua_stack_handle_by_replaces_call, (void *)&a,
 			NULL) == 0) {
-      nua_handle_t *nh = a.retval;
-
-      if (nh && !NH_IS_DEFAULT(nh) && nh->nh_valid)
-	return nua_handle_ref(nh);
+       return a.retval;
     }
   }
   return NULL;
@@ -1085,10 +1094,7 @@ nua_handle_t *nua_handle_by_call_id(nua_t *nua, const char *call_id)
     if (su_task_execute(nua->nua_server,
 			nua_stack_handle_by_call_id_call, (void *)&a,
 			NULL) == 0) {
-      nua_handle_t *nh = a.retval;
-
-      if (nh && !NH_IS_DEFAULT(nh) && nh->nh_valid)
-	return nua_handle_ref(nh);
+       return a.retval;
     }
   }
   return NULL;
@@ -1148,5 +1154,22 @@ void nua_handle_dialog_usage_set_refresh_range(nua_handle_t *nh,
 	unsigned min, unsigned max) {
 	if (nh && nh->nh_ds && nh->nh_ds->ds_usage) {
 		nua_dialog_usage_set_refresh_range(nh->nh_ds->ds_usage, min, max);
+	}
+}
+
+void nua_unref_user(nua_t *nua)
+{
+	enter;
+	nua_signal(nua, NULL, NULL, nua_r_unref, 0, NULL, TAG_NULL());
+}
+
+void nua_handle_unref_user(nua_handle_t *nh)
+{
+	enter;
+	if (NH_IS_VALID(nh)) {
+	  nua_signal(nh->nh_nua, nh, NULL, nua_r_handle_unref, 0, NULL, TAG_NULL());
+	}
+	else {
+	  SU_DEBUG_1(("nua: nua_r_handle_unref with invalid handle %p\n", (void *)nh));
 	}
 }
