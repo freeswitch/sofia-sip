@@ -45,14 +45,19 @@ SOFIA_BEGIN_DECLS
 #undef tcase_add_loop_test
 
 /* Redirect tcase_add_test() to our function */
+#if CHECK_MINOR_VERSION >= 13
+#define tcase_add_test(tc, ttest) s2_tcase_add_test(tc, ttest, 0, 0, 1)
+
+void s2_tcase_add_test(TCase *, const TTest *, int signo, int start, int end);
+#else
 #define tcase_add_test(tc, tf) s2_tcase_add_test(tc, tf, "" #tf "", 0, 0, 1)
 
 void s2_tcase_add_test(TCase *, TFun, char const *name,
 		       int signo, int start, int end);
+#endif
 
 #define tcase_add_loop_test(tc, tf, s, e) \
   s2_tcase_add_test(tc, tf, "" #tf "", 0, (s), (e))
-
 void s2_select_tests(char const *pattern);
 
 SOFIA_END_DECLS

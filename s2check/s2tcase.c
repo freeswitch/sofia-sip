@@ -46,10 +46,18 @@ static char const * const *test_patterns = default_patterns;
  * A special version of tcase_add_test() that inserts test function into
  * tcase only if its name matches given pattern.
  */
-void s2_tcase_add_test(TCase *tc, TFun tf, char const *name,
-		       int signo, int start, int end)
+void s2_tcase_add_test(TCase *tc,
+#if CHECK_MINOR_VERSION >= 13
+                       const TTest *ttest,
+#else
+                       TFun tf, char const *name,
+#endif
+                       int signo, int start, int end)
 {
   char const * const *patterns;
+#if CHECK_MINOR_VERSION >= 13
+  const char *name = ttest->name;
+#endif
 
 #if HAVE_FNMATCH_H
   for (patterns = test_patterns; *patterns; patterns++) {
@@ -57,7 +65,11 @@ void s2_tcase_add_test(TCase *tc, TFun tf, char const *name,
       if (strcmp(*patterns, "*")) {
 	printf("%s: selected\n", name);
       }
+#if CHECK_MINOR_VERSION >= 13
+      _tcase_add_test(tc, ttest, signo, 0, start, end);
+#else
       _tcase_add_test(tc, tf, name, signo, 0, start, end);
+#endif
       return;
     }
   }
@@ -67,7 +79,11 @@ void s2_tcase_add_test(TCase *tc, TFun tf, char const *name,
       if (strcmp(*patterns, "*")) {
 	printf("%s: selected\n", name);
       }
+#if CHECK_MINOR_VERSION >= 13
+      _tcase_add_test(tc, ttest, signo, 0, start, end);
+#else
       _tcase_add_test(tc, tf, name, signo, 0, start, end);
+#endif
       return;
     }
   }
