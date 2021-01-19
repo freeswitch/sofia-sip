@@ -1954,3 +1954,20 @@ tag_typedef_t ntatag_s_tout_response =    USIZETAG_TYPEDEF(s_tout_response);
 /* Internal */
 tag_typedef_t ntatag_delay_sending = BOOLTAG_TYPEDEF(delay_sending);
 tag_typedef_t ntatag_incomplete = BOOLTAG_TYPEDEF(incomplete);
+
+
+tag_typedef_t ntatag_q_in_completed =    SIZETAG_TYPEDEF(q_in_completed);
+tag_typedef_t ntatag_q_in_final_failed =    SIZETAG_TYPEDEF(q_in_final_failed);
+tag_typedef_t ntatag_q_in_inv_completed =    SIZETAG_TYPEDEF(q_in_inv_completed);
+tag_typedef_t ntatag_q_in_inv_confirmed =    SIZETAG_TYPEDEF(q_in_inv_confirmed);
+tag_typedef_t ntatag_q_in_preliminary =    SIZETAG_TYPEDEF(q_in_preliminary);
+tag_typedef_t ntatag_q_in_proceeding =    SIZETAG_TYPEDEF(q_in_proceeding);
+tag_typedef_t ntatag_q_in_terminated =    SIZETAG_TYPEDEF(q_in_terminated);
+
+tag_typedef_t ntatag_q_out_completed =    SIZETAG_TYPEDEF(q_out_completed);
+tag_typedef_t ntatag_q_out_delayed =    SIZETAG_TYPEDEF(q_out_delayed);
+tag_typedef_t ntatag_q_out_inv_calling =    SIZETAG_TYPEDEF(q_out_inv_calling);
+tag_typedef_t ntatag_q_out_inv_completed =    SIZETAG_TYPEDEF(q_out_inv_completed);
+tag_typedef_t ntatag_q_out_inv_proceeding =    SIZETAG_TYPEDEF(q_out_inv_proceeding);
+tag_typedef_t ntatag_q_out_resolving =    SIZETAG_TYPEDEF(q_out_resolving);
+tag_typedef_t ntatag_q_out_terminated =    SIZETAG_TYPEDEF(q_out_terminated);
