@@ -175,6 +175,10 @@ int nua_stack_set_defaults(nua_handle_t *nh,
 
   NHP_SET(nhp, auto_invite_100, 1);
 
+  NHP_SET(nhp, always_regenerate_offer, 0);
+  
+  NHP_SET(nhp, tagged_on_prack, 0);
+
   NHP_SET(nhp, appl_method,
 	  sip_allow_make(home, "INVITE, REGISTER, PUBLISH, SUBSCRIBE"));
 
@@ -1024,6 +1028,14 @@ static int nhp_set_tags(su_home_t *home,
     else if (tag == nutag_auto_invite_100) {
       NHP_SET(nhp, auto_invite_100, value != 0);
     }
+    /* NUTAG_ALWAYS_REGENERATE_OFFER() */
+    else if (tag == nutag_always_regenerate_offer) {
+      NHP_SET(nhp, always_regenerate_offer, value != 0);
+    /* NUTAG_TAGGED_ON_PRACK() */
+    }
+    else if (tag == nutag_tagged_on_prack) {
+      NHP_SET(nhp, tagged_on_prack, value != 0);
+    }
     /* NUTAG_DETECT_NETWORK_UPDATES(detect_network_updates) */
     else if (ngp && tag == nutag_detect_network_updates) {
       int detector = (int)value;
@@ -1127,7 +1139,7 @@ int nhp_save_params(nua_handle_t *nh,
   su_home_t *home = nh->nh_home;
   nua_t *nua = nh->nh_nua;
   nua_handle_t *dnh = nua->nua_dhandle;
-  nua_handle_preferences_t *dst, old[1];
+  nua_handle_preferences_t *dst = nh->nh_prefs, old[1];
 
   if (gsrc) {
     *nua->nua_prefs = *gsrc;	/* No pointers this far */

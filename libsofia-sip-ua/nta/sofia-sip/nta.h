@@ -60,6 +60,10 @@ typedef struct nta_outgoing_s   nta_outgoing_t;
 /** NTA incoming request */
 typedef struct nta_incoming_s   nta_incoming_t;
 
+typedef int (*nta_peek_datagram_request_func)(const msg_t *msg, const sip_t *sip);
+
+typedef void (*nta_outgoing_invite_retransmit_func)();
+
 #ifndef NTA_AGENT_MAGIC_T
 /** Default type of application context for NTA agents.
  * Application may define this to appropriate type before including
@@ -141,6 +145,10 @@ int nta_agent_add_tport(nta_agent_t *agent,
 
 SOFIAPUBFUN int nta_agent_close_tports(nta_agent_t *agent);
 
+SOFIAPUBFUN void nta_set_peek_datagram_request_func(nta_peek_datagram_request_func func);
+
+SOFIAPUBFUN void nta_set_outgoing_invite_retransmit_func(nta_outgoing_invite_retransmit_func func);
+
 SOFIAPUBFUN sip_contact_t *nta_agent_contact(nta_agent_t const *a);
 SOFIAPUBFUN sip_via_t *nta_agent_via(nta_agent_t const *a);
 SOFIAPUBFUN sip_via_t *nta_agent_public_via(nta_agent_t const *a);
@@ -209,6 +217,9 @@ SOFIAPUBFUN char const *nta_leg_rtag(nta_leg_t *leg, char const *tag);
 
 /** Get remote tag. */
 SOFIAPUBFUN char const *nta_leg_get_rtag(nta_leg_t const *leg);
+
+/** Remove remote tag. */
+SOFIAPUBFUN void nta_leg_del_rtag(nta_leg_t *leg);
 
 /** Get local request sequence number. @NEW_1_12_9 */
 SOFIAPUBFUN uint32_t nta_leg_get_seq(nta_leg_t const *leg);

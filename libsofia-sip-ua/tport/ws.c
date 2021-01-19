@@ -32,6 +32,8 @@ static struct ws_globals_s ws_globals;
 
 #ifndef WSS_STANDALONE
 
+#define snprintf_nowarn(...) (snprintf(__VA_ARGS__) < 0 ? printf("snprintf failure") : (void)0)
+
 void init_ssl(void)
 {
 	//	SSL_library_init();

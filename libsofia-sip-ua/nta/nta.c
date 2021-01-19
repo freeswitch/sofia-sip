@@ -126,6 +126,11 @@ HTABLE_DECLARE_WITH(leg_htable, lht, nta_leg_t, size_t, hash_value_t);
 HTABLE_DECLARE_WITH(outgoing_htable, oht, nta_outgoing_t, size_t, hash_value_t);
 HTABLE_DECLARE_WITH(incoming_htable, iht, nta_incoming_t, size_t, hash_value_t);
 
+/* Callback whether to drop incoming messages on purpose*/
+nta_peek_datagram_request_func nta_peek_datagram_request = 0;
+
+nta_outgoing_invite_retransmit_func nta_outgoing_invite_retransmit = 0;
+
 typedef struct outgoing_queue_t {
   nta_outgoing_t **q_tail;
   nta_outgoing_t  *q_head;
@@ -2903,9 +2908,16 @@ void agent_recv_request(nta_agent_t *agent,
       return;
     }
   }
+  
+  if (nta_peek_datagram_request && !tport_is_reliable(tport) && nta_peek_datagram_request(msg, sip) != 0) {
+      SU_DEBUG_5(("nta: %s (%u) is %s\n", method_name, cseq, "dropped by nta_peek_datagram_request simulating packet loss"));
+      agent->sa_stats->as_drop_request++;
+      msg_destroy(msg);
+      return;
+  }
 
   stream = tport_is_stream(tport);
-
+  
   /* Try to use compression on reverse direction if @Via has comp=sigcomp  */
   if (stream &&
       sip->sip_via && sip->sip_via->v_comp &&
@@ -4634,6 +4646,15 @@ char const *nta_leg_get_rtag(nta_leg_t const *leg)
     return NULL;
 }
 
+/** Remove remote tag. */
+void nta_leg_del_rtag(nta_leg_t *leg)
+{
+  if (leg && leg->leg_remote) {
+    sip_to_t to0[1]; *to0 = *leg->leg_remote; to0->a_params = NULL;
+    leg->leg_remote = sip_from_dup(leg->leg_home, to0);
+  }
+}
+
 /** Get local request sequence number. */
 uint32_t nta_leg_get_seq(nta_leg_t const *leg)
 {
@@ -5192,6 +5213,7 @@ int leg_route(nta_leg_t *leg,
     r = NULL;
 
 #ifdef NTA_STRICT_ROUTING
+  sip_route_init(r0);
   /*
    * Handle Contact according to the RFC2543bis04 sections 16.1, 16.2 and 16.4.
    */
@@ -8990,6 +9012,10 @@ void outgoing_retransmit(nta_outgoing_t *orq)
 {
   if (orq->orq_prepared && !orq->orq_delayed) {
     orq->orq_retries++;
+    
+    if (orq->orq_method == sip_method_invite && nta_outgoing_invite_retransmit) {
+        nta_outgoing_invite_retransmit();
+    }
 
     if (orq->orq_retries >= 4 && orq->orq_cc) {
       orq->orq_tpn->tpn_comp = NULL;
@@ -12024,6 +12050,16 @@ int nta_tport_keepalive(nta_outgoing_t *orq)
 #else
   return -1;
 #endif
+}
+
+void nta_set_peek_datagram_request_func(nta_peek_datagram_request_func func)
+{
+  nta_peek_datagram_request = func;
+}
+
+void nta_set_outgoing_invite_retransmit_func(nta_outgoing_invite_retransmit_func func)
+{
+    nta_outgoing_invite_retransmit = func;
 }
 
 /** Close all transports. @since Experimental in @VERSION_1_12_2. */

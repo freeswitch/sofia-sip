@@ -119,6 +119,12 @@ struct nua_handle_preferences
   /** Enable/Disable automatic 100 Trying when receiving INVITE */
   unsigned         nhp_auto_invite_100:1;
 
+  /** Always Regenerate Offer */
+  unsigned         nhp_always_regenerate_offer:1;
+  
+  /** Enable/Disable tagged (early dialog) for outgoing PRACK */
+  unsigned         nhp_tagged_on_prack:1;
+
   unsigned:0;
 
   /* Default lifetime for implicit subscriptions created by REFER */
@@ -220,6 +226,8 @@ struct nua_handle_preferences
     unsigned nhb_timer_autorequire:1;
     unsigned nhb_retry_after_enable:1;
     unsigned nhb_auto_invite_100:1;
+    unsigned nhb_always_regenerate_offer:1;
+    unsigned nhb_tagged_on_prack:1;
     unsigned nhb_call_tls_orq_connect_timeout:1;
     unsigned :0;
   } set_bits;
