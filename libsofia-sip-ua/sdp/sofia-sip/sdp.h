@@ -324,6 +324,10 @@ struct sdp_rtpmap_s {
   unsigned long  rm_rate;		/**< Sampling rate */
   sdp_text_t    *rm_params;		/**< Format-specific parameters  */
   sdp_text_t    *rm_fmtp;	        /**< Contents of fmtp */
+
+  int              rm_assigned; /**< flag indicating that this entry has been processed */
+  sdp_attribute_t *rm_ptime;    /**< pointer to PTIME attribute value */
+
   unsigned       rm_predef : 1;	        /**< is this entry well-known? */
   unsigned       rm_pt : 7;		/**< Payload type */
   unsigned       rm_any : 1;	        /**< Wildcard entry */

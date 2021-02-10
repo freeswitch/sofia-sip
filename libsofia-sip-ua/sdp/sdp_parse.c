@@ -1433,7 +1433,7 @@ int sdp_media_has_rtp(sdp_media_t const *m)
 }
 
 #define RTPMAP(pt, encoding, rate, params) \
-  { sizeof(sdp_rtpmap_t), NULL, encoding, rate, (char *)params, NULL, 1, pt, 0 }
+  { sizeof(sdp_rtpmap_t), NULL, encoding, rate, (char *)params, NULL, 1, NULL, 1, pt, 0 }
 
 /* rtpmaps for well-known codecs */
 static sdp_rtpmap_t const
@@ -1541,6 +1541,9 @@ static void parse_payload(sdp_parser_t *p, char *r, sdp_rtpmap_t **result)
 	rm->rm_pt = value;
 	rm->rm_encoding = "";
 	rm->rm_rate = 0;
+
+	rm->rm_ptime = NULL;
+	rm->rm_assigned = 0;
       }
     }
     else if (p->pr_config && r[0] == '*' && (r[1] == ' ' || r[1] == '\0')) {
@@ -1552,6 +1555,9 @@ static void parse_payload(sdp_parser_t *p, char *r, sdp_rtpmap_t **result)
       rm->rm_any = 1;
       rm->rm_encoding = "*";
       rm->rm_rate = 0;
+
+      rm->rm_ptime = NULL;
+      rm->rm_assigned = 0;
 
       return;
     }
@@ -1592,6 +1598,8 @@ static void parse_media_attr(sdp_parser_t *p, char *r, sdp_media_t *m,
   int rtp = sdp_media_has_rtp(m);
   char *name = NULL, *value = NULL;
   int n;
+
+  sdp_rtpmap_t *rm;
 
   if (!(name = token(&r, ":", TOKEN, SPACE TAB))) {
     parsing_error(p,"invalid attribute name");
@@ -1636,6 +1644,18 @@ static void parse_media_attr(sdp_parser_t *p, char *r, sdp_media_t *m,
 
     a->a_name  = name;
     a->a_value = value;
+
+    /* all codec entries which have been processed after the last 'ptime'
+     * (and consequently don't have 'ptime' assigned yet) - associate them
+     * with this latest 'ptime' entry
+     */
+    if (su_casematch(name, "ptime")) {
+      for (rm = m->m_rtpmaps; rm; rm = rm->rm_next) {
+        if (rm->rm_assigned && !rm->rm_ptime) {
+          rm->rm_ptime = a;
+        }
+      }
+    }
   }
 }
 
@@ -1686,6 +1706,9 @@ static int parse_rtpmap(sdp_parser_t *p, char *r, sdp_media_t *m)
   rm->rm_encoding = encoding;
   rm->rm_rate = rate;
   rm->rm_params = params;
+
+  rm->rm_ptime = NULL;
+  rm->rm_assigned = 1;
 
   return 0;
 }
