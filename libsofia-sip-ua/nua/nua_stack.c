@@ -662,6 +662,12 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
 		  su_msg_destroy(nua->nua_signal);
 	  }
     return;
+  case nua_r_unref:
+    nua_unref(nua);
+    break;
+  case nua_r_handle_unref:
+    nua_handle_unref(nh);
+    break;
   default:
     break;
   }

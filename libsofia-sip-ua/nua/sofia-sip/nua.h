@@ -158,7 +158,9 @@ typedef enum nua_event_e {
      compatibility! */
   nua_i_network_changed,        /**< Local IP(v6) address has changed.
 				   @NEW_1_12_2 */
-  nua_i_register		/**< Incoming REGISTER. @NEW_1_12_4. */
+  nua_i_register,		/**< Incoming REGISTER. @NEW_1_12_4. */
+  nua_r_unref,			/** Calls nua_unref() from dispatcher @NEW_1_13_3 */
+  nua_r_handle_unref	/** Calls nua_handle_unref() from dispatcher @NEW_1_13_3 */
 } nua_event_t;
 
 typedef struct event_s {
@@ -393,6 +395,10 @@ nua_handle_t *nua_handle_by_call_id(nua_t *nua, const char *call_id);
 SOFIAPUBFUN const nta_leg_t *nua_get_dialog_state_leg(nua_handle_t *nh);
 SOFIAPUBFUN su_home_t *nua_handle_get_home(nua_handle_t *nh);
 SOFIAPUBFUN void nua_unref(nua_t *nua);
+/** Destroy reference to nua using dispatcher */
+SOFIAPUBFUN void nua_unref_user(nua_t *nua);
+/** Destroy reference to handle using dispatcher */
+SOFIAPUBFUN void nua_handle_unref_user(nua_handle_t *nh);
 SOFIAPUBFUN su_home_t *nua_get_home(nua_t *nua);
 SOFIAPUBFUN nta_agent_t *nua_get_agent(nua_t *nua);
 SOFIAPUBFUN void nua_handle_set_has_invite(nua_handle_t *nh, unsigned val);
