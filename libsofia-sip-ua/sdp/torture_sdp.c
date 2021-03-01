@@ -975,6 +975,7 @@ static int test_build(void)
     printf("sdp_torture.c: built SDP message:\"%s\".\n", data);
 
   sdp_printer_free(printer);
+  su_home_unref(home);
 
   END();
 }
