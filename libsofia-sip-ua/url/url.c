@@ -2121,7 +2121,9 @@ char *url_query_as_header_string(su_home_t *home,
       if (b_start)
 	break;
       b_start = i + n + 1, b_len = strcspn(s + b_start, "&");
-      i = b_start + b_len + 1;
+      i = b_start + b_len;
+      if (s[i] == '&')
+        i += 1;
       continue;
     }
     if (i != j)

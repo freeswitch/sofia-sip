@@ -156,6 +156,8 @@ int test_quote(void)
   url_digest(hash2, sizeof(hash2), (url_t const *)c, NULL);
   TEST(memcmp(hash1, hash2, sizeof(hash1)), 0);
 
+  su_home_deinit(home);
+
   END();
 }
 
