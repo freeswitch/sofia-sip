@@ -460,9 +460,7 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
       if (!mp->mp_close_delim)
 		  break;			/* error */
       /* Include also transport-padding and epilogue in the close-delimiter */
-	  *next = '\0';
       mp->mp_close_delim->pl_len = p + len - next;
-	  next += strlen(boundary) - 2;
       mp->mp_close_delim->pl_data = next;
 	  
       break;
