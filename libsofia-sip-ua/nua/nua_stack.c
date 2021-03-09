@@ -514,7 +514,7 @@ int nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg,
 
     assert(tend == t); (void)tend; assert(b == bend); (void)bend;
 
-    e->e_always = event == nua_r_destroy || event == nua_r_shutdown || event == nua_r_handle_unref;
+    e->e_always = event == nua_r_destroy || event == nua_r_shutdown || event == nua_r_handle_unref || event == nua_r_unref;
     e->e_event = event;
     e->e_nh = nh ? nua_handle_ref(nh) : NULL;
     e->e_status = status;
