@@ -1165,11 +1165,7 @@ void nua_unref_user(nua_t *nua)
 
 void nua_handle_unref_user(nua_handle_t *nh)
 {
-	enter;
-	if (NH_IS_VALID(nh)) {
-	  nua_signal(nh->nh_nua, nh, NULL, nua_r_handle_unref, 0, NULL, TAG_NULL());
-	}
-	else {
-	  SU_DEBUG_1(("nua: nua_r_handle_unref with invalid handle %p\n", (void *)nh));
-	}
+	assert(nh);
+	nh_enter;
+	nua_signal(nh->nh_nua, nh, NULL, nua_r_handle_unref, 0, NULL, TAG_NULL());
 }
