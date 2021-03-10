@@ -376,6 +376,8 @@ char const *nua_event_name(nua_event_t event)
   case nua_r_nit_respond: return "nua_r_nit_respond";
   case nua_r_set_params: return "nua_r_set_params";
   case nua_r_ack: return "nua_r_ack";
+  case nua_r_handle_unref: return "nua_r_handle_unref";
+  case nua_r_unref: return "nua_r_unref";
   default: return "NUA_UNKNOWN";
   }
 }

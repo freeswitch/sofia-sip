@@ -514,7 +514,7 @@ int nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg,
 
     assert(tend == t); (void)tend; assert(b == bend); (void)bend;
 
-    e->e_always = event == nua_r_destroy || event == nua_r_shutdown;
+    e->e_always = event == nua_r_destroy || event == nua_r_shutdown || event == nua_r_handle_unref || event == nua_r_unref;
     e->e_event = event;
     e->e_nh = nh ? nua_handle_ref(nh) : NULL;
     e->e_status = status;
@@ -549,10 +549,10 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
   nua_event_data_t *e = ee->ee_data;
   nua_handle_t *nh = e->e_nh;
   tagi_t *tags = e->e_tags;
-  nua_event_t event;
+  nua_event_t event = (enum nua_event_e)e->e_event;
   int error = 0;
 
-  if (nh) {
+  if (nh && event != nua_r_handle_unref) {
     if (!nh->nh_prev)
       nh_append(nua, nh);
     if (!nh->nh_ref_by_stack) {
@@ -574,8 +574,6 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
   }
 
   su_msg_save(nua->nua_signal, msg);
-
-  event = (enum nua_event_e)e->e_event;
 
   if (nua->nua_shutdown && !e->e_always) {
     /* Shutting down */
