@@ -946,6 +946,8 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
   url_string_t * proxy = NH_PGET(nh, proxy);
   int call_tls_orq_connect_timeout_is_set = NH_PISSET(nh, call_tls_orq_connect_timeout);
   uint32_t call_tls_orq_connect_timeout = NH_PGET(nh, call_tls_orq_connect_timeout);
+  int ack_failure_callback_is_set = NH_PISSET(nh, ack_failure_callback);
+  ack_failure_callback_f ack_failure_callback_func = NH_PGET(nh, ack_failure_callback);
 
   if (nh->nh_auth) {
     if (cr->cr_challenged ||
@@ -968,6 +970,8 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
 					   NTATAG_DEFAULT_PROXY(proxy)),
 				    TAG_IF(call_tls_orq_connect_timeout_is_set,
 					   NTATAG_TLS_ORQ_CONNECT_TIMEOUT(call_tls_orq_connect_timeout)),
+				    TAG_IF(ack_failure_callback_is_set,
+					   NTATAG_ACK_FAILURE_CALLBACK(ack_failure_callback_func)),
 				    TAG_NEXT(tags));
 
   if (cr->cr_orq == NULL) {

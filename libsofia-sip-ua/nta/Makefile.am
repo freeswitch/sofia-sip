@@ -12,6 +12,10 @@ AM_CPPFLAGS = 		-I$(srcdir)/../ipt -I../ipt \
 			-I$(srcdir)/../msg -I../msg \
 			-I$(srcdir)/../sip -I../sip \
 			-I$(srcdir)/../bnf -I../bnf \
+			-I$(srcdir)/../nua -I../nua \
+			-I$(srcdir)/../sdp -I../sdp \
+			-I$(srcdir)/../nea -I../nea \
+			-I$(srcdir)/../soa -I../soa \
 			-I$(srcdir)/../sresolv -I../sresolv \
 			-I$(srcdir)/../tport -I../tport \
 			-I$(srcdir)/../url -I../url \

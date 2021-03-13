@@ -186,6 +186,9 @@ typedef void (*nua_callback_f)(nua_event_t event,
 			       sip_t const *sip,
 			       tagi_t tags[]);
 
+/** Typedef of ack failure callback. */
+typedef void (*ack_failure_callback_f)(msg_t *orq);
+
 /** Create a NUA agent. */
 SOFIAPUBFUN nua_t *nua_create(su_root_t *root,
 			      nua_callback_f callback,

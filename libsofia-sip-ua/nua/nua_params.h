@@ -61,6 +61,7 @@ struct nua_handle_preferences
   unsigned         nhp_retry_count;	/**< times to retry a request */
   unsigned         nhp_max_subscriptions;
   uint32_t         nhp_call_tls_orq_connect_timeout;
+  ack_failure_callback_f nhp_ack_failure_callback;
 
   /* Session-related preferences */
   char const      *nhp_soa_name;
@@ -221,6 +222,7 @@ struct nua_handle_preferences
     unsigned nhb_retry_after_enable:1;
     unsigned nhb_auto_invite_100:1;
     unsigned nhb_call_tls_orq_connect_timeout:1;
+    unsigned nhb_ack_failure_callback:1;
     unsigned :0;
   } set_bits;
     unsigned set_unsigned[2];

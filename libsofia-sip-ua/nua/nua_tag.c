@@ -673,6 +673,41 @@ tag_typedef_t nutag_call_tls_orq_connect_timeout = UINTTAG_TYPEDEF(call_tls_orq_
  * Reference tag for NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT().
  */
 
+ /**@def NUTAG_ACK_FAILURE_CALLBACK(x)
+  *
+  * Callback to notify application when an ACK fails
+  *
+  * Overrides NTATAG_ACK_FAILURE_CALLBACK()
+  *
+  * @par Used with
+  *    nua_create(), nua_set_params(), nua_handle(), nua_set_hparams(),
+  *    nua_get_params(), nua_get_hparams(),
+  *    nua_register(), nua_unregister(),
+  *    nua_options(), nua_invite(), nua_ack(), nua_cancel(), nua_bye(),
+  *    nua_prack(), nua_update(), nua_info(),
+  *    nua_message(), nua_publish(), nua_unpublish(), nua_notifier(),
+  *    nua_subscribe(), nua_unsubscribe(), nua_notify(), nua_refer(),
+  *    nua_method(), nua_respond()
+  *    nua_authenticate().
+  *
+  * @par Parameter type
+  *    pointer to an ack_failure_callback_f function
+  *
+  * @par Values
+  * - 0 - Disabled
+  * - pointer - enabled
+  *
+  * @NEW_1_13_4.
+  *
+  * Corresponding tag taking reference parameter is NUTAG_ACK_FAILURE_CALLBACK_REF().
+  */
+tag_typedef_t nutag_ack_failure_callback = PTRTAG_TYPEDEF(ack_failure_callback);
+
+/**@def NUTAG_ACK_FAILURE_CALLBACK_REF(x)
+ *
+ * Reference tag for NUTAG_ACK_FAILURE_CALLBACK().
+ */
+
 /**@def NUTAG_MAX_SUBSCRIPTIONS(x)
  *
  * Set maximum number of simultaneous subscribers per single event server.

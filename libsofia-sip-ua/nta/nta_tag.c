@@ -1416,6 +1416,25 @@ tag_typedef_t ntatag_tls_rport = BOOLTAG_TYPEDEF(tls_rport);
  */
 tag_typedef_t ntatag_tls_orq_connect_timeout = UINTTAG_TYPEDEF(tls_orq_connect_timeout);
 
+/**@def NTATAG_ACK_FAILURE_CALLBACK(x)
+ *
+ * Notify application via a callback if an ACK fails.
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
+ *
+ * @par Parameter type
+ *    Pointer to the ack_failure_callback function
+ *
+ * @par Values
+ * - 0 - Disabled
+ * - pointer - Enabled
+ *
+ * @NEW_1_13_4
+ */
+tag_typedef_t ntatag_ack_failure_callback = PTRTAG_TYPEDEF(ack_failure_callback);
+
 /**@def NTATAG_PRELOAD(x)
  *
  * Preload by N bytes.

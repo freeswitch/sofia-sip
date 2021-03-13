@@ -268,6 +268,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *     nothing
  *
  * @par Related tags:
+ *   NUTAG_ACK_FAILURE_CALLBACK() \n
  *   NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR() \n
  *   NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and
  *                         SIPTAG_ALLOW_EVENTS_STR() \n
@@ -392,6 +393,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *     nothing
  *
  * @par Tags Used to Set Handle-Specific Parameters:
+ *   NUTAG_ACK_FAILURE_CALLBACK() \n
  *   NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR() \n
  *   NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and
  *                         SIPTAG_ALLOW_EVENTS_STR() \n
@@ -712,6 +714,10 @@ static int nhp_set_tags(su_home_t *home,
     else if (tag == nutag_call_tls_orq_connect_timeout) {
       NHP_SET(nhp, call_tls_orq_connect_timeout, (uint32_t)value);
     }
+	/* NUTAG_ACK_FAILURE_CALLBACK(ack_failure_callback_f) */
+	else if (tag == nutag_ack_failure_callback) {
+	  NHP_SET(nhp, ack_failure_callback, (ack_failure_callback_f)value);
+	}
     /* NUTAG_MAX_SUBSCRIPTIONS(max_subscriptions) */
     else if (tag == nutag_max_subscriptions) {
       NHP_SET(nhp, max_subscriptions, (unsigned)value);
@@ -1493,6 +1499,7 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *               when responding to nua_get_hparams()
  * @param sip    NULL
  * @param tags
+ *   NUTAG_ACK_FAILURE_CALLBACK() \n
  *   NUTAG_APPL_METHOD() \n
  *   NUTAG_AUTH_CACHE() \n
  *   NUTAG_AUTOACK() \n
@@ -1672,6 +1679,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
      TIF(NUTAG_RETRY_COUNT, retry_count),
      TIF(NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT, call_tls_orq_connect_timeout),
+     TIF(NUTAG_ACK_FAILURE_CALLBACK, ack_failure_callback),
      TIF(NUTAG_MAX_SUBSCRIPTIONS, max_subscriptions),
 
      TIF(NUTAG_SOA_NAME, soa_name),

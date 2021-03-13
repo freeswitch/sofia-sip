@@ -78,6 +78,8 @@
 #include <sofia-sip/msg_parser.h>
 #include <sofia-sip/htable.h>
 
+#include <sofia-sip/nua.h>
+
 /* Resolver context type */
 #define SRES_CONTEXT_T    nta_outgoing_t
 
@@ -190,6 +192,8 @@ struct nta_agent_s
   unsigned sa_t1x64; /**< SIP T1X64 - transaction lifetime (32 s) */
 
   unsigned sa_tls_orq_connect_timeout;  /**< Connect Timeout for outgoing requests using TLS (ms) */
+
+  ack_failure_callback_f sa_ack_failure_callback;  /**< Callback to notify the app when an ACK fails */
 
   unsigned sa_progress;		/**< Progress timer.
 				   Interval between retransmitting
@@ -513,6 +517,8 @@ struct nta_outgoing_s
 
   msg_t		       *orq_request;
   msg_t                *orq_response;
+
+  ack_failure_callback_f orq_ack_failure_callback; /* Callback to notify the app if an ACK failed */
 
   su_time_t             orq_sent;       /**< When request was sent? */
   unsigned              orq_delay;      /**< RTT estimate */
@@ -848,7 +854,7 @@ su_log_t nta_log[] = { SU_LOG_INIT("nta", "NTA_DEBUG", SU_DEBUG) };
  * NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4(),
  * NTATAG_STATELESS(),
  * NTATAG_TAG_3261(), NTATAG_TCP_RPORT(), NTATAG_TIMEOUT_408(),
- * NTATAG_TLS_RPORT(), NTATAG_TLS_ORQ_CONNECT_TIMEOUT(),
+ * NTATAG_TLS_RPORT(), NTATAG_TLS_ORQ_CONNECT_TIMEOUT(), NTATAG_ACK_FAILURE_CALLBACK(),
  * NTATAG_TIMER_C(), NTATAG_MAX_PROCEEDING(),
  * NTATAG_UA(), NTATAG_UDP_MTU(), NTATAG_USER_VIA(),
  * NTATAG_USE_NAPTR(), NTATAG_USE_SRV() and NTATAG_USE_TIMESTAMP().
@@ -1421,7 +1427,7 @@ void agent_kill_terminator(nta_agent_t *agent)
  * NTATAG_SIP_T1X64(), NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4(),
  * NTATAG_STATELESS(),
  * NTATAG_TAG_3261(), NTATAG_TCP_RPORT(), NTATAG_TIMEOUT_408(),
- * NTATAG_TLS_RPORT(), NTATAG_TLS_ORQ_CONNECT_TIMEOUT(),
+ * NTATAG_TLS_RPORT(), NTATAG_TLS_ORQ_CONNECT_TIMEOUT(), NTATAG_ACK_FAILURE_CALLBACK(),
  * NTATAG_TIMER_C(), NTATAG_MAX_PROCEEDING(),
  * NTATAG_UA(), NTATAG_UDP_MTU(), NTATAG_USER_VIA(),
  * NTATAG_USE_NAPTR(), NTATAG_USE_SRV() and NTATAG_USE_TIMESTAMP().
@@ -1463,6 +1469,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned sip_t4     = agent->sa_t4;
   unsigned sip_t1x64  = agent->sa_t1x64;
   unsigned tls_orq_connect_timeout = agent->sa_tls_orq_connect_timeout;
+  ack_failure_callback_f ack_failure_callback = agent->sa_ack_failure_callback;
   unsigned timer_c    = agent->sa_timer_c;
   unsigned timer_d    = 32000;
   unsigned graylist   = agent->sa_graylist;
@@ -1538,6 +1545,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	      NTATAG_TCP_RPORT_REF(tcp_rport),
 	      NTATAG_TLS_RPORT_REF(tls_rport),
 	      NTATAG_TLS_ORQ_CONNECT_TIMEOUT_REF(tls_orq_connect_timeout),
+	      NTATAG_ACK_FAILURE_CALLBACK_REF(ack_failure_callback),
 	      NTATAG_TIMEOUT_408_REF(timeout_408),
 	      NTATAG_UA_REF(ua),
 	      NTATAG_UDP_MTU_REF(udp_mtu),
@@ -1674,6 +1682,8 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 
   if (tls_orq_connect_timeout > NTA_TIME_MAX) tls_orq_connect_timeout = NTA_TIME_MAX;
   agent->sa_tls_orq_connect_timeout = tls_orq_connect_timeout;
+
+  agent->sa_ack_failure_callback = ack_failure_callback;
 
   if (graylist > 24 * 60 * 60)
     graylist = 24 * 60 * 60;
@@ -7868,6 +7878,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   int explicit_transport = 1;
   int call_tls_orq_connect_timeout_is_set = 0;
   int call_tls_orq_connect_timeout = 0;
+  ack_failure_callback_f ack_failure_callback = NULL;
 
   tagi_t const *t;
   tport_t *override_tport = NULL;
@@ -7945,6 +7956,9 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
       call_tls_orq_connect_timeout = t->t_value;
       if (call_tls_orq_connect_timeout > NTA_TIME_MAX) call_tls_orq_connect_timeout = NTA_TIME_MAX;
     }
+    else if (ntatag_ack_failure_callback == tt) {
+      ack_failure_callback = (ack_failure_callback_f)t->t_value;
+    }
   }
 
   orq->orq_agent    = agent;
@@ -7969,6 +7983,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   orq->orq_uas       = !stateless && agent->sa_is_a_uas;
   orq->orq_call_tls_connect_timeout_is_set = call_tls_orq_connect_timeout_is_set;
   orq->orq_call_tls_connect_timeout = (call_tls_orq_connect_timeout > 0) ? call_tls_orq_connect_timeout : 0;
+  orq->orq_ack_failure_callback = ack_failure_callback;
 
   if (cc)
     orq->orq_cc = nta_compartment_ref(cc);
@@ -8383,9 +8398,9 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
 
   outgoing_trying(orq);		/* Timer B / F */
 
-  if (orq->orq_method == sip_method_ack)
-    ;
-  else if (!orq->orq_reliable) {
+  if (orq->orq_method == sip_method_ack) {
+    if (agent->sa_ack_failure_callback && !orq->orq_ack_failure_callback) orq->orq_ack_failure_callback = agent->sa_ack_failure_callback;
+  } else if (!orq->orq_reliable) {
     /* race condition on initial t1 timer timeout, set minimum initial timeout to 1000ms */
 	unsigned t1_timer = agent->sa_t1;
 	if (t1_timer < 1000) t1_timer = 1000;
@@ -9061,8 +9076,12 @@ size_t outgoing_timer_bf(outgoing_queue_t *q,
 
     if (orq->orq_method != sip_method_ack)
       outgoing_timeout(orq, now);
-    else
+    else {
+	  if (orq->orq_ack_failure_callback) {
+		orq->orq_ack_failure_callback(orq->orq_request);
+      }
       outgoing_terminate(orq);
+	}
 
     assert(q->q_head != orq || (int32_t)(orq->orq_timeout - now) > 0);
   }
