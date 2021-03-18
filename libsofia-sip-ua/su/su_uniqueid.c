@@ -90,12 +90,15 @@ union state {
 #endif
 
 static pthread_once_t once = PTHREAD_ONCE_INIT;
-static int done_once = 1;
+static int done_once = 0;
 static pthread_key_t state_key;
 
 static void
 init_once(void)
 {
+  if (done_once)
+    return;
+
   pthread_key_create(&state_key, free);
 #if HAVE_DEV_URANDOM
   urandom = fopen("/dev/urandom", "rb");
