@@ -860,7 +860,7 @@ static int auc_digest_challenge(auth_client_t *ca, msg_auth_t const *ch)
     goto error;
 
   /* Check that we can handle the challenge */
-  if (!ac->ac_md5 && !ac->ac_md5sess)
+  if (!ac->ac_md5 && !ac->ac_md5sess && !ac->ac_sha256 && !ac->ac_sha256sess && !ac->ac_sha512_256 && !ac->ac_sha512_256sess)
     goto error;
   if (ac->ac_qop && !ac->ac_auth && !ac->ac_auth_int)
     goto error;
