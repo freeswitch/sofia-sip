@@ -64,7 +64,7 @@ issize_t auth_digest_challenge_get(su_home_t *home,
 {
   ssize_t n;
   auth_challenge_t ac[1] = {{ 0 }};
-  char const *md5 = NULL, *md5sess = NULL, *sha1 = NULL,
+  char const *md5 = NULL, *md5sess = NULL, *sha1 = NULL, *sha256 = NULL, *sha512_256 = NULL,
     *stale = NULL,
     *qop_auth = NULL, *qop_auth_int = NULL;
 
@@ -86,6 +86,8 @@ issize_t auth_digest_challenge_get(su_home_t *home,
 		      "algorithm=md5", &md5,
 		      "algorithm=md5-sess", &md5sess,
 		      "algorithm=sha1", &sha1,
+		      "algorithm=sha-256", &sha256,
+		      "algorithm=sha-512-256", &sha512_256,
 		      "stale=true", &stale,
 		      "qop=auth", &qop_auth,
 		      "qop=auth-int", &qop_auth_int,
@@ -97,6 +99,8 @@ issize_t auth_digest_challenge_get(su_home_t *home,
   ac->ac_md5 = md5 != NULL || ac->ac_algorithm == NULL;
   ac->ac_md5sess = md5sess != NULL;
   ac->ac_sha1 = sha1 != NULL;
+  ac->ac_sha256 = sha256 != NULL;
+  ac->ac_sha512_256 = sha512_256 != NULL;
   ac->ac_auth = qop_auth != NULL;
   ac->ac_auth_int = qop_auth_int != NULL;
 
