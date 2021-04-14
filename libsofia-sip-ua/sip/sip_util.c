@@ -392,23 +392,31 @@ issize_t sip_header_field_e(char *b, isize_t bsiz, sip_header_t const *h, int fl
   return msg_header_field_e(b, bsiz, h, flags);
 }
 
+#define MAX_SIP_HEADER_STRING_LEN 2048
 /** Convert the header @a h to a string allocated from @a home. */
 char *sip_header_as_string(su_home_t *home, sip_header_t const *h)
 {
   ssize_t len;
-  char *rv, s[256];
+  char *rv, *s;
   ssize_t n;
 
   if (h == NULL)
     return NULL;
 
-  len = sip_header_field_e(s, sizeof(s), h, 0);
+  if (!(s = su_alloc(home, MAX_SIP_HEADER_STRING_LEN))) {
+      return NULL;
+  }
 
-  if (len >= 0 && (size_t)len < sizeof(s))
-    return su_strdup(home, s);
+  len = sip_header_field_e(s, MAX_SIP_HEADER_STRING_LEN, h, 0);
+
+  if (len >= 0 && (size_t)len < MAX_SIP_HEADER_STRING_LEN) {
+      char *result = su_strdup(home, s);
+      su_free(home, s);
+      return result;
+  }
 
   if (len == -1)
-    len = 2 * sizeof(s);
+    len = 2 * MAX_SIP_HEADER_STRING_LEN;
   else
     len += 1;
 
@@ -424,6 +432,8 @@ char *sip_header_as_string(su_home_t *home, sip_header_t const *h)
     else			/* glibc 2.0 */
       len *= 2;
   }
+
+  su_free(home, s);
 
   return rv;
 }
