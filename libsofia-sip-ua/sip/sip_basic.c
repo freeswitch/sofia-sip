@@ -2832,8 +2832,12 @@ char const *sip_via_port(sip_via_t const *v, int *using_rport)
  * typedef struct {
  *   sip_common_t       id_common[1];    // Common fragment info
  *   sip_error_t		*id_next;        // Link to next (dummy)
- *   char const			*id_value;		// Identity
- *   char const			*id_info;		// Info param containing URL of the cert, with no '<','>'
+ *   char const			*id_value;       // Identity
+ *   char const			*id_info;        // Info param containing URL of the cert, with no '<','>'
+ *   char const         *id_signed_identity_digest;	// Digest 
+ *   char const         *id_info_alg;    // Field containing alg of the cert
+ *   char const         *id_info_ppt;    // Field containing PASSporT Type
+ *   msg_param_t const  *id_info_params; // Field containing extensions
  * } sip_identity_t;
  * @endcode
  *
@@ -2850,15 +2854,25 @@ issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_identity_t *id = (sip_identity_t *)h;
   char const *p = NULL, *pp = NULL, *ppp = NULL, *ie = NULL;
-  char *result = NULL;
+  char *sid = NULL, *uri = NULL, *alg = NULL, *ppt = NULL, *ext = NULL;
   size_t len = 0;
 
-  id->id_value = strdup(s);
+  id->id_value = su_strdup(home, s);
+  id->id_signed_identity_digest = s;
   id->id_info = NULL;
 
+  sid = strchr(s, ';');
   p = strstr(s, "info=");
-  if (p) {
+  alg = strstr(s, "alg=");
+  ppt = strstr(s, "ppt=");
 
+  if (sid) {
+      *sid = '\0';
+  } else {
+      id->id_signed_identity_digest = NULL;
+  }
+
+  if (p) {
 	  ie = strchr(p, ';');
 	  pp = strchr(p, '<');
 	  ppp = strchr(p, '>');
@@ -2866,14 +2880,40 @@ issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 	  // allow for a spaces between "info=" and opening '<'
 	  // extract URI from inside "<>" but allow empty - let the higher level app decide what to do about it
 	  if (ie && pp && ppp && (pp < ppp) && (ppp < ie)) {
-
 		  len = ppp - pp;
-		  if ((result = malloc(len))) {
-			  memcpy(result, pp + 1, len - 1);
-			  result[len - 1] = '\0';
-			  id->id_info = result;
-		  }
+          uri = pp + 1;
+          uri[len - 1] = '\0';
+          id->id_info = uri;
 	  }
+  }
+
+  if (alg) {
+      alg += 4;
+      id->id_info_alg = alg;
+      alg = strchr(alg, ';');
+      if (alg) {
+          *alg = '\0';
+      } else {
+          id->id_info_alg = NULL;
+      }
+  }
+
+  if (ppt) {
+      ext = strchr(ppt, ';');
+
+      if (ext) {
+          msg_param_t *params = su_alloc(home, sizeof(msg_param_t));
+          if (msg_params_d(home, &ext, &params) >= 0) {
+              id->id_info_params = params;
+          }
+      }
+
+      ppt += 4;
+      id->id_info_ppt = ppt;
+      ppt = strchr(ppt, ';');
+      if (ppt) {
+          *ppt = '\0';
+      }
   }
 
   return 0;
@@ -2881,24 +2921,70 @@ issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 
 issize_t sip_identity_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
-  sip_identity_t const *id = (sip_identity_t *)h;
+  char* b0 = b, * end = b + bsiz;
+  sip_identity_t const* id = (sip_identity_t*)h;
 
-  return snprintf(b, bsiz, "%s", id->id_value);
+  if (id->id_signed_identity_digest) {
+      MSG_STRING_E(b, end, id->id_signed_identity_digest);
+      MSG_CHAR_E(b, end, ';');
+  }
+
+  if (id->id_info) {
+      MSG_STRING_E(b, end, "info=<");
+      MSG_STRING_E(b, end, id->id_info);
+      MSG_STRING_E(b, end, ">;");
+  }
+
+  if (id->id_info_alg) {
+      MSG_STRING_E(b, end, "alg=");
+      MSG_STRING_E(b, end, id->id_info_alg);
+      MSG_CHAR_E(b, end, ';');
+  }
+
+  if (id->id_info_ppt) {
+      MSG_STRING_E(b, end, "ppt=");
+      MSG_STRING_E(b, end, id->id_info_ppt);
+      /* No need to put ';' as following  MSG_PARAMS_E starts from ';' */
+  }
+
+  if (id->id_info_params) {
+      MSG_PARAMS_E(b, end, id->id_info_params, flags);
+  }
+
+  MSG_TERM_E(b, end);
+
+  return b - b0;
 }
 
 isize_t sip_identity_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_identity_t const *id = (sip_identity_t *)h;
-  return offset + MSG_STRING_SIZE(id->id_value);
+
+  offset += MSG_STRING_SIZE(id->id_value);
+  offset += MSG_STRING_SIZE(id->id_signed_identity_digest);
+  offset += MSG_STRING_SIZE(id->id_info);
+  offset += MSG_STRING_SIZE(id->id_info_alg);
+  offset += MSG_STRING_SIZE(id->id_info_ppt);
+  MSG_PARAMS_SIZE(offset, id->id_info_params);
+
+  return offset;
 }
 
 char *sip_identity_dup_one(sip_header_t *dst, sip_header_t const *src,
 		       char *b, isize_t xtra)
 {
-  sip_identity_t *id = (sip_identity_t *)dst;
-  sip_identity_t const *o = (sip_identity_t *)src;
+  sip_identity_t* o_dst = dst->sh_identity;
+  sip_identity_t const* o_src = src->sh_identity;
 
-  MSG_STRING_DUP(b, id->id_value, o->id_value);
+  char* end = b + xtra;
+  b = msg_params_dup(&o_dst->id_info_params, o_src->id_info_params, b, xtra);
+  o_dst->id_value = o_src->id_value;
+  o_dst->id_signed_identity_digest = o_src->id_signed_identity_digest;
+  o_dst->id_info = o_src->id_info;
+  o_dst->id_info_alg = o_src->id_info_alg;
+  o_dst->id_info_ppt = o_src->id_info_ppt;
+
+  assert(b <= end); (void)end;
 
   return b;
 }
@@ -2909,6 +2995,27 @@ static int sip_identity_update(msg_common_t *h,
 {
   sip_identity_t *id = (sip_identity_t *)h;
 
-  id->id_value = strdup(value);
+  if (name == NULL) {
+       id->id_value = NULL;
+       id->id_signed_identity_digest = NULL;
+       id->id_info = NULL;
+       id->id_info_alg = NULL;
+       id->id_info_ppt = NULL;
+       id->id_info_params = NULL;
+  } 
+#define MATCH(s) (namelen == strlen(#s) && su_casenmatch(name, #s, strlen(#s)))  
+  else if (MATCH(digest)) {
+      id->id_signed_identity_digest = value;
+  } else if (MATCH(uri)) {
+      id->id_info = value;
+  } else if (MATCH(alg)) {
+      id->id_info_alg = value;
+  } else if (MATCH(ppt)) {
+      id->id_info_ppt = value;
+  } else if (MATCH(value)) {
+      id->id_value = value;
+  }
+#undef MATCH
+
   return 0;
 }

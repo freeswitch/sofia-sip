@@ -486,7 +486,11 @@ struct sip_identity_s
   sip_common_t   id_common[1];	/**< Common fragment info */
   sip_error_t   *id_next;		/**< Link to next (dummy) */
   char const    *id_value;		/**< Identity text as shown in SIP Header */
-  char const	*id_info;		/**< Info param containing URL of the cert */
+  char const	*id_info;		/**< Field containing URL of the cert */
+  char const    *id_signed_identity_digest;	/**< Digest */
+  char const	*id_info_alg;		/**< Field containing alg of the cert */
+  char const	*id_info_ppt;		/**< Field containing PASSporT Type */
+  msg_param_t const *id_info_params;	/**< Field containing extensions */
 };
 
 /**@ingroup sip_contact
