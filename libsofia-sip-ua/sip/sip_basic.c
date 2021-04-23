@@ -2857,7 +2857,7 @@ issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
   char *sid = NULL, *uri = NULL, *alg = NULL, *ppt = NULL, *ext = NULL;
   size_t len = 0;
 
-  id->id_info = su_strdup(home, s);
+  id->id_value = su_strdup(home, s);
   id->id_signed_identity_digest = s;
   id->id_info = NULL;
 
