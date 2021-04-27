@@ -1159,13 +1159,21 @@ void nua_handle_dialog_usage_set_refresh_range(nua_handle_t *nh,
 
 void nua_unref_user(nua_t *nua)
 {
+#ifndef HAVE_UNREF_USER
+    nua_unref(nua);
+#else
 	enter;
 	nua_signal(nua, NULL, NULL, nua_r_unref, 0, NULL, TAG_NULL());
+#endif
 }
 
 void nua_handle_unref_user(nua_handle_t *nh)
 {
-	assert(nh);
-	nh_enter;
-	nua_signal(nh->nh_nua, nh, NULL, nua_r_handle_unref, 0, NULL, TAG_NULL());
+#ifndef HAVE_UNREF_USER
+    nua_handle_unref(nh);
+#else
+    assert(nh);
+    nh_enter;
+    nua_signal(nh->nh_nua, nh, NULL, nua_r_handle_unref, 0, NULL, TAG_NULL());
+#endif
 }

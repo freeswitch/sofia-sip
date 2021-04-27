@@ -274,6 +274,14 @@ AC_DEFINE([HAVE_SOFIA_SRESOLV], 1, [Define to 1 if we use DNS library])
 AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define to 1 if we use S/MIME library])
 
 AC_ARG_ENABLE(stun,
+[  --enable-unref-user          enable *_unref_user() functions (disabled)],
+ enable_unref_user=yes,)
+
+if test enable_unref_user = xyes ; then
+  AC_DEFINE([HAVE_UNREF_USER], 1, [Define to 1 to enable *_unref_user() functions])
+fi
+
+AC_ARG_ENABLE(stun,
 [  --disable-stun          disable stun module (enabled)],
  , enable_stun=yes)
 
