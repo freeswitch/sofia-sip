@@ -4,9 +4,9 @@
 	dh $@ --with autoreconf
 
 override_dh_auto_configure:
-	configure \
+	bash -c "configure \
 	  --prefix=/usr \
 	  --with-pic \
-	  --disable-stun
+	  --disable-stun"
 
 override_dh_auto_test:
