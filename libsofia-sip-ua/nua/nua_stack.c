@@ -754,12 +754,16 @@ int nh_call_pending(nua_handle_t *nh, sip_time_t now)
   nua_dialog_usage_t *du;
   sip_time_t next = now + NUA_STACK_TIMER_INTERVAL / 1000;
 
+  nua_handle_protected_ref(nh);
+
   for (du = ds->ds_usage; du; du = du->du_next) {
     if (now == 0)
       break;
     if (du->du_refresh && du->du_refresh < next)
       break;
   }
+
+  nua_handle_protected_unref(nh);
 
   if (du == NULL)
     return 0;
