@@ -270,14 +270,9 @@ void tls_init(void) {
 static
 int tls_init_ecdh_curve(tls_t *tls)
 {
-  int nid;
-  EC_KEY *ecdh;
-  if (!(nid = OBJ_sn2nid("prime256v1"))) {
-    tls_log_errors(1, "Couldn't find specified curve", 0);
-    errno = EIO;
-    return -1;
-  }
-  if (!(ecdh = EC_KEY_new_by_curve_name(nid))) {
+#if OPENSSL_VERSION_NUMBER < 0x10002000
+  EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+  if (!ecdh) {
     tls_log_errors(1, "Couldn't create specified curve", 0);
     errno = EIO;
     return -1;
@@ -286,6 +281,15 @@ int tls_init_ecdh_curve(tls_t *tls)
   SSL_CTX_set_tmp_ecdh(tls->ctx, ecdh);
   EC_KEY_free(ecdh);
   return 0;
+#elif OPENSSL_VERSION_NUMBER < 0x10100000
+  if (!SSL_CTX_set_ecdh_auto(tls->ctx, 1)) {
+    return -1;
+  }
+  SSL_CTX_set_options(tls->ctx, SSL_OP_SINGLE_ECDH_USE);
+  return 0;
+#else
+  return 0;
+#endif
 }
 #endif
 
