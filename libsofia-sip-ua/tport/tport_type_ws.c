@@ -326,11 +326,10 @@ ssize_t tport_send_stream_ws(tport_t const *self, msg_t *msg,
 	  *(wstp->wstp_buffer + wstp->wstp_buflen) = '\0';
 	  wrote = ws_write_frame(&wstp->ws, WSOC_TEXT, wstp->wstp_buffer, wstp->wstp_buflen);
 
-	  if (wrote < 0) {
+	  if (wrote <= 0) {
 		  int err = su_errno();
-		  SU_DEBUG_3(("ws_write_frame: %s\n", strerror(err)));
-		  size = wrote;
-		  
+		  SU_DEBUG_3(("ws_write_frame: %s (%ld)\n", strerror(err), (long)wrote));
+		  return (wrote == 0) ? 0 : -1;
 	  } else {
 		  size = wstp->wstp_buflen;
 	  }
@@ -392,13 +391,14 @@ static int tport_ws_init_primary_secure(tport_primary_t *pri,
   //  SSL_load_error_strings();     /* load all error messages */                                                                                         
   wspri->ssl_method = SSLv23_server_method();   /* create server instance */
   wspri->ssl_ctx = SSL_CTX_new((SSL_METHOD *)wspri->ssl_method);         /* create context */
+
+  if (!wspri->ssl_ctx) {
+	  tls_log_errors(3, "tport_ws_init_primary_secure", 0);
+	  goto done;
+  }
+
   SSL_CTX_sess_set_remove_cb(wspri->ssl_ctx, NULL);
   wspri->ws_secure = 1;
-
-  if ( !wspri->ssl_ctx ) {
-      tls_log_errors(3, "tport_ws_init_primary_secure", 0);
-      goto done;
-  }
 
   /* Disable SSLv2 */
   SSL_CTX_set_options(wspri->ssl_ctx, SSL_OP_NO_SSLv2);
