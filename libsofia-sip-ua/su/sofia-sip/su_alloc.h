@@ -58,6 +58,7 @@ struct su_home_s {
   int         suh_size;
   su_block_t *suh_blocks;
   su_alock_t *suh_lock;
+  int         suh_protected;
 };
 
 #define SU_HOME_INIT(obj) { 0, NULL, NULL }
@@ -90,6 +91,8 @@ int _su_home_unref_by(
 #else
 SU_DLL void *su_home_ref(su_home_t const *);
 SU_DLL int su_home_unref(su_home_t *);
+SU_DLL void su_home_protect(su_home_t* home);
+SU_DLL void su_home_unprotect(su_home_t * home);
 #endif
 
 SU_DLL size_t su_home_refcount(su_home_t *home);
