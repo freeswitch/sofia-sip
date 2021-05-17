@@ -773,6 +773,10 @@ int su_home_unref(su_home_t *home)
     UNLOCK(home);
     return 0;
   }
+  else if (home->suh_protected) {
+      assert(!"home->suh_protected");
+      return 0;
+  }
   else if (sub->sub_parent) {
     su_home_t *parent = sub->sub_parent;
     UNLOCK(home);
@@ -787,6 +791,20 @@ int su_home_unref(su_home_t *home)
     /* UNLOCK(home); */
     return 1;
   }
+}
+
+void su_home_protect(su_home_t* home) {
+    if (home == NULL)
+        return;
+
+    home->suh_protected = 1;
+}
+
+void su_home_unprotect(su_home_t* home) {
+    if (home == NULL)
+        return;
+
+    home->suh_protected = 0;
 }
 #endif
 

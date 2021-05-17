@@ -227,6 +227,11 @@ nua_handle_t *nua_handle_ref(nua_handle_t *nh)
   return (nua_handle_t *)su_home_ref(nh->nh_home);
 }
 
+void nua_handle_protect(nua_handle_t* nh) {
+    if (!nh) return;
+    su_home_protect(nh->nh_home);
+}
+
 /** Destroy reference to handle.
  *
  * The handles use reference counting for memory management. In addition to
@@ -240,6 +245,11 @@ nua_handle_t *nua_handle_ref(nua_handle_t *nh)
 int nua_handle_unref(nua_handle_t *nh)
 {
   return su_home_unref(nh->nh_home);
+}
+
+void nua_handle_unprotect(nua_handle_t* nh) {
+    if (!nh) return;
+    su_home_unprotect(nh->nh_home);
 }
 
 #endif

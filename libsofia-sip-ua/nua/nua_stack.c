@@ -856,7 +856,9 @@ void nua_stack_shutdown(nua_t *nua)
   for (nh = nua->nua_handles; nh; nh = nh_next) {
     nua_dialog_state_t *ds = nh->nh_ds;
 
+    nua_handle_protect(nh);
     nh_next = nh->nh_next;
+    nua_handle_protect(nh_next);
 
     busy += nua_dialog_repeat_shutdown(nh, ds);
 
@@ -869,6 +871,8 @@ void nua_stack_shutdown(nua_t *nua)
 
     if (nh_notifier_shutdown(nh, NULL, NEATAG_REASON("noresource"), TAG_END()))
       busy++;
+
+    nua_handle_unprotect(nh);
   }
 
   if (!busy)

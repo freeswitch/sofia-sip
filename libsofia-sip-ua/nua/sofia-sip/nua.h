@@ -224,6 +224,9 @@ SOFIAPUBFUN nua_handle_t *nua_handle_ref(nua_handle_t *);
 /** Destroy reference to handle */
 SOFIAPUBFUN int nua_handle_unref(nua_handle_t *);
 
+SOFIAPUBFUN void nua_handle_protect(nua_handle_t *);
+SOFIAPUBFUN void nua_handle_unprotect(nua_handle_t *);
+
 /** Bind a callback context to an operation handle. */
 SOFIAPUBFUN void nua_handle_bind(nua_handle_t *nh, nua_hmagic_t *magic);
 
