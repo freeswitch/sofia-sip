@@ -492,7 +492,7 @@ int nua_signal(nua_t *nua, nua_handle_t *nh, msg_t *msg,
   if (nua == NULL)
     return -1;
 
-  if (nua->nua_shutdown_started && event != nua_r_shutdown)
+  if (nua->nua_shutdown_started && event != nua_r_shutdown && event != nua_r_destroy && event != nua_r_handle_unref && event != nua_r_unref)
     return -1;
 
   ta_start(ta, tag, value);
