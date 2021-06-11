@@ -376,8 +376,8 @@ void nua_application_event(nua_t *dummy, su_msg_r sumsg, nua_ee_data_t *ee)
       char const *name = nua_event_name((enum nua_event_e)e->e_event) + 4;
       SU_DEBUG_7(("nua(%p): event %s dropped\n", (void *)nh, name));
     }
-    nua_handle_unref(nh);
-    nua_stack_unref(nua);
+    if (nh) nua_handle_unref_user(nh);
+    if (nua) nua_unref_user(nua);
     return;
   }
 
@@ -402,8 +402,8 @@ void nua_application_event(nua_t *dummy, su_msg_r sumsg, nua_ee_data_t *ee)
     nua->nua_current = frame->nf_next;
   }
 
-  nua_handle_unref(nh);
-  nua_stack_unref(nua);
+  if (nh) nua_handle_unref_user(nh);
+  if (nua) nua_unref_user(nua);
 }
 
 /** Get current request message. @NEW_1_12_4.
