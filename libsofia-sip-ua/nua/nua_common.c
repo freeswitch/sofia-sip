@@ -227,6 +227,12 @@ nua_handle_t *nua_handle_ref(nua_handle_t *nh)
   return (nua_handle_t *)su_home_ref(nh->nh_home);
 }
 
+nua_handle_t* nua_handle_protected_ref(nua_handle_t* nh)
+{
+    nh->nh_protected_ref = 1;
+    return nua_handle_ref(nh);
+}
+
 /** Destroy reference to handle.
  *
  * The handles use reference counting for memory management. In addition to
@@ -239,9 +245,16 @@ nua_handle_t *nua_handle_ref(nua_handle_t *nh)
  */
 int nua_handle_unref(nua_handle_t *nh)
 {
+  if (!nh) return 0;
+  assert(!nh->nh_protected_ref);
   return su_home_unref(nh->nh_home);
 }
 
+int nua_handle_protected_unref(nua_handle_t* nh)
+{
+    nh->nh_protected_ref = 0;
+    return nua_handle_unref(nh);
+}
 #endif
 
 /** Generate an instance identifier. */

@@ -151,6 +151,7 @@ struct nua_handle_s
   unsigned        nh_init:1;	        /**< Handle has been initialized */
   unsigned        nh_used_ptags:1;	/**< Ptags has been used */
   unsigned        nh_destroyed:1;	/**< nh_destroy already called */
+  unsigned        nh_protected_ref : 1;	/**< set this flag to assert on unwanted nua_handle_unref() */
   unsigned :0;
 
   nua_dialog_state_t nh_ds[1];
