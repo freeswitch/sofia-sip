@@ -171,6 +171,12 @@ char const *sip_status_phrase(int status)
   case 422: return sip_422_Session_timer;
   case 423: return sip_423_Interval_too_brief;
 
+  case 428: return sip_428_Use_identity_header;
+  case 436: return sip_436_Bad_identity_info;
+  case 437: return sip_437_Unsupported_credential;
+  case 438: return sip_438_Invalid_identity_header;
+  case 439: return sip_439_Stale_date;
+
   case 480: return sip_480_Temporarily_unavailable;
   case 481: return sip_481_No_transaction;
   case 482: return sip_482_Loop_detected;

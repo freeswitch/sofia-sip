@@ -84,6 +84,10 @@ typedef struct {
   unsigned    ac_md5 : 1;	/**< algorithm=MS5 (or missing) */
   unsigned    ac_md5sess : 1;	/**< algorithm=MD5-sess */
   unsigned    ac_sha1 : 1;	/**< algorithm=sha1 (SSA Hash) */
+  unsigned    ac_sha256 : 1;	/**< algorithm=sha-256 */
+  unsigned    ac_sha256sess : 1;	/**< algorithm=sha-256-sess */
+  unsigned    ac_sha512_256 : 1;	/**< algorithm=sha-512-256 */
+  unsigned    ac_sha512_256sess : 1;	/**< algorithm=sha-512-256-sess */
   unsigned    ac_auth : 1;	/**< qop=auth */
   unsigned    ac_auth_int : 1;	/**< qop=auth-int */
   unsigned : 0;

@@ -413,6 +413,57 @@ ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 	return r;
 }
 
+/** Log WSS error(s).
+ *
+ * Log the WSS error specified by the error code @a e and all the errors in
+ * the queue. The error code @a e implies no error, and it is not logged.
+ */
+void wss_log_errors(unsigned level, char const *s, unsigned long e)
+{
+	if (e == 0)
+		e = ERR_get_error();
+
+	if (!tport_log->log_init)
+		su_log_init(tport_log);
+
+	if (s == NULL) s = "tls";
+
+	for (; e != 0; e = ERR_get_error()) {
+		if (level <= tport_log->log_level) {
+			const char *error = ERR_lib_error_string(e);
+			const char *func = ERR_func_error_string(e);
+			const char *reason = ERR_reason_error_string(e);
+
+			su_llog(tport_log, level, "%s: %08lx:%s:%s:%s\n",
+				s, e, error, func, reason);
+		}
+	}
+}
+
+int wss_error(wsh_t *wsh, int ssl_err, char const *who,
+	void *buf, int size)
+{
+	switch (ssl_err) {
+	case SSL_ERROR_ZERO_RETURN:
+		return 0;
+
+	case SSL_ERROR_SYSCALL:
+		ERR_clear_error();
+		if (SSL_get_shutdown(wsh->ssl) & SSL_RECEIVED_SHUTDOWN)
+			return 0;			/* EOS */
+		if (errno == 0)
+			return 0;			/* EOS */
+
+		errno = EIO;
+		return -1;
+
+	default:
+		wss_log_errors(1, who, ssl_err);
+		errno = EIO;
+		return -1;
+	}
+}
+
 ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 {
 	ssize_t r;
@@ -420,12 +471,20 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 	int ssl_err = 0;
 	size_t wrote = 0;
 
+	if (wsh == NULL || data == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	if (wsh->ssl) {
 		do {
-			r = SSL_write(wsh->ssl, (void *)((unsigned char *)data + wrote), bytes - wrote);
+			void *buf = (void *)((unsigned char *)data + wrote);
+			int size = bytes - wrote;
+
+			r = SSL_write(wsh->ssl, buf, size);
 
 			if (r == 0) {
-				ssl_err = 42;
+				ssl_err = -42;
 				break;
 			}
 			
@@ -450,6 +509,7 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 				ssl_err = SSL_get_error(wsh->ssl, r);
 
 				if (ssl_err != SSL_ERROR_WANT_WRITE && ssl_err != SSL_ERROR_WANT_READ) {
+					ssl_err = wss_error(wsh, ssl_err, "ws_raw_write: SSL_write", buf, size);
 					break;
 				}
 				ssl_err = 0;
@@ -457,13 +517,13 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 
 		} while (--sanity > 0 && wrote < bytes);
 
-		if (!sanity) ssl_err = 56;
+		if (!sanity) ssl_err = -56;
 		
 		if (ssl_err) {
-			r = ssl_err * -1;
+			r = ssl_err;
 		}
 
-		return r;
+		return r < 0 ? r : wrote;
 	}
 
 	do {
@@ -986,6 +1046,7 @@ ssize_t ws_write_frame(wsh_t *wsh, ws_opcode_t oc, void *data, size_t bytes)
 	ssize_t raw_ret = 0;
 
 	if (wsh->down) {
+		errno = EIO;
 		return -1;
 	}
 
@@ -1031,7 +1092,7 @@ ssize_t ws_write_frame(wsh_t *wsh, ws_opcode_t oc, void *data, size_t bytes)
 
 	raw_ret = ws_raw_write(wsh, bp, (hlen + bytes));
 
-	if (raw_ret != (ssize_t) (hlen + bytes)) {
+	if (raw_ret <= 0 || raw_ret != (ssize_t) (hlen + bytes)) {
 		return raw_ret;
 	}
 
