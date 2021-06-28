@@ -428,6 +428,8 @@ static int test_filters(void)
   TEST_P(b5[0].t_tag, tag_q);
   TEST_P(b5[1].t_tag, tag_p);
 
+  su_free(NULL, b5); tl_vfree(nsfilter);
+
   b = tl_afilter(home, filter5, lst); TEST_1(b);
   TEST_P(b[0].t_tag, tag_a);
   TEST_P(b[1].t_tag, tag_i);
@@ -476,6 +478,8 @@ static int test_print(void)
     if ((tstflags & tst_verbatim) == 0)
       fclose(out);
   }
+
+  tl_vfree(lst);
 
   END();
 }
@@ -563,6 +567,8 @@ static int test_gets(void)
   TEST(p, 1);
   TEST_S(b, "b");
 
+  tl_vfree(lst);
+
   lst = tl_list(TAG_A_REF(a),
 		TAG_I_REF(i),
 		TAG_NULL());
@@ -571,6 +577,8 @@ static int test_gets(void)
 
   TEST_S(a, "Foo");
   TEST(i, -1);
+
+  tl_vfree(lst);
 
   END();
 }

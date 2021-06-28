@@ -176,6 +176,7 @@ static int test_identity(void)
 	  (home, "Jaska <sip:joe@example.com>, Helmi <tel:+3587808000>")));
 
   msg_destroy(msg);
+  su_free(NULL, test_mclass), test_mclass = NULL;
 
   /* Now with extensions */
   TEST_1(test_mclass = msg_mclass_clone(def1, 0, 0));
@@ -207,6 +208,7 @@ static int test_identity(void)
   TEST_S(rpid->rpid_url->url_host, "test.domain.com");
 
   msg_destroy(msg);
+  su_free(NULL, test_mclass), test_mclass = NULL;
 
   {
     su_home_t *home = su_home_clone(NULL, sizeof *home);
@@ -1218,6 +1220,8 @@ static int test_encoding(void)
   TEST_1(c = sip->sip_content_length->l_common);
   TEST_M(c->h_data, "l:0\r\n", c->h_len);
 
+  msg_destroy(msg);
+
   END();
 }
 
@@ -2012,7 +2016,7 @@ static int sip_header_test(void)
   TEST(sip_add_tagis(msg, sip, &tl), 0);
   TEST_P(tl, tl0 + 2);
 
-  tl_free(tl0);
+  tl_vfree(tl0);
 
   TEST_P(sip_timestamp_make(home, "+1"), NULL);
   TEST_P(sip_timestamp_make(home, "1.0e6 13.0"), NULL);
@@ -2612,6 +2616,7 @@ int test_refer(void)
   TEST(msg_header_remove_param(rp->rp_common, "to-tag"), 1);
   TEST_P(rp->rp_to_tag, NULL);
 
+  msg_destroy(msg);
   su_home_unref(home);
 
   END();
@@ -3582,6 +3587,8 @@ static int test_utils(void)
 	 == 0);
   TEST_1(d_ver == NULL);
 
+  su_home_unref(home);
+
   END();
 }
 
@@ -3665,6 +3672,9 @@ int main(int argc, char *argv[])
 #if HAVE_OPEN_C
   sleep(5);
 #endif
+
+  if (test_mclass)
+    su_free(NULL, test_mclass);
 
   return retval;
 }

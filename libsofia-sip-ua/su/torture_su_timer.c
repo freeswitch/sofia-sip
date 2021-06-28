@@ -272,6 +272,7 @@ int main(int argc, char *argv[])
   for (i = 0; i < N; i++) {
     su_timer_destroy(timers[i]);
   }
+  free(timers);
 
   su_root_destroy(root);
 

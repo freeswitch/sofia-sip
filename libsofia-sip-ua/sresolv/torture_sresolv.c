@@ -173,6 +173,7 @@ int test_api_errors(void)
   TEST(su_home_threadsafe((su_home_t *)res), 0);
 
   unlink(template);
+  su_home_unref(ctx->home);
 
   s = sockets[0];
 
@@ -247,7 +248,7 @@ int test_cache(void)
   cache = sres_cache_new(N1);
   TEST_1(cache);
 
-  all = calloc(N3, sizeof *all); if (!all) perror("calloc"), exit(2);
+  all = calloc(N3 + 1, sizeof *all); if (!all) perror("calloc"), exit(2);
 
   memset(a0, 0, sizeof a0);
 

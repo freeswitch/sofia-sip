@@ -829,6 +829,7 @@ static int http_header_handling_test(void)
   TEST_SIZE(http_content_length_class->hc_params,
 	    offsetof(http_content_length_t, l_common));
 
+  msg_destroy(msg), msg = NULL;
   su_home_unref(home);
 
   END();
@@ -1433,6 +1434,7 @@ static int http_tag_test(void)
   {
     msg_t *msg;
     http_t *http;
+    su_home_t *home;
 
     http_referer_t *r;
     http_upgrade_t *u;
@@ -1449,8 +1451,10 @@ static int http_tag_test(void)
     TEST_1(http->http_status);
     TEST_1(http->http_server);
 
-    r = http_referer_make(NULL, "ftp://ftp.funet.fi"); TEST_1(r);
-    u = http_upgrade_make(NULL, "HTTP/1.1, TLS/1.1"); TEST_1(u);
+
+    TEST_1(home = su_home_new(sizeof *home));
+    r = http_referer_make(home, "ftp://ftp.funet.fi"); TEST_1(r);
+    u = http_upgrade_make(home, "HTTP/1.1, TLS/1.1"); TEST_1(u);
 
     TEST_1(u->k_items);
     TEST_S(u->k_items[0], "HTTP/1.1");
@@ -1476,6 +1480,7 @@ static int http_tag_test(void)
     TEST_1(http->http_payload);
 
     msg_destroy(msg);
+    su_home_unref(home);
   }
 
   END();

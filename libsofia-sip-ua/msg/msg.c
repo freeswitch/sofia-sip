@@ -165,6 +165,7 @@ void msg_destroy(msg_t *msg)
     su_home_mutex_unlock(msg->m_home);
     if (refs)
       break;
+    msg_destroy(msg->m_next);
     su_home_zap(msg->m_home);
   }
 }

@@ -1095,12 +1095,12 @@ int test_digest_client(void)
 
     /* Test client with two challenges */
     au = sip_www_authenticate_make(
-      NULL,
+      home,
       "Digest realm=\"test-realm\", "
       "nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", "
       "opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"");
     au->au_next = sip_www_authenticate_make(
-      NULL,
+      home,
       "Not-Digest realm=\"test-realm\", "
       "zip=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", "
       "zap=\"5ccc069c403ebaf9f0171e9517f40e41\"");

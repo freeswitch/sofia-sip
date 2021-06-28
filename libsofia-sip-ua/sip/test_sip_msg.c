@@ -161,16 +161,19 @@ int main(int argc, char *argv[])
   int exitcode = 0;
   msg_mclass_t const *sip_mclass = sip_default_mclass();
   msg_t *msg = msg_create(sip_mclass, MSG_FLG_EXTRACT_COPY);
+  msg_t *next = NULL;
   msg_iovec_t iovec[1];
 
   tcp = argv[1] && strcmp(argv[1], "-t") == 0;
 
   test_msg_class(sip_mclass);
 
+#define error_exit(n) exitcode = n; goto error
+
   for (n = 0, m = 0;;) {
     if (msg_recv_iovec(msg, iovec, 1, 1, 0) < 0) {
       perror("msg_recv_iovec");
-      exit(1);
+      error_exit(1);
     }
     assert(iovec->mv_len >= 1);
 
@@ -178,7 +181,7 @@ int main(int argc, char *argv[])
 
     if (n < 0) {
       perror("test_sip_msg read");
-      exit(1);
+      error_exit(1);
     }
 
     msg_recv_commit(msg, n, n == 0);
@@ -199,17 +202,17 @@ int main(int argc, char *argv[])
 
   if (m < 0) {
     fprintf(stderr, "test_sip_msg: parsing error ("MOD_ZD")\n", n);
-    exit(1);
+    error_exit(1);
   }
 
   if (sip->sip_flags & MSG_FLG_TRUNC) {
     fprintf(stderr, "test_sip_msg: message truncated\n");
-    exit(1);
+    error_exit(1);
   }
 
-  if (msg_next(msg)) {
+  if ((next = msg_next(msg))) {
     fprintf(stderr, "test_sip_msg: stuff after message\n");
-    exit(1);
+    error_exit(1);
   }
 
 #if 0
@@ -224,11 +227,11 @@ int main(int argc, char *argv[])
 
   if (MSG_HAS_ERROR(sip->sip_flags) || sip->sip_error) {
     fprintf(stderr, "test_sip_msg: parsing error\n");
-    exit(1);
+    error_exit(1);
   }
   else if (sip_sanity_check(sip) < 0) {
     fprintf(stderr, "test_sip_msg: message failed sanity check\n");
-    exit(1);
+    error_exit(1);
   }
 
   if (sip->sip_request) {
@@ -284,10 +287,14 @@ int main(int argc, char *argv[])
 	    sip->sip_content_length->l_length);
   }
 
-  if (msg_next(msg)) {
+  if ((next = msg_next(msg))) {
     fprintf(stderr, "test_sip_msg: extra stuff after valid message\n");
-    exit(1);
+    error_exit(1);
   }
+
+error:
+  if (next) msg_destroy(next);
+  msg_destroy(msg);
 
   return exitcode;
 }
