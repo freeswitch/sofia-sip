@@ -171,7 +171,8 @@ nua_t *nua_create(su_root_t *root,
       nua->nua_magic = magic;
     }
     else {
-      su_home_unref(nua->nua_home);
+      nua->nua_shutdown_final = 1;
+      nua_destroy(nua);
       nua = NULL;
     }
 #endif
