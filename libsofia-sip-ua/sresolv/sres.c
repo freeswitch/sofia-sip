@@ -3664,7 +3664,8 @@ sres_decode_msg(sres_resolver_t *res,
 
   if (err == SRES_RECORD_ERR ||
       err == SRES_NAME_ERR ||
-      err == SRES_UNIMPL_ERR)
+      err == SRES_UNIMPL_ERR ||
+      err == SRES_AUTH_ERR)
     errorcount = 1;
 
   total = errorcount + m->m_ancount + m->m_nscount + m->m_arcount;
