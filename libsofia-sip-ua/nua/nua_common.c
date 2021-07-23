@@ -244,7 +244,14 @@ void nua_handle_protect(nua_handle_t* nh) {
  */
 int nua_handle_unref(nua_handle_t *nh)
 {
-  return su_home_unref(nh->nh_home);
+  int nh_inserted = ((nh)->nh_prev != NULL);
+  int retval = su_home_unref(nh->nh_home);
+
+  if (retval && nh_inserted) {
+      assert(!"nua handle was destroyed but still inserted into nua handles list");
+  }
+
+  return retval;
 }
 
 void nua_handle_unprotect(nua_handle_t* nh) {
