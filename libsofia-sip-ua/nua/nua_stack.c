@@ -551,6 +551,7 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
   tagi_t *tags = e->e_tags;
   nua_event_t event = (enum nua_event_e)e->e_event;
   int error = 0;
+  char *phrase = (event == nua_r_handle_unref && e->e_phrase) ? strdup(e->e_phrase) : NULL;
 
   if (nh && event != nua_r_handle_unref) {
     if (!nh->nh_prev)
@@ -678,6 +679,9 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
   }
 
   su_msg_destroy(nua->nua_signal);
+  if (phrase) {
+      free(phrase);
+  }
 }
 
 /* ====================================================================== */

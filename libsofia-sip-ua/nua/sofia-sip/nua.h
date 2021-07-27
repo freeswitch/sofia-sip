@@ -401,7 +401,13 @@ SOFIAPUBFUN void nua_unref(nua_t *nua);
 /** Destroy reference to nua using dispatcher */
 SOFIAPUBFUN void nua_unref_user(nua_t *nua);
 /** Destroy reference to handle using dispatcher */
+/*
 SOFIAPUBFUN void nua_handle_unref_user(nua_handle_t *nh);
+*/
+SOFIAPUBFUN void _nua_handle_unref_user_by(nua_handle_t* nh, char const *file, unsigned line, char const *function);
+#define nua_handle_unref_user(nh) \
+  _nua_handle_unref_user_by((nh), __FILE__, __LINE__, __func__)
+
 SOFIAPUBFUN su_home_t *nua_get_home(nua_t *nua);
 SOFIAPUBFUN nta_agent_t *nua_get_agent(nua_t *nua);
 SOFIAPUBFUN void nua_handle_set_has_invite(nua_handle_t *nh, unsigned val);

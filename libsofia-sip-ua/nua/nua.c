@@ -1182,9 +1182,16 @@ void nua_unref_user(nua_t *nua)
 	nua_signal(nua, NULL, NULL, nua_r_unref, 0, NULL, TAG_NULL());
 }
 
-void nua_handle_unref_user(nua_handle_t *nh)
+/*void nua_handle_unref_user(nua_handle_t *nh)
 {
 	assert(nh);
 	nh_enter;
 	nua_signal(nh->nh_nua, nh, NULL, nua_r_handle_unref, 0, NULL, TAG_NULL());
+}*/
+
+void _nua_handle_unref_user_by(nua_handle_t* nh, char const* file, unsigned line, char const* function)
+{
+    assert(nh);
+    nh_enter;
+    nua_signal(nh->nh_nua, nh, NULL, nua_r_handle_unref, 0, su_sprintf(nh->nh_home, "%s:%s:%d", function, file, line), TAG_NULL());
 }
