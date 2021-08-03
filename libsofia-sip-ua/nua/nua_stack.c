@@ -551,11 +551,21 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
   tagi_t *tags = e->e_tags;
   nua_event_t event = (enum nua_event_e)e->e_event;
   int error = 0;
-  char *phrase = (event == nua_r_handle_unref && e->e_phrase) ? strdup(e->e_phrase) : NULL;
+  char *phrase = NULL;
+
+  if (event == nua_r_handle_unref && e->e_phrase) {
+      phrase = strdup(e->e_phrase);
+      su_free(nh->nh_home, e->e_phrase);
+      e->e_phrase = NULL;
+  }
 
   if (nh && event != nua_r_handle_unref) {
-    if (!nh->nh_prev)
+    if (!nh->nh_prev) {
+      if (nh->nh_destroyed) {
+        assert(!"Attempt to insert destroyed nua handle");
+      }
       nh_append(nua, nh);
+    }
     if (!nh->nh_ref_by_stack) {
       /* Mark handle as used by stack */
       nh->nh_ref_by_stack = 1;
@@ -659,6 +669,9 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
 	  if (nh && !nh->nh_destroyed) {
 		  nua_stack_destroy_handle(nua, nh, tags);
 		  su_msg_destroy(nua->nua_signal);
+	  }
+	  if (phrase) {
+		  free(phrase);
 	  }
     return;
   case nua_r_unref:
