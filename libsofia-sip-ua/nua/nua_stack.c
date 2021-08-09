@@ -209,8 +209,16 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 
 void nua_stack_deinit(su_root_t *root, nua_t *nua)
 {
-  enter;
+  nua_handle_t *nh, *nh_next;
 
+  enter;
+  for (nh = nua->nua_handles; nh; nh = nh_next) {
+    nh_next = nh->nh_next;
+
+    if (nh->nh_soa) {
+      soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
+    }
+  }
   su_timer_destroy(nua->nua_timer), nua->nua_timer = NULL;
   nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
 }
