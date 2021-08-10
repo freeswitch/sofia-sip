@@ -212,15 +212,32 @@ void nua_stack_deinit(su_root_t *root, nua_t *nua)
   nua_handle_t *nh, *nh_next;
 
   enter;
+
+  su_task_deinit(nua->nua_server);
+  su_task_deinit(nua->nua_client);
+
+  su_timer_destroy(nua->nua_timer), nua->nua_timer = NULL;
+  nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
+
   for (nh = nua->nua_handles; nh; nh = nh_next) {
     nh_next = nh->nh_next;
 
     if (nh->nh_soa) {
       soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
     }
+
+    /* Cleanup remaining nua handles as they are su_home_new'ed and not su_home_cloned (do not belong to the nua's home)
+       See nh_create_handle().
+       At least one handle will be found here and it is nua default handle
+       which is su_home_cloned (see nua_stack_init()) and therefore does not actually require to be unrefed.
+       Nua is about to die so we don't remove nh from nua, just unref nh */
+    if (nh != nua->nua_handles) {
+      su_home_t *nh_home = (su_home_t *)nh;
+
+      SU_DEBUG_9(("nua(%p): found handle with refcount = "MOD_ZU". Destroying.\n", (void *)nh, su_home_refcount(nh_home)));
+      while(!su_home_unref(nh_home));
+    }
   }
-  su_timer_destroy(nua->nua_timer), nua->nua_timer = NULL;
-  nta_agent_destroy(nua->nua_nta), nua->nua_nta = NULL;
 }
 
 /* ----------------------------------------------------------------------
