@@ -1770,6 +1770,10 @@ static void parse_descs(sdp_parser_t *p,
       bandwidths = &(*bandwidths)->b_next;
       break;
 
+    case 'i': 
+      parse_information(p, rest, &m->m_information);
+      break;
+     
     case 'k':
       parse_key(p, rest, &m->m_key);
       break;
