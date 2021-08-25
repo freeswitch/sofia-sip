@@ -73,8 +73,8 @@ int http_request_complete(msg_t *msg)
   if (!http->http_host)
     return -1;
 
-    for (pl = http->http_payload; pl; pl = pl->pl_next)
-      len += pl->pl_len;
+  for (pl = http->http_payload; pl; pl = pl->pl_next)
+    len += pl->pl_len;
 
   if (len > UINT32_MAX)
     return -1;
