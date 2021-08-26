@@ -3749,21 +3749,20 @@ sres_record_t *
 sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth)
 {
   sres_cache_t *cache = res->res_cache;
-  sres_record_t *sr, sr0[1];
-
+  sres_record_t *sr = NULL, *srl, sr0[1];
   uint16_t m_size;
   char name[1025];
   unsigned len;
   char btype[8], bclass[8];
 
-  sr = memset(sr0, 0, sizeof sr0);
+  srl = memset(sr0, 0, sizeof sr0);
 
-  len = m_get_domain(sr->sr_name = name, sizeof(name) - 1, m, 0); /* Name */
-  sr->sr_type = m_get_uint16(m);  /* Type */
-  sr->sr_class = m_get_uint16(m); /* Class */
-  sr->sr_ttl = m_get_uint32(m);   /* TTL */
-  sr->sr_rdlen = m_get_uint16(m); /* rdlength */
-  sr->sr_parsed = 1;
+  len = m_get_domain(srl->sr_name = name, sizeof(name) - 1, m, 0); /* Name */
+  srl->sr_type = m_get_uint16(m);  /* Type */
+  srl->sr_class = m_get_uint16(m); /* Class */
+  srl->sr_ttl = m_get_uint32(m);   /* TTL */
+  srl->sr_rdlen = m_get_uint16(m); /* rdlength */
+  srl->sr_parsed = 1;
   if (m->m_error)
     goto error;
   if (len >= (sizeof name)) {
@@ -3777,46 +3776,46 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth)
 	      nth < m->m_ancount + m->m_nscount ? "AUTHORITY" :
 	      "ADDITIONAL",
 	      name,
-	      sres_record_type(sr->sr_type, btype),
-	      sres_record_class(sr->sr_class, bclass),
-	      sr->sr_ttl, sr->sr_rdlen));
+	      sres_record_type(srl->sr_type, btype),
+	      sres_record_class(srl->sr_class, bclass),
+	      srl->sr_ttl, srl->sr_rdlen));
 
-  if (m->m_offset + sr->sr_rdlen > m->m_size) {
+  if (m->m_offset + srl->sr_rdlen > m->m_size) {
     m->m_error = "truncated message";
     goto error;
   }
 
   m_size = m->m_size;
   /* limit m_size to indicated rdlen, check whether record is truncated */
-  m->m_size = m->m_offset + sr->sr_rdlen;
+  m->m_size = m->m_offset + srl->sr_rdlen;
 
-  switch (sr->sr_type) {
+  switch (srl->sr_type) {
   case sres_type_soa:
-    sr = sres_init_rr_soa(cache, sr->sr_soa, m);
+    sr = sres_init_rr_soa(cache, srl->sr_soa, m);
     break;
   case sres_type_a:
-    sr = sres_init_rr_a(cache, sr->sr_a, m);
+    sr = sres_init_rr_a(cache, srl->sr_a, m);
     break;
   case sres_type_a6:
-    sr = sres_init_rr_a6(cache, sr->sr_a6, m);
+    sr = sres_init_rr_a6(cache, srl->sr_a6, m);
     break;
   case sres_type_aaaa:
-    sr = sres_init_rr_aaaa(cache, sr->sr_aaaa, m);
+    sr = sres_init_rr_aaaa(cache, srl->sr_aaaa, m);
     break;
   case sres_type_cname:
-    sr = sres_init_rr_cname(cache, sr->sr_cname, m);
+    sr = sres_init_rr_cname(cache, srl->sr_cname, m);
     break;
   case sres_type_ptr:
-    sr = sres_init_rr_ptr(cache, sr->sr_ptr, m);
+    sr = sres_init_rr_ptr(cache, srl->sr_ptr, m);
     break;
   case sres_type_srv:
-    sr = sres_init_rr_srv(cache, sr->sr_srv, m);
+    sr = sres_init_rr_srv(cache, srl->sr_srv, m);
     break;
   case sres_type_naptr:
-    sr = sres_init_rr_naptr(cache, sr->sr_naptr, m);
+    sr = sres_init_rr_naptr(cache, srl->sr_naptr, m);
     break;
   default:
-    sr = sres_init_rr_unknown(cache, sr->sr_record, m);
+    sr = sres_init_rr_unknown(cache, srl->sr_record, m);
     break;
   }
 
