@@ -41,6 +41,8 @@
 #include <sofia-sip/su_tag_class.h>
 #endif
 
+#include <assert.h>
+
 SOFIA_BEGIN_DECLS
 
 #define tt_next     tt_class->tc_next
@@ -68,6 +70,8 @@ su_inline int t_end(tagi_t const *t)
 su_inline tagi_t const *t_next(tagi_t const *t)
 {
   tag_type_t tt = TAG_TYPE_OF(t);
+
+  assert(tt->tt_class);
 
   if (tt->tt_next)
     return tt->tt_next(t);

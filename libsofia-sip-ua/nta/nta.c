@@ -2450,7 +2450,7 @@ int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
 
   /* Set via field magic for the tports */
   for (tp = primaries; tp; tp = tport_next(tp)) {
-    assert(via->v_common->h_data == tp);
+    assert(via->v_common && via->v_common->h_data == tp);
     v = tport_magic(tp);
     tport_set_magic(tp, new_via);
     msg_header_free(self->sa_home, (void *)v);
@@ -3431,7 +3431,7 @@ void agent_recv_response(nta_agent_t *agent,
     return;
   }
 
-  if (sip->sip_cseq->cs_method == sip_method_invite
+  if (sip->sip_cseq && sip->sip_cseq->cs_method == sip_method_invite
       && 200 <= sip->sip_status->st_status
       && sip->sip_status->st_status < 300
       /* Exactly one Via header, belonging to us */
@@ -5669,14 +5669,14 @@ void incoming_queue(incoming_queue_t *queue,
 		    nta_incoming_t *irq)
 {
   if (irq->irq_queue == queue) {
-    assert(queue->q_timeout == 0);
+    assert(queue && queue->q_timeout == 0);
     return;
   }
 
   if (incoming_is_queued(irq))
     incoming_remove(irq);
 
-  assert(*queue->q_tail == NULL);
+  assert(queue && *queue->q_tail == NULL);
 
   irq->irq_timeout = set_timeout(irq->irq_agent, queue->q_timeout);
 

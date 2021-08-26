@@ -595,9 +595,9 @@ int su_select_port_wait_events(su_port_t *self, su_duration_t tout)
     ser->ser_wait->revents = 0;
 
     if (ser->ser_wait->events & SU_WAIT_IN)
-      if (FD_ISSET(fd, rset)) ser->ser_wait->revents |= SU_WAIT_IN, n--;
+      if (rset && FD_ISSET(fd, rset)) ser->ser_wait->revents |= SU_WAIT_IN, n--;
     if (ser->ser_wait->events & SU_WAIT_OUT)
-      if (FD_ISSET(fd, wset)) ser->ser_wait->revents |= SU_WAIT_OUT, n--;
+      if (wset && FD_ISSET(fd, wset)) ser->ser_wait->revents |= SU_WAIT_OUT, n--;
 
     if (ser->ser_wait->revents) {
       magic = ser->ser_root ? su_root_magic(ser->ser_root) : NULL;

@@ -1942,7 +1942,7 @@ void url_string_update(su_md5_t *md5, char const *s)
   int have_authority = 1;
   enum url_type_e type = url_any;
   char const *at, *colon;
-  char schema[48];
+  char schema[48] = { 0 };
 
   if (s == NULL || strlen(s) == 0 || strcmp(s, "*") == 0) {
     su_md5_update(md5, "*\0\0*", 4);

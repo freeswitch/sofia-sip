@@ -2105,6 +2105,7 @@ int soa_description_set(soa_session_t *ss,
     sdp_str0_new = sdp_str_new;
 
   if (sdp_new && printer && sdp_str_new && sdp_str0_new) {
+    assert(ssd);
     tbf1 = ssd->ssd_sdp, tbf2 = ssd->ssd_printer;
     tbf3 = (void *)ssd->ssd_str, tbf4 = (void *)ssd->ssd_unparsed;
 

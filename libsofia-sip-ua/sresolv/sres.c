@@ -3826,6 +3826,8 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth)
   if (sr == sr0)
     sr = sres_cache_alloc_record(cache, sr, 0);
 
+  assert(sr != sr0);
+
   if (sr == NULL) {
     m->m_error = "memory exhausted";
     goto error;
