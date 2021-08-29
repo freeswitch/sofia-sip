@@ -35,6 +35,7 @@ static struct ws_globals_s ws_globals;
 void init_ssl(void)
 {
 	//	SSL_library_init();
+	SSL_load_error_strings();
 }
 void deinit_ssl(void)
 {
@@ -290,6 +291,9 @@ int ws_handshake(wsh_t *wsh)
 	}
 
 	wsh->uri = malloc((e-p) + 1);
+
+	if (!wsh->uri) goto err;
+
 	strncpy(wsh->uri, p, e-p);
 	*(wsh->uri + (e-p)) = '\0';
 
@@ -346,22 +350,26 @@ int ws_handshake(wsh_t *wsh)
 
 }
 
+#define SSL_WANT_READ_WRITE(err) (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+int wss_error(wsh_t *wsh, int ssl_err, char const *who);
+
 ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 {
 	ssize_t r;
-	int err = 0;
+	int ssl_err = 0;
 
 	wsh->x++;
 	if (wsh->x > 250) ms_sleep(1);
 
 	if (wsh->ssl) {
 		do {
+			//ERR_clear_error();
 			r = SSL_read(wsh->ssl, data, bytes);
 
-			if (r == -1) {
-				err = SSL_get_error(wsh->ssl, r);
+			if (r < 0) {
+				ssl_err = SSL_get_error(wsh->ssl, r);
 
-				if (err == SSL_ERROR_WANT_READ) {
+				if (SSL_WANT_READ_WRITE(ssl_err)) {
 					if (!block) {
 						r = -2;
 						goto end;
@@ -369,12 +377,13 @@ ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 					wsh->x++;
 					ms_sleep(10);
 				} else {
+					wss_error(wsh, ssl_err, "ws_raw_read: SSL_read");
 					r = -1;
 					goto end;
 				}
 			}
 
-		} while (r == -1 && err == SSL_ERROR_WANT_READ && wsh->x < 1000);
+		} while (r < 0 && SSL_WANT_READ_WRITE(ssl_err) && wsh->x < 1000);
 
 		goto end;
 	}
@@ -440,8 +449,7 @@ void wss_log_errors(unsigned level, char const *s, unsigned long e)
 	}
 }
 
-int wss_error(wsh_t *wsh, int ssl_err, char const *who,
-	void *buf, int size)
+int wss_error(wsh_t *wsh, int ssl_err, char const *who)
 {
 	switch (ssl_err) {
 	case SSL_ERROR_ZERO_RETURN:
@@ -481,6 +489,7 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 			void *buf = (void *)((unsigned char *)data + wrote);
 			int size = bytes - wrote;
 
+			//ERR_clear_error();
 			r = SSL_write(wsh->ssl, buf, size);
 
 			if (r == 0) {
@@ -496,20 +505,20 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 				int ms = 1;
 
 				if (wsh->block) {
-					if (sanity < WS_WRITE_SANITY * 3 / 4) {
-						ms = 50;
-					} else if (sanity < WS_WRITE_SANITY / 2) {
+					if (sanity < WS_WRITE_SANITY / 2) {
 						ms = 25;
+					} else if (sanity < WS_WRITE_SANITY * 3 / 4) {
+						ms = 50;
 					}
 				}
 				ms_sleep(ms);
 			}
 
-			if (r == -1) {
+			if (r < 0) {
 				ssl_err = SSL_get_error(wsh->ssl, r);
 
-				if (ssl_err != SSL_ERROR_WANT_WRITE && ssl_err != SSL_ERROR_WANT_READ) {
-					ssl_err = wss_error(wsh, ssl_err, "ws_raw_write: SSL_write", buf, size);
+				if (!SSL_WANT_READ_WRITE(ssl_err)) {
+					ssl_err = wss_error(wsh, ssl_err, "ws_raw_write: SSL_write");
 					break;
 				}
 				ssl_err = 0;
@@ -537,10 +546,10 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 			int ms = 1;
 
 			if (wsh->block) {
-				if (sanity < WS_WRITE_SANITY * 3 / 4) {
-					ms = 50;
-				} else if (sanity < WS_WRITE_SANITY / 2) {
+				if (sanity < WS_WRITE_SANITY / 2) {
 					ms = 25;
+				} else if (sanity < WS_WRITE_SANITY * 3 / 4) {
+					ms = 50;
 				}
 			}
 			ms_sleep(ms);
@@ -641,7 +650,9 @@ int establish_logical_layer(wsh_t *wsh)
 			}
 
 			if (code < 0) {
-				if (code == -1 && SSL_get_error(wsh->ssl, code) != SSL_ERROR_WANT_READ) {
+				int ssl_err = SSL_get_error(wsh->ssl, code);
+				if (!SSL_WANT_READ_WRITE(ssl_err)) {
+					wss_error(wsh, ssl_err, "establish_logical_layer: SSL_accept");
 					return -1;
 				}
 			}
@@ -752,10 +763,18 @@ void ws_destroy(wsh_t *wsh)
 	}
 
 	if (wsh->ssl) {
-		int code;
+		int code = 0;
 		do {
+			if (code == -1) {
+				int ssl_err = SSL_get_error(wsh->ssl, code);
+				if (ssl_err != SSL_ERROR_WANT_READ) {
+					wss_error(wsh, ssl_err, "ws_destroy: SSL_shutdown");
+					break;
+				}
+			}
 			code = SSL_shutdown(wsh->ssl);
-		} while (code == -1 && SSL_get_error(wsh->ssl, code) == SSL_ERROR_WANT_READ);
+		// } while (code == -1 && SSL_get_error(wsh->ssl, code) == SSL_ERROR_WANT_READ);
+		} while (code == -1);
 
 		SSL_free(wsh->ssl);
 		wsh->ssl = NULL;
