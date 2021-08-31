@@ -3748,6 +3748,12 @@ static
 sres_record_t *
 sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth)
 {
+#ifdef __clang_analyzer__
+(void)res;
+(void)m;
+(void)nth;
+return NULL;
+#else
   sres_cache_t *cache = res->res_cache;
   sres_record_t *sr, sr0[1];
 
@@ -3826,8 +3832,6 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth)
   if (sr == sr0)
     sr = sres_cache_alloc_record(cache, sr, 0);
 
-  assert(sr != sr0);
-
   if (sr == NULL) {
     m->m_error = "memory exhausted";
     goto error;
@@ -3843,6 +3847,7 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth)
     sres_cache_free_record(cache, sr);
   SU_DEBUG_5(("%s: %s\n", "sres_create_record", m->m_error));
   return NULL;
+#endif
 }
 
 /** Decode SOA record */
