@@ -767,10 +767,8 @@ void ws_destroy(wsh_t *wsh)
 		do {
 			if (code == -1) {
 				int ssl_err = SSL_get_error(wsh->ssl, code);
-				if (ssl_err != SSL_ERROR_WANT_READ) {
-					wss_error(wsh, ssl_err, "ws_destroy: SSL_shutdown");
-					break;
-				}
+				wss_error(wsh, ssl_err, "ws_destroy: SSL_shutdown");
+				break;
 			}
 			code = SSL_shutdown(wsh->ssl);
 		// } while (code == -1 && SSL_get_error(wsh->ssl, code) == SSL_ERROR_WANT_READ);
