@@ -216,6 +216,7 @@ static __inline int timers_resize(void* realloc_arg, su_timer_queue_t h[1], size
 	struct timers_priv* _priv; size_t _offset = (((size_t) & (((struct timers_priv*)0)->_heap[1])) - 1) / sizeof(su_timer_t*); size_t _min_size = 32 - _offset; size_t _bytes; size_t _used = 0; _priv = *(void**)h;
 	if (_priv) { if (new_size == 0) new_size = 2 * _priv->_size + _offset + 1; _used = _priv->_used; if (new_size < _used) new_size = _used; }
 	if (new_size < _min_size) new_size = _min_size; _bytes = (_offset + 1 + new_size) * sizeof(su_timer_t*);
+	assert(_bytes);
 	(void)realloc_arg; _priv = timers_alloc(realloc_arg, *(struct timers_priv**)h, _bytes);
 	if (!_priv) return -1; *(struct timers_priv**)h = _priv; _priv->_size = new_size; _priv->_used = _used; return 0;
 }
