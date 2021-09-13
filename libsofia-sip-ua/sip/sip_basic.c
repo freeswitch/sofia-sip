@@ -2874,6 +2874,7 @@ issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 
   if (p) {
 	  ie = strchr(p, ';');
+	  if (!ie) ie = strchr(p, '\0');
 	  pp = strchr(p, '<');
 	  ppp = strchr(p, '>');
 
@@ -2893,8 +2894,6 @@ issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
       alg = strchr(alg, ';');
       if (alg) {
           *alg = '\0';
-      } else {
-          id->id_info_alg = NULL;
       }
   }
 
@@ -2926,23 +2925,21 @@ issize_t sip_identity_e(char b[], isize_t bsiz, sip_header_t const *h, int flags
 
   if (id->id_signed_identity_digest) {
       MSG_STRING_E(b, end, id->id_signed_identity_digest);
-      MSG_CHAR_E(b, end, ';');
   }
 
   if (id->id_info) {
-      MSG_STRING_E(b, end, "info=<");
+      MSG_STRING_E(b, end, ";info=<");
       MSG_STRING_E(b, end, id->id_info);
-      MSG_STRING_E(b, end, ">;");
+      MSG_STRING_E(b, end, ">");
   }
 
   if (id->id_info_alg) {
-      MSG_STRING_E(b, end, "alg=");
+      MSG_STRING_E(b, end, ";alg=");
       MSG_STRING_E(b, end, id->id_info_alg);
-      MSG_CHAR_E(b, end, ';');
   }
 
   if (id->id_info_ppt) {
-      MSG_STRING_E(b, end, "ppt=");
+      MSG_STRING_E(b, end, ";ppt=");
       MSG_STRING_E(b, end, id->id_info_ppt);
       /* No need to put ';' as following  MSG_PARAMS_E starts from ';' */
   }
