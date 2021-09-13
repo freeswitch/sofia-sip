@@ -650,7 +650,14 @@ int nua_dialog_repeat_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds)
     if (nua_server_request_is_pending(sr)) {
       SR_STATUS1(sr, SIP_410_GONE); /* 410 terminates dialog */
       nua_server_respond(sr, NULL);
-      nua_server_report(sr);
+      if (nua_server_report(sr) > 2) {
+        /*
+            Dialog was destroyed if nua_base_server_report() returned 3 or 4.
+            All references (sr) are cleared from queued server requests at this point.
+            See nua_dialog_deinit() and nua_dialog_usage_remove_at()
+        */
+        break;
+      }
     }
   }
 
