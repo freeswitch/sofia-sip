@@ -240,7 +240,8 @@ void nua_stack_deinit(su_root_t *root, nua_t *nua)
 
 #if HAVE_SMIME		/* Start NRC Boston */
     sm_destroy(nua->sm);
-#endif			/* End NRC Boston */}
+#endif
+/* End NRC Boston */
 
   }
 }
