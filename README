@@ -21,6 +21,9 @@ Sofia-SIP uses the GNU autotools, so building procedure
 is the usual:
 
 sh> sh autogen.sh (if building from darcs)
+or
+sh> sh botstrap.sh
+
 sh> ./configure
 sh> make
 sh> make install
