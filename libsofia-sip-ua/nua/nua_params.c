@@ -1595,6 +1595,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   /* nta */
   unsigned udp_mtu = 0;
   usize_t max_proceeding = 0;
+  usize_t max_recv_requests_per_second = 0;
   unsigned sip_t1 = 0, sip_t2 = 0, sip_t4 = 0, sip_t1x64 = 0;
   unsigned debug_drop_prob = 0;
   url_string_t const *proxy = NULL;
@@ -1612,6 +1613,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     nta_agent_get_params(nua->nua_nta,
 			 NTATAG_UDP_MTU_REF(udp_mtu),
 			 NTATAG_MAX_PROCEEDING_REF(max_proceeding),
+			 NTATAG_MAX_PROCEEDING_REF(max_recv_requests_per_second),
 			 NTATAG_SIP_T1_REF(sip_t1),
 			 NTATAG_SIP_T2_REF(sip_t2),
 			 NTATAG_SIP_T4_REF(sip_t4),
@@ -1768,6 +1770,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
      NTATAG_UDP_MTU(udp_mtu),
      NTATAG_MAX_PROCEEDING(max_proceeding),
+     NTATAG_MAX_RECV_REQUESTS_PER_SECOND(max_recv_requests_per_second),
      NTATAG_SIP_T1(sip_t1),
      NTATAG_SIP_T2(sip_t2),
      NTATAG_SIP_T4(sip_t4),
