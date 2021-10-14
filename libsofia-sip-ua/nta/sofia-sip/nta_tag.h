@@ -161,6 +161,12 @@ NTA_DLL extern tag_typedef_t ntatag_max_proceeding;
 NTA_DLL extern tag_typedef_t ntatag_max_proceeding_ref;
 #define NTATAG_MAX_PROCEEDING_REF(x) ntatag_max_proceeding_ref, tag_usize_vr(&(x))
 
+NTA_DLL extern tag_typedef_t ntatag_max_recv_requests_per_second;
+#define NTATAG_MAX_RECV_REQUESTS_PER_SECOND(x) ntatag_max_recv_requests_per_second, tag_usize_v((x))
+
+NTA_DLL extern tag_typedef_t ntatag_max_recv_requests_per_second_ref;
+#define NTATAG_MAX_RECV_REQUESTS_PER_SECOND_REF(x) ntatag_max_recv_requests_per_second_ref, tag_usize_vr(&(x))
+
 NTA_DLL extern tag_typedef_t ntatag_max_forwards;
 #define NTATAG_MAX_FORWARDS(x) ntatag_max_forwards, tag_uint_v((x))
 

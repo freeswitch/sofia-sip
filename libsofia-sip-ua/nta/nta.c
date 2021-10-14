@@ -179,6 +179,7 @@ struct nta_agent_s
   unsigned sa_bad_resp_mask;	/**< Response error mask */
   usize_t  sa_maxsize;		/**< Maximum size of incoming messages */
   usize_t  sa_max_proceeding;	/**< Maximum size of proceeding queue */
+  usize_t  sa_max_recv_requests_per_second;	/**< Maximum receiving requests per second */
 
   unsigned sa_udp_mtu;		/**< Maximum size of outgoing UDP requests */
 
@@ -307,6 +308,13 @@ struct nta_agent_s
     usize_t as_tout_request;
     usize_t as_tout_response;
   }                  sa_stats[1];
+
+  /** Current load in receiving messages per second */
+  struct {
+      usize_t as_recv_request_last;
+      su_time_t last_time;
+      unsigned requests_per_second;
+  } sa_load[1];
 
   /** Hash of dialogs. */
   leg_htable_t          sa_dialogs[1];
@@ -1456,6 +1464,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned bad_resp_mask = agent->sa_bad_resp_mask;
   usize_t  maxsize    = agent->sa_maxsize;
   usize_t  max_proceeding = agent->sa_max_proceeding;
+  usize_t  max_recv_requests_per_second = agent->sa_max_recv_requests_per_second;
   unsigned max_forwards = agent->sa_max_forwards->mf_count;
   unsigned udp_mtu    = agent->sa_udp_mtu;
   unsigned sip_t1     = agent->sa_t1;
@@ -1514,6 +1523,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	      NTATAG_GRAYLIST_REF(graylist),
 	      NTATAG_MAXSIZE_REF(maxsize),
 	      NTATAG_MAX_PROCEEDING_REF(max_proceeding),
+	      NTATAG_MAX_RECV_REQUESTS_PER_SECOND_REF(max_recv_requests_per_second),
 	      NTATAG_MAX_FORWARDS_REF(max_forwards),
 	      NTATAG_MCLASS_REF(mclass),
 	      NTATAG_MERGE_482_REF(merge_482),
@@ -1624,6 +1634,8 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 
   if (max_proceeding == 0) max_proceeding = USIZE_MAX;
   agent->sa_max_proceeding = max_proceeding;
+  
+  agent->sa_max_recv_requests_per_second = max_recv_requests_per_second;
 
   if (max_forwards == 0) max_forwards = 70; /* Default value */
   agent->sa_max_forwards->mf_count = max_forwards;
@@ -1802,6 +1814,7 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
 	     NTATAG_GRAYLIST(agent->sa_graylist),
 	     NTATAG_MAXSIZE(agent->sa_maxsize),
 	     NTATAG_MAX_PROCEEDING(agent->sa_max_proceeding),
+	     NTATAG_MAX_RECV_REQUESTS_PER_SECOND(agent->sa_max_recv_requests_per_second),
 	     NTATAG_MAX_FORWARDS(agent->sa_max_forwards->mf_count),
 	     NTATAG_MCLASS(agent->sa_mclass),
 	     NTATAG_MERGE_482(agent->sa_merge_482),
@@ -2899,14 +2912,43 @@ void agent_recv_request(nta_agent_t *agent,
   unsigned cseq = sip->sip_cseq ? sip->sip_cseq->cs_seq : 0;
   int insane, errors, stream;
   unsigned compressed = 0;
+  su_duration_t sa_load_elapsed_ms = su_duration(su_now(), agent->sa_load->last_time);
 
   agent->sa_stats->as_recv_msg++;
   agent->sa_stats->as_recv_request++;
 
-  SU_DEBUG_5(("nta: received %s " URL_PRINT_FORMAT " %s (CSeq %u)\n",
+  if (agent->sa_load->requests_per_second == 0) agent->sa_load->requests_per_second = 1;
+
+  if (sa_load_elapsed_ms >= 1000) {
+      if (agent->sa_load->as_recv_request_last) {
+          agent->sa_load->requests_per_second = ((agent->sa_stats->as_recv_request - agent->sa_load->as_recv_request_last) * 1000) / sa_load_elapsed_ms;
+      }
+
+      /** Update */
+      agent->sa_load->last_time = su_now();
+      agent->sa_load->as_recv_request_last = agent->sa_stats->as_recv_request;
+
+      if (agent->sa_max_recv_requests_per_second && agent->sa_load->requests_per_second > agent->sa_max_recv_requests_per_second) {          
+          SU_DEBUG_5(("SIP flood: Dropped %u incoming SIP messages, %u message / sec (of %u allowed)\n",              
+              agent->sa_stats->as_drop_request + 1, agent->sa_load->requests_per_second, agent->sa_max_recv_requests_per_second));
+      }
+
+  } else if (sa_load_elapsed_ms == -SU_DURATION_MAX) {
+      /** Initialize */
+      agent->sa_load->last_time = su_now();
+      agent->sa_load->as_recv_request_last = agent->sa_stats->as_recv_request;
+  }
+
+  if (agent->sa_max_recv_requests_per_second && agent->sa_load->requests_per_second > agent->sa_max_recv_requests_per_second) {
+      agent->sa_stats->as_drop_request++;
+      msg_destroy(msg);
+      return;
+  }
+
+  SU_DEBUG_5(("nta: received %s " URL_PRINT_FORMAT " %s (CSeq %u) (load: %u rps)\n",
 	      method_name,
 	      URL_PRINT_ARGS(sip->sip_request->rq_url),
-	      sip->sip_request->rq_version, cseq));
+	      sip->sip_request->rq_version, cseq, agent->sa_load->requests_per_second));
 
   if (agent->sa_drop_prob && !tport_is_reliable(tport)) {
     if ((unsigned)su_randint(0, 1000) < agent->sa_drop_prob) {

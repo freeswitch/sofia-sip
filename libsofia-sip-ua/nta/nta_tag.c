@@ -422,6 +422,26 @@ tag_typedef_t ntatag_maxsize = USIZETAG_TYPEDEF(maxsize);
  */
 tag_typedef_t ntatag_max_proceeding = USIZETAG_TYPEDEF(max_proceeding);
 
+/**@def NTATAG_MAX_RECV_REQUESTS_PER_SECOND(x)
+ *
+ * Maximum receiving requests per second.
+ *
+ * Messages will start dropping when this threshold reaches.
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
+ *
+ * @par Parameter type
+ *    - #usize_t
+ *
+ * @par Values
+ *    - Maximum receiving requests per second (size_t).
+ *
+ * @NEW_1_13_6
+ */
+tag_typedef_t ntatag_max_recv_requests_per_second = USIZETAG_TYPEDEF(max_recv_requests_per_second);
+
 /**@def NTATAG_UDP_MTU(x)
  *
  * Maximum size of outgoing UDP request.
