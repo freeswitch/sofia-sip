@@ -237,12 +237,12 @@ void nua_stack_deinit(su_root_t *root, nua_t *nua)
       SU_DEBUG_9(("nua(%p): found handle with refcount = "MOD_ZU". Destroying.\n", (void *)nh, su_home_refcount(nh_home)));
       while(!su_home_unref(nh_home));
     }
+  }
 
 #if HAVE_SMIME		/* Start NRC Boston */
-    sm_destroy(nua->sm);
-#endif			/* End NRC Boston */}
+  sm_destroy(nua->sm);
+#endif			/* End NRC Boston */
 
-  }
 }
 
 /* ----------------------------------------------------------------------
