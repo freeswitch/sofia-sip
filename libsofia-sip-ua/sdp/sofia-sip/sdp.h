@@ -144,6 +144,8 @@ typedef enum
   sdp_bw_ct,				/**< Conference total */
   sdp_bw_as,				/**< Application-specific */
   sdp_bw_tias,				/**< Application-specific */
+  sdp_bw_rs,				/**< RFC 3556 SDP Bandwidth Modifiers for RTCP */
+  sdp_bw_rr,				/**< RFC 3556 SDP Bandwidth Modifiers for RTCP */
 } sdp_bandwidth_e;
 
 /** Session or media bandwidth. */
