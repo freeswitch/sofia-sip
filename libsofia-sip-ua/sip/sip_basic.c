@@ -802,6 +802,49 @@ issize_t sip_name_addr_e(char b[], isize_t bsiz,
   return b - b0;
 }
 
+issize_t sip_name_addr_rr_e(char b[], isize_t bsiz,
+             int flags,
+             char const *display,
+             int brackets, url_t const url[],
+             msg_param_t const params[],
+             char const *comment)
+{
+  int const compact = MSG_IS_COMPACT(flags);
+  char const *u;
+  char *b0 = b, *end = b + bsiz;
+
+  brackets = brackets || display ||
+    (url && (url->url_params ||
+         url->url_headers ||
+         ((u = url->url_user) && u[strcspn(u, ";,?")]) ||
+         ((u = url->url_password) && u[strcspn(u, ",")])));
+
+  if (display && display[0]) {
+    MSG_STRING_E(b, end, display);
+    if (!compact) MSG_CHAR_E(b, end, ' ');
+  }
+  if (url) {
+    if (brackets) MSG_CHAR_E(b, end, '<');
+    URL_E(b, end, url);
+    MSG_PARAMS_E(b, end, params, flags);
+    if (brackets) MSG_CHAR_E(b, end, '>');
+  } else {
+    MSG_PARAMS_E(b, end, params, flags);
+  }
+
+  if (comment) {
+    if (!compact) MSG_CHAR_E(b, end, ' ');
+    MSG_CHAR_E(b, end, '(');
+    MSG_STRING_E(b, end, comment);
+    MSG_CHAR_E(b, end, ')');
+  }
+
+  MSG_TERM_E(b, end);
+
+  return b - b0;
+}
+
+
 /** Calculate the extra size needed to duplicate a name-addr-params construct.
  *
  * @param display  display name (may be NULL)
@@ -2273,7 +2316,10 @@ issize_t sip_route_d(su_home_t *home,
 issize_t sip_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_route(h));
-  return sip_any_route_e(b, bsiz, h, flags);
+  sip_route_t const *r = (sip_route_t *)h;
+
+  return sip_name_addr_rr_e(b, bsiz, flags,
+             r->r_display, 1, r->r_url, r->r_params, NULL);
 }
 
 /**@ingroup sip_route
@@ -2347,7 +2393,10 @@ issize_t sip_record_route_d(su_home_t *home,
 issize_t sip_record_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_record_route(h));
-  return sip_any_route_e(b, bsiz, h, flags);
+  sip_route_t const *r = (sip_route_t *)h;
+
+  return sip_name_addr_rr_e(b, bsiz, flags,
+             r->r_display, 1, r->r_url, r->r_params, NULL);
 }
 
 /** @ingroup sip_record_route
