@@ -117,6 +117,9 @@ enum msg_flg_user {
    * are ready to upper layers */
   MSG_FLG_STREAMING = (1<<6),
 
+  /** Encode parameters inside of the URL <> brackets */
+  MSG_FLG_PARAMS_IN_URL_BRACKETS = (1<<7),
+
   /** Make messages threadsafe. */
   MSG_FLG_THRDSAFE = (1<<15),
 

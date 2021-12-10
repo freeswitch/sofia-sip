@@ -785,10 +785,13 @@ issize_t sip_name_addr_e(char b[], isize_t bsiz,
   if (url) {
     if (brackets) MSG_CHAR_E(b, end, '<');
     URL_E(b, end, url);
+    if (MSG_FLAGS(flags, MSG_FLG_PARAMS_IN_URL_BRACKETS)) MSG_PARAMS_E(b, end, params, flags);
     if (brackets) MSG_CHAR_E(b, end, '>');
   }
 
-  MSG_PARAMS_E(b, end, params, flags);
+  if (!url || !MSG_FLAGS(flags, MSG_FLG_PARAMS_IN_URL_BRACKETS)) {
+    MSG_PARAMS_E(b, end, params, flags);
+  }
 
   if (comment) {
     if (!compact) MSG_CHAR_E(b, end, ' ');
@@ -2273,7 +2276,7 @@ issize_t sip_route_d(su_home_t *home,
 issize_t sip_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_route(h));
-  return sip_any_route_e(b, bsiz, h, flags);
+  return sip_any_route_e(b, bsiz, h, flags | MSG_FLG_PARAMS_IN_URL_BRACKETS);
 }
 
 /**@ingroup sip_route
@@ -2347,7 +2350,7 @@ issize_t sip_record_route_d(su_home_t *home,
 issize_t sip_record_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 {
   assert(sip_is_record_route(h));
-  return sip_any_route_e(b, bsiz, h, flags);
+  return sip_any_route_e(b, bsiz, h, flags | MSG_FLG_PARAMS_IN_URL_BRACKETS);
 }
 
 /** @ingroup sip_record_route
