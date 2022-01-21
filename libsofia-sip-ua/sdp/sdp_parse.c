@@ -1352,6 +1352,10 @@ static void parse_media(sdp_parser_t *p, char *r, sdp_media_t **result)
       PARSE_ALLOC(p, sdp_list_t, l);
       *fmt = l;
       l->l_text = token(&r, SPACE TAB, TOKEN, SPACE TAB);
+      if (!l->l_text) {
+         parsing_error(p, "m= invalid");
+         return;
+      }
       fmt = &l->l_next;
     }
   }
