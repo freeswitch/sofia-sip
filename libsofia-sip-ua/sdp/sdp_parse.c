@@ -699,7 +699,7 @@ static void parse_information(sdp_parser_t *p, char *r, sdp_text_t **result)
   /*
    information-field =   ["i=" text CRLF]
    */
-  *result = r;
+  if (result) *result = r;
 }
 
 /* -------------------------------------------------------------------------
@@ -1164,7 +1164,7 @@ static void parse_key(sdp_parser_t *p, char *r, sdp_key_t **result)
 
   {
     PARSE_ALLOC(p, sdp_key_t, k);
-    *result = k;
+    if (result) *result = k;
 
     /* These are defined as key-sensitive in RFC 4566 */
 #define MATCH(s, tok) \
