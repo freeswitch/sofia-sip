@@ -699,7 +699,7 @@ static void parse_information(sdp_parser_t *p, char *r, sdp_text_t **result)
   /*
    information-field =   ["i=" text CRLF]
    */
-  *result = r;
+  if (result) *result = r;
 }
 
 /* -------------------------------------------------------------------------
@@ -1168,7 +1168,7 @@ static void parse_key(sdp_parser_t *p, char *r, sdp_key_t **result)
 
   {
     PARSE_ALLOC(p, sdp_key_t, k);
-    *result = k;
+    if (result) *result = k;
 
     /* These are defined as key-sensitive in RFC 4566 */
 #define MATCH(s, tok) \
@@ -1356,6 +1356,10 @@ static void parse_media(sdp_parser_t *p, char *r, sdp_media_t **result)
       PARSE_ALLOC(p, sdp_list_t, l);
       *fmt = l;
       l->l_text = token(&r, SPACE TAB, TOKEN, SPACE TAB);
+      if (!l->l_text) {
+         parsing_error(p, "m= invalid");
+         return;
+      }
       fmt = &l->l_next;
     }
   }
