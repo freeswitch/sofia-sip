@@ -1,5 +1,5 @@
 Name:           sofia-sip
-Version:        1.13.6
+Version:        1.13.7
 Release:        1%{?dist}
 Summary:        Sofia SIP User-Agent library
 
