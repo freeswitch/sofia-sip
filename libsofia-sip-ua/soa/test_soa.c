@@ -951,8 +951,8 @@ int test_codec_selection(struct context *ctx)
   TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
   TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 3);
   TEST_S(rm->rm_encoding, "GSM");
-  /* Using payload type 96 from offer */
-  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 96);
+  /* Not use same payload as remote so 97 from answer */
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 97);
   TEST_S(rm->rm_encoding, "G729");
   TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 111);
   TEST_S(rm->rm_encoding, "telephone-event");
@@ -1009,9 +1009,10 @@ int test_codec_selection(struct context *ctx)
 
   /* Answering end matches payload types
      then sorts by local preference,
-     then select best codec => GSM with pt 97 */
+     not use same payload type as remote,
+     then select best codec => GSM with pt 3 */
   TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
-  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 3);
   TEST_S(rm->rm_encoding, "GSM");
   TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 111);
   TEST_S(rm->rm_encoding, "telephone-event");
@@ -1263,7 +1264,8 @@ int test_codec_selection(struct context *ctx)
   TEST_1(!m->m_next);
 
   TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
-  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 96);
+  /* Not use same payload as remote so 97 from answer */
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
   TEST_S(rm->rm_encoding, "G729");
   TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 111);
   TEST_S(rm->rm_encoding, "telephone-event");
@@ -2240,8 +2242,8 @@ int test_address_selection(struct context *ctx)
   TEST_OC_ADDRESS(a, "2001:1508:1003::21a:a0ff:fe71:813", ip6);
   TEST_VOID(soa_terminate(a, NULL));
 
-  /* SOATAG_AF(SOA_AF_IP4_IP6), o= mentions IP6 => select IP4  */
-  n = soa_set_user_sdp(a, 0, "o=- 1 1 IN IP6 ::\r\n"
+  /* SOATAG_AF(SOA_AF_IP4_IP6) and SOATAG_USER_O_LINE() tag remove so, o= mentions IP6 => select IP4  */
+  n = soa_set_user_sdp(a, 0, "o=- 1 1 IN IP4 ::\r\n"
 		       "m=audio 5008 RTP/AVP 0 8", -1); TEST(n, 1);
   n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
   TEST_OC_ADDRESS(a, "11.12.13.14", ip4);
