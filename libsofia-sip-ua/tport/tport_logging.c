@@ -901,6 +901,6 @@ void tport_log_msg(tport_t *self, msg_t *msg,
     buffer_pos = buffer_size - 1;
   }
   buffer[buffer_pos] = '\0';
-  su_log("%s", buffer);
+  su_log("%s\n", buffer);
   free(buffer);
 }
