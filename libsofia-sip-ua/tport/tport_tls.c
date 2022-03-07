@@ -434,6 +434,13 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   SSL_CTX_set_verify_depth(tls->ctx, ti->verify_depth);
   SSL_CTX_set_verify(tls->ctx, verify, tls_verify_cb);
 #ifndef OPENSSL_NO_EC
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  if (tls_init_ecdh_curve(tls) == 0) {
+    SU_DEBUG_3(("%s\n", "tls: initialized ECDH"));
+  } else {
+    SU_DEBUG_3(("%s\n", "tls: failed to initialize ECDH"));
+  }
+#else
   if (tls->accept == 0) {
     SU_DEBUG_3(("%s\n", "tls: initialized ECDH"));
   } else if (tls_init_ecdh_curve(tls) == 0) {
@@ -441,6 +448,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   } else {
     SU_DEBUG_3(("%s\n", "tls: failed to initialize ECDH"));
   }
+#endif
 #endif
   if (!SSL_CTX_set_cipher_list(tls->ctx, ti->ciphers)) {
     SU_DEBUG_1(("%s: error setting cipher list\n", "tls_init_context"));
