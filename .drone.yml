@@ -1,5 +1,69 @@
 ---
 kind: pipeline
+name: unit-tests
+
+steps:
+    - name: bootstrap
+      image: signalwire/freeswitch-public-base
+      pull: always
+      commands:
+      - ./autogen.sh
+
+    - name: configure
+      image: signalwire/freeswitch-public-base
+      pull: always
+      commands:
+      - apt-get -y install check
+      - ./configure --with-pic --without-doxygen --disable-stun
+
+    - name: build
+      image: signalwire/freeswitch-public-base
+      pull: always
+      commands:
+      - apt-get -y install check
+      - echo '#!/bin/bash\nmake -j`nproc --all` |& tee ./unit-tests-build-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./build-status.txt\n' > build.sh
+      - chmod +x build.sh
+      - ./build.sh
+
+    - name: run-tests
+      image: signalwire/freeswitch-public-base
+      pull: always
+      commands:
+      - apt-get -y install check
+      - make install
+      - echo '#!/bin/bash\n./tests.sh |& tee ./tests/unit/unit-tests-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./unit-tests-status.txt\n' > run-tests.sh
+      - chmod +x run-tests.sh
+      - make check && exit 0 || echo 'make check failed'
+      - ./run-tests.sh
+      - cd tests/unit
+      - mkdir -p logs && (mv log_run-tests_*.html logs || true) && (mv backtrace_*.txt logs || true)
+      - ls -la ./logs
+      - echo 0 > run-tests-status.txt
+      - ./collect-test-logs.sh && exit 0 || echo 'Some tests failed'
+      - ls -la
+      - echo 1 > run-tests-status.txt
+      - cd logs && ls -la
+
+    - name: notify
+      image: signalwire/drone-notify
+      pull: always
+      environment:
+        SLACK_WEBHOOK_URL:
+          from_secret: slack_webhook_url
+        ENV_FILE:
+          from_secret: notify_env
+      commands:
+      - /root/unit-tests-notify.sh
+      
+trigger:
+  branch:
+  - master
+  event:
+  - pull_request
+  - push
+
+---
+kind: pipeline
 name: scan-build
 
 steps:
@@ -46,6 +110,6 @@ trigger:
 
 ---
 kind: signature
-hmac: ac8a02442523f785e8d9eef2a667e664b3bd5ec12b858dcc6736518ea18ff266
+hmac: 7a77efc692a53c1574bce1f2f53aadda0610629195eb7e71916505a63545a557
 
 ...
