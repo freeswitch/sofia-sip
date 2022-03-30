@@ -33,6 +33,7 @@ steps:
       - make install
       - echo '#!/bin/bash\n./tests.sh |& tee ./tests/unit/unit-tests-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./unit-tests-status.txt\n' > run-tests.sh
       - chmod +x run-tests.sh
+      - cd libsofia-sip-ua/nta && ip addr && ip -6 route show && make test_nta && ./run_test_nta
       - make check && exit 0 || echo 'make check failed'
       - ./run-tests.sh
       - cd tests/unit
@@ -57,7 +58,7 @@ steps:
       
 trigger:
   branch:
-  - master
+  - v6
   event:
   - pull_request
   - push
@@ -110,6 +111,6 @@ trigger:
 
 ---
 kind: signature
-hmac: 5d5329338612d55fff2bf6250f5b16ac56760b238b390df7974b8b42ce4b8071
+hmac: 83c5856e40e7d862b953ada93979eb29d47e19b472586623336c149c9d973ddb
 
 ...
