@@ -948,8 +948,8 @@ static int nua_session_client_response(nua_client_request_t *cr,
   else if (!session_get_description(sip, &sdp, &len))
     /* No SDP */;
   else if (cr->cr_answer_recv) {
-    if (cr->cr_answer_recv > status) {
-      LOG3("status is older than previous answer, ignoring");
+    if (status < 200 && cr->cr_answer_recv >= 200) {
+      LOG3("call already answered, ignoring provisional response");
       sdp = NULL;
       return 0;
     } else {
