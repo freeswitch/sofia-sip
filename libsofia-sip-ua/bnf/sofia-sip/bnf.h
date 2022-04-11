@@ -196,7 +196,7 @@ su_inline isize_t span_token_lws(char const *s)
   return e - s;
 }
 
-/** Calculate span of a token characters.  */
+/** Calculate span of token characters.  */
 su_inline isize_t span_token(char const *s)
 {
   char const *e = s;
@@ -205,7 +205,7 @@ su_inline isize_t span_token(char const *s)
   return e - s;
 }
 
-/** Calculate span of a alphabetic characters.  */
+/** Calculate span of alphabetic characters.  */
 su_inline isize_t span_alpha(char const *s)
 {
   char const *e = s;
@@ -214,7 +214,7 @@ su_inline isize_t span_alpha(char const *s)
   return e - s;
 }
 
-/** Calculate span of a digits.  */
+/** Calculate span of digits.  */
 su_inline isize_t span_digit(char const *s)
 {
   char const *e = s;
@@ -241,7 +241,7 @@ su_inline isize_t span_alpha_digit_safe(char const *s)
   return e - s;
 }
 
-/** Calculate span of a characters valid in parameters.  */
+/** Calculate span of characters valid in parameters.  */
 su_inline isize_t span_param(char const *s)
 {
   char const *e = s;
@@ -259,7 +259,7 @@ su_inline isize_t span_word(char const *s)
   return e - s;
 }
 
-/** Calculate span of a unreserved characters.  */
+/** Calculate span of unreserved characters.  */
 su_inline isize_t span_unreserved(char const *s)
 {
   char const *e = s;

@@ -75,7 +75,7 @@ SOFIA_BEGIN_DECLS
 #define HTTP_HEADER_CLASS_LIST(c, l, kind) \
   MSG_HEADER_CLASS(http_, c, l, "", k_items, kind, msg_list, http_no)
 
-/** Define a authorization header class */
+/** Define an authorization header class */
 #define HTTP_HEADER_CLASS_AUTH(c, l, kind) \
   MSG_HEADER_CLASS(http_, c, l, "", au_params, kind, msg_auth, http_no)
 

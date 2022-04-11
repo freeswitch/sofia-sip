@@ -817,7 +817,7 @@ void auth_challenge_digest(auth_mod_t *am,
     as->as_status = ach->ach_status, as->as_phrase = ach->ach_phrase;
 }
 
-/** Construct a info header for @b Digest authentication scheme. */
+/** Construct an info header for @b Digest authentication scheme. */
 void auth_info_digest(auth_mod_t *am,
 		      auth_status_t *as,
 		      auth_challenger_t const *ach)

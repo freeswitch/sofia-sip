@@ -738,7 +738,7 @@ int host_is_ip6_reference(char const *string)
 
 /** Return true if @a string is valid IP address.
  *
- * Valid IP address is either a IP4 adddress in quad-octet notation,
+ * Valid IP address is either an IP4 adddress in quad-octet notation,
  * IP6 hex address or IP6 reference in square brackets ([]).
  */
 int host_is_ip_address(char const *string)

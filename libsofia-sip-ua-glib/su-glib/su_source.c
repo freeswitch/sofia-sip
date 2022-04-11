@@ -538,7 +538,7 @@ GSource *su_source_gsource(su_port_t *self)
 /** @internal
  *
  *  Register a @c su_wait_t object. The wait object, a callback function and
- *  a argument pointer is stored in the port object.  The callback function
+ *  an argument pointer is stored in the port object.  The callback function
  *  will be called when the wait object is signaled.
  *
  *  Please note if identical wait objects are inserted, only first one is
@@ -673,7 +673,7 @@ int su_source_register(su_port_t *self,
 /** Unregister a su_wait_t object.
  *
  *  The function su_source_unregister() unregisters a su_wait_t object. The
- *  wait object, a callback function and a argument are removed from the
+ *  wait object, a callback function and an argument are removed from the
  *  port object.
  *
  * @param self     - pointer to port object
@@ -754,7 +754,7 @@ int su_source_unregister(su_port_t *self,
 /** Deregister a su_wait_t object.
  *
  *  The function su_source_deregister() deregisters a su_wait_t registrattion.
- *  The wait object, a callback function and a argument are removed from the
+ *  The wait object, a callback function and an argument are removed from the
  *  port object.
  *
  * @param self     - pointer to port object

@@ -1045,7 +1045,7 @@ int sip_response_terminates_dialog(int response_code,
     return terminate_dialog;
 
   case 417:
-    /** @par 417 Uknown Resource-Priority
+    /** @par 417 Unknown Resource-Priority
       The effect of this response on usages
       and dialogs is analgous to that for 420 and 488.  The usage is not
       affected.  The dialog is only affected by a change in its local
