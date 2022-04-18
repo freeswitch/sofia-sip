@@ -364,7 +364,12 @@ char *url_canonize2(char *d, char const * const s, size_t n,
       continue;
     }
 
-    h1 = s[i + 1], h2 = s[i + 2];
+    h1 = s[i + 1];
+    if (!h1) {
+        *d = '\0';
+        return NULL;
+    }
+    h2 = s[i + 2];
 
     if (!IS_HEX(h1) || !IS_HEX(h2)) {
       *d = '\0';
@@ -422,7 +427,12 @@ char *url_canonize3(char *d, char const * const s, size_t n,
       continue;
     }
 
-    h1 = s[i + 1], h2 = s[i + 2];
+    h1 = s[i + 1];
+    if (!h1) {
+        *d = '\0';
+        return NULL;
+    }
+    h2 = s[i + 2];
 
     if (!IS_HEX(h1) || !IS_HEX(h2)) {
       *d = '\0';
