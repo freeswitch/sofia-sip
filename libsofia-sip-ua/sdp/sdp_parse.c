@@ -396,6 +396,10 @@ static void parse_message(sdp_parser_t *p)
        record = next(&message, CRLF, strip)) {
     field = record[0];
 
+    if (strlen(record) < 2) {
+      return;
+    }
+
     rest = record + 2; rest += strspn(rest, strip);
 
     if (record[1] != '=') {
@@ -1762,6 +1766,10 @@ static void parse_descs(sdp_parser_t *p,
        record && p->pr_ok;
        record = next(&message, CRLF, strip)) {
     char field = record[0];
+
+    if (strlen(record) < 2) {
+      return;
+    }
 
     rest = record + 2; rest += strspn(rest, strip);
 
