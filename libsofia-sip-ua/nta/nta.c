@@ -10912,6 +10912,8 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
 
   if (results)
     outgoing_query_results(orq, sq, results, found);
+  else if (!q)
+    outgoing_resolving_error(orq, SIPDNS_503_ERROR);
 }
 #endif /* SU_HAVE_IN6 */
 
