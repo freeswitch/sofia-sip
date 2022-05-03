@@ -943,6 +943,60 @@ static int nua_session_client_response(nua_client_request_t *cr,
 
  retry:
 
+  sip_t *req = (sip_t *) sip;
+  msg_t *msg = msg = nta_outgoing_getrequest(cr->cr_orq);
+  su_home_t * home_temp = NULL;
+  home_temp = su_home_create();
+  su_home_init(home_temp);
+
+  //For multipart content type, parse it, find application/sdp part and replace payload in response.
+  if (req->sip_content_type && su_casenmatch(req->sip_content_type->c_type, "multipart/", 10)) {
+    msg_multipart_t *mp, *mpp;
+
+    if (req->sip_multipart) {
+      mp = req->sip_multipart;
+    } else {
+     mp = msg_multipart_parse(home_temp, req->sip_content_type, (sip_payload_t *)req->sip_payload);
+     req->sip_multipart = mp;
+    }
+
+    if (mp) {
+      int sdp = 0;
+      /* extract the SDP and set the primary content-type and payload to that SDP as if it was the only content so SOA will work */
+      for (mpp = mp; mpp; mpp = mpp->mp_next) {
+         if (mpp->mp_content_type && mpp->mp_content_type->c_type &&
+                        mpp->mp_payload && mpp->mp_payload->pl_data &&
+                        su_casenmatch(mpp->mp_content_type->c_type, "application/sdp", 15)) {
+            req->sip_content_type = msg_content_type_dup (msg_home(msg), mpp->mp_content_type);
+
+            if (req->sip_content_length) {
+              req->sip_content_length->l_length = mpp->mp_payload->pl_len;
+            }
+
+            req->sip_payload->pl_data = su_strdup (msg_home(msg), mpp->mp_payload->pl_data);
+            req->sip_payload->pl_len = mpp->mp_payload->pl_len;
+
+            sdp++;
+            break;
+          }
+       }
+
+       /* insist on the existance of a SDP in the content */
+       if (!sdp) {
+         if (home_temp) {
+           su_home_destroy (home_temp);
+           su_home_unref (home_temp);
+           home_temp = NULL;
+        }
+      }
+    }
+  }
+  if (home_temp) {
+    su_home_destroy (home_temp);
+    su_home_unref (home_temp);
+    home_temp = NULL;
+  }
+	
   if (!ss || !sip || 300 <= status)
     /* Xyzzy */;
   else if (!session_get_description(sip, &sdp, &len))
