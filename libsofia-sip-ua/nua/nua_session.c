@@ -941,10 +941,8 @@ static int nua_session_client_response(nua_client_request_t *cr,
   SU_DEBUG_5(("nua(%p): %s: %s %s in %u %s (%u)\n", \
 			  (void *)nh, cr->cr_method_name, (m), received, status, phrase, cr->cr_answer_recv))
 
- retry:
-
   sip_t *req = (sip_t *) sip;
-  msg_t *msg = msg = nta_outgoing_getrequest(cr->cr_orq);
+  msg_t *msg = nta_outgoing_getrequest(cr->cr_orq);
   su_home_t * home_temp = NULL;
   home_temp = su_home_create();
   su_home_init(home_temp);
@@ -996,6 +994,8 @@ static int nua_session_client_response(nua_client_request_t *cr,
     su_home_unref (home_temp);
     home_temp = NULL;
   }
+
+retry:
 	
   if (!ss || !sip || 300 <= status)
     /* Xyzzy */;
