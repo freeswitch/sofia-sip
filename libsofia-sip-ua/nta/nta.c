@@ -9491,6 +9491,9 @@ int outgoing_recv(nta_outgoing_t *_orq,
     outgoing_reset_timer(original); /* Retransmission */
 
     if (status < 200) {
+      if (original->orq_queue == sa->sa_out.inv_completed) {
+	return outgoing_duplicate(orq, msg, sip);
+      }
       if (original->orq_status < 200)
 	original->orq_status = status;
       if (orq->orq_status < 200)
