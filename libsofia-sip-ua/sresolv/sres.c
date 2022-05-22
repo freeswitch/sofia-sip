@@ -3307,7 +3307,7 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 
       switch (ee->ee_origin) {
       case SO_EE_ORIGIN_LOCAL:
-	strcpy(info, origin = "local");
+	strcpy(info, "local");
 	break;
       case SO_EE_ORIGIN_ICMP:
 	snprintf(info, sizeof(info), "%s type=%u code=%u",
