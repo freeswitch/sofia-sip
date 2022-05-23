@@ -3318,7 +3318,7 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 		  "icmp6", ee->ee_type, ee->ee_code);
 	break;
       case SO_EE_ORIGIN_NONE:
-	strcpy(info, origin = "none");
+	strcpy(info, "none");
 	break;
       default:
 	strcpy(info, origin = "unknown");
