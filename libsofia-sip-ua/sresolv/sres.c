@@ -3315,7 +3315,7 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 	break;
       case SO_EE_ORIGIN_ICMP6:
 	snprintf(info, sizeof(info), "%s type=%u code=%u",
-		 origin = "icmp6", ee->ee_type, ee->ee_code);
+		  "icmp6", ee->ee_type, ee->ee_code);
 	break;
       case SO_EE_ORIGIN_NONE:
 	strcpy(info, origin = "none");
