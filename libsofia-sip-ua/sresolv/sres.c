@@ -4049,7 +4049,7 @@ static sres_record_t *sres_init_rr_naptr(sres_cache_t *cache,
     m_get_string(na->na_flags = s, len[0], m, offset[0]), s += len[0];
     m_get_string(na->na_services = s, len[1], m, offset[1]), s += len[1];
     m_get_string(na->na_regexp = s, len[2], m, offset[2]), s += len[2];
-    m_get_domain(na->na_replace = s, len[3], m, offset[3]), s += len[3];
+    m_get_domain(na->na_replace = s, len[3], m, offset[3]);
   }
 
   return (sres_record_t *)na;
