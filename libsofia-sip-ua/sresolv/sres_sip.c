@@ -736,7 +736,6 @@ sres_sip_try_a_aaaa_steps(sres_sip_t *srs)
 static int
 sres_sip_send_steps(sres_sip_t *srs)
 {
-  int process = 0;
 
   /* New queries to send */
   while (*srs->srs_send) {
@@ -786,10 +785,12 @@ sres_sip_send_steps(sres_sip_t *srs)
     }
 
     sres_sip_answer(step, NULL, answers);
-    return process = 1;
+    /* process = 1 */
+    return 1;
   }
 
-  return process = 0;
+  /* process = 0 */
+  return 0;
 }
 
 static void
