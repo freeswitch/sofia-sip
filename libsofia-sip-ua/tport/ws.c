@@ -779,17 +779,6 @@ void ws_destroy(wsh_t *wsh)
 	}
 
 	if (wsh->ssl) {
-		int code = 0;
-		do {
-			if (code == -1) {
-				int ssl_err = SSL_get_error(wsh->ssl, code);
-				wss_error(wsh, ssl_err, "ws_destroy: SSL_shutdown");
-				break;
-			}
-			code = SSL_shutdown(wsh->ssl);
-		// } while (code == -1 && SSL_get_error(wsh->ssl, code) == SSL_ERROR_WANT_READ);
-		} while (code == -1);
-
 		SSL_free(wsh->ssl);
 		wsh->ssl = NULL;
 	}
@@ -825,6 +814,21 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 	}
 
 	restore_socket(wsh->sock);
+
+	if (wsh->ssl) {
+		int code = 0;
+		do {
+			if (code == -1) {
+				int ssl_err = SSL_get_error(wsh->ssl, code);
+				wss_error(wsh, ssl_err, "ws_close: SSL_shutdown");
+				break;
+			}
+			code = SSL_shutdown(wsh->ssl);
+		} while (code == -1);
+
+		SSL_free(wsh->ssl);
+		wsh->ssl = NULL;
+	}
 
 	if (wsh->close_sock && wsh->sock != ws_sock_invalid) {
 #ifndef WIN32
