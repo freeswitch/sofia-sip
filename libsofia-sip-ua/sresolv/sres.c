@@ -782,7 +782,7 @@ sres_resolver_new_internal(sres_cache_t *cache,
   if (conf_file_path && conf_file_path != sres_conf_file_path)
     res->res_cnffile = su_strdup(res->res_home, conf_file_path);
   else
-    res->res_cnffile = conf_file_path = sres_conf_file_path;
+    res->res_cnffile = sres_conf_file_path;
 
   if (!res->res_cache || !res->res_cnffile) {
     perror("sres: malloc");
