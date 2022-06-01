@@ -6131,12 +6131,17 @@ static nta_incoming_t *incoming_find(nta_agent_t const *agent,
   sip_from_t const *from = sip->sip_from;
   sip_request_t *rq = sip->sip_request;
   incoming_htable_t const *iht = agent->sa_incoming;
-  hash_value_t hash = NTA_HASH(i, cseq->cs_seq);
+  hash_value_t hash;
   char const *magic_branch;
 
   nta_incoming_t **ii, *irq;
 
   int is_uas_ack = return_ack && agent->sa_is_a_uas;
+
+  if (cseq == NULL)
+    return NULL;
+
+  hash = NTA_HASH(i, cseq->cs_seq);
 
   if (v->v_branch && su_casenmatch(v->v_branch, "z9hG4bK", 7))
     magic_branch = v->v_branch + 7;
