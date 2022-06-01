@@ -143,7 +143,8 @@ int time_d(char const **ss,
     return -1;
   *sec = 10 * s[0] + s[1] - 11 * '0'; s += 2;
   if (*s) {
-    if (!IS_LWS(*s)) return -1; skip_lws(&s);
+    if (!IS_LWS(*s)) return -1;
+    skip_lws(&s);
   }
   *ss = s;
   return 0;
