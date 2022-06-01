@@ -1244,11 +1244,11 @@ int stun_test_nattype(stun_handle_t *sh,
   /* If no server given, use default address from stun_handle_init() */
   if (!server) {
     /* memcpy(&sd->sd_pri_info, &sh->sh_pri_info, sizeof(su_addrinfo_t)); */
-    memcpy(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
+    memmove(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
   }
   else {
     err = stun_atoaddr(sh->sh_home, AF_INET, &sd->sd_pri_info, server);
-    memcpy(sd->sd_pri_addr, &sd->sd_pri_info.ai_addr, sizeof(su_sockaddr_t));
+    memmove(sd->sd_pri_addr, &sd->sd_pri_info.ai_addr, sizeof(su_sockaddr_t));
   }
   destination = (su_sockaddr_t *) sd->sd_pri_addr;
 
