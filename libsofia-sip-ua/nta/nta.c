@@ -3473,7 +3473,7 @@ void agent_recv_response(nta_agent_t *agent,
     return;
   }
 
-  if (sip->sip_cseq->cs_method == sip_method_invite
+  if (sip->sip_cseq && sip->sip_cseq->cs_method == sip_method_invite
       && 200 <= sip->sip_status->st_status
       && sip->sip_status->st_status < 300
       /* Exactly one Via header, belonging to us */
