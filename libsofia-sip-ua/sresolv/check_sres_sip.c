@@ -66,7 +66,7 @@ struct context {
 } x[1];
 
 static su_addrinfo_t hint_udp_tcp[2];
-static su_addrinfo_t hint_udp_tcp_tls[2];
+static su_addrinfo_t hint_udp_tcp_tls[3];
 static su_addrinfo_t hint_udp_tcp_ip4[2];
 static su_addrinfo_t hint_tls[1];
 static su_addrinfo_t hint_tls_udp_tcp[1];
