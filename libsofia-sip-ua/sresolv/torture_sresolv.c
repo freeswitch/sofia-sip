@@ -139,8 +139,7 @@ int test_api_errors(void)
 {
   sres_context_t ctx[1];
   sres_resolver_t *res;
-  int s, fd;
-  int sockets[20];
+  int fd;
   struct sockaddr sa[1] = {{ 0 }};
   char *template = NULL;
   FILE *f;
@@ -173,8 +172,6 @@ int test_api_errors(void)
   TEST(su_home_threadsafe((su_home_t *)res), 0);
 
   unlink(template);
-
-  s = sockets[0];
 
   TEST_P(sres_resolver_ref(NULL), NULL);
   TEST(errno, EFAULT);
