@@ -146,7 +146,7 @@ int test_api_errors(void)
 
   BEGIN();
 
-  memset(ctx, 0, sizeof ctx);
+  memset(ctx, 0, sizeof *ctx);
 
   template = su_sprintf(ctx->home, ".torture_sresolv_api.conf.XXXXXX");
   TEST_1(template);
