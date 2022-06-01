@@ -290,12 +290,12 @@ int test_cache(void)
 	   (unsigned)N, (long unsigned)t2.tv_sec, t2.tv_nsec);
   }
 
-  for (i = 0, N; i < N; i++)
+  for (i = 0, N = N3; i < N; i++)
     TEST(all[i]->a_record->r_refcount, 2);
 
   TEST_1(copy = sres_cache_copy_answers(cache, (sres_record_t **)all));
 
-  for (i = 0, N; i < N; i++)
+  for (i = 0, N = N3; i < N; i++)
     TEST(all[i]->a_record->r_refcount, 3);
 
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t0);
@@ -312,19 +312,19 @@ int test_cache(void)
 	   (unsigned)N, (long unsigned)t2.tv_sec, t2.tv_nsec);
   }
 
-  for (i = 0, N; i < N; i++)
+  for (i = 0, N = N3; i < N; i++)
     TEST(all[i]->a_record->r_refcount, 2);
 
   sres_cache_free_answers(cache, copy), copy = NULL;
 
-  for (i = 0, N; i < N; i++)
+  for (i = 0, N = N3; i < N; i++)
     TEST(all[i]->a_record->r_refcount, 1);
 
   base += 24 * 3600;
 
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t0);
 
-  for (i = 0, N; i < N; i++) {
+  for (i = 0, N = N3; i < N; i++) {
     now = base + (3600 * i + N / 2) / N;
     a->a_record->r_ttl = 60 + (i * 60) % 3600;
     sres_cache_store(cache, (sres_record_t *)all[i], now);
@@ -339,7 +339,7 @@ int test_cache(void)
 	   (unsigned)N, (long unsigned)t2.tv_sec, t2.tv_nsec);
   }
 
-  for (i = 0, N; i < N; i++)
+  for (i = 0, N = N3; i < N; i++)
     TEST(all[i]->a_record->r_refcount, 2);
 
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t0);
@@ -357,7 +357,7 @@ int test_cache(void)
 	   (unsigned)N, (long unsigned)t2.tv_sec, t2.tv_nsec);
   }
 
-  for (i = 0, N; i < N; i++) {
+  for (i = 0, N = N3; i < N; i++) {
     TEST(all[i]->a_record->r_refcount, 1);
     sres_cache_free_one(cache, (sres_record_t *)all[i]);
   }
