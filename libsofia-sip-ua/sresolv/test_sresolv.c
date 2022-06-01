@@ -1914,15 +1914,6 @@ port $port
   END();
 }
 
-void
-fill_stack(void)
-{
-  int i,array[32768];
-
-  for (i = 0; i < 32768; i++)
-    array[i] = i ^ 0xdeadbeef;
-}
-
 #if HAVE_ALARM
 static RETSIGTYPE sig_alarm(int s)
 {
