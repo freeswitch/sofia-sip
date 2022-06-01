@@ -150,8 +150,8 @@ static int test_alloc(void)
 
   su_home_preload(home, 1, 1024 + 2 * 8);
 
-  TEST_1(c = su_zalloc(home, 64)); p0 = c; p1 = c + 1024;
-  TEST_P(c = su_realloc(home, c0 = c, 127), c0);
+  TEST_1(c = su_zalloc(home, 64)); p0 = c; p1 = c + 1024; c0 = c;
+  TEST_P(c = su_realloc(home, c0, 127), c0);
 
   TEST_1(c = c0 = su_zalloc(home, 1024 - 128));
   TEST_1(p0 <= c); TEST_1(c < p1);
