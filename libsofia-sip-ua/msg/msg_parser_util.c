@@ -444,7 +444,7 @@ issize_t msg_avlist_d(su_home_t *home,
   else if (n == N) {
     /* Reallocate params */
     char const **nparams = su_realloc(home, (void*)(params != stack ? params : NULL),
-				      (N = MSG_PARAMS_NUM(N + 1)) * sizeof(*params));
+				      MSG_PARAMS_NUM(N + 1) * sizeof(*params));
     if (!nparams) {
       goto error;
     }
