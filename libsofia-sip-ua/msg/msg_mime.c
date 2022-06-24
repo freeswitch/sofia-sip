@@ -405,9 +405,9 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
     b = p, p = p + m - 2;
   else if ((p = memmem(p, len, boundary + 1, m - 1))) {
     if (p != pl->pl_data && p[-1] == '\r')
-      b = --p, p = p + m, len -= m;
+      b = --p, p = p + m;
     else
-      b = p, p = p + m - 1, len -= m - 1;
+      b = p, p = p + m - 1;
   }
   else {
     su_home_deinit(msg_home(msg));
