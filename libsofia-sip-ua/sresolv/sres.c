@@ -3299,7 +3299,6 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 	|| (c->cmsg_level == SOL_IPV6 && c->cmsg_type == IPV6_RECVERR)
 #endif
 	) {
-      char const *origin;
 
       ee = (struct sock_extended_err *)CMSG_DATA(c);
       from = (void *)SO_EE_OFFENDER(ee);
@@ -3307,21 +3306,21 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 
       switch (ee->ee_origin) {
       case SO_EE_ORIGIN_LOCAL:
-	strcpy(info, origin = "local");
+	strcpy(info, "local");
 	break;
       case SO_EE_ORIGIN_ICMP:
 	snprintf(info, sizeof(info), "%s type=%u code=%u",
-		 origin = "icmp", ee->ee_type, ee->ee_code);
+			"icmp", ee->ee_type, ee->ee_code);
 	break;
       case SO_EE_ORIGIN_ICMP6:
 	snprintf(info, sizeof(info), "%s type=%u code=%u",
-		 origin = "icmp6", ee->ee_type, ee->ee_code);
+			"icmp6", ee->ee_type, ee->ee_code);
 	break;
       case SO_EE_ORIGIN_NONE:
-	strcpy(info, origin = "none");
+	strcpy(info, "none");
 	break;
       default:
-	strcpy(info, origin = "unknown");
+	strcpy(info, "unknown");
 	break;
       }
 
