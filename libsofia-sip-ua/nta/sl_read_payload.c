@@ -55,7 +55,7 @@ sip_payload_t *sl_read_payload(su_home_t *home, char const *fname)
   sip_payload_t *pl;
 
   if (fname == NULL || strcmp(fname, "-") == 0)
-    f = stdin, fname = "<stdin>";
+    f = stdin;
   else
     f = fopen(fname, "rb");
 
