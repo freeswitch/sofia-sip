@@ -782,7 +782,7 @@ sres_resolver_new_internal(sres_cache_t *cache,
   if (conf_file_path && conf_file_path != sres_conf_file_path)
     res->res_cnffile = su_strdup(res->res_home, conf_file_path);
   else
-    res->res_cnffile = conf_file_path = sres_conf_file_path;
+    res->res_cnffile = sres_conf_file_path;
 
   if (!res->res_cache || !res->res_cnffile) {
     perror("sres: malloc");
@@ -4049,7 +4049,7 @@ static sres_record_t *sres_init_rr_naptr(sres_cache_t *cache,
     m_get_string(na->na_flags = s, len[0], m, offset[0]), s += len[0];
     m_get_string(na->na_services = s, len[1], m, offset[1]), s += len[1];
     m_get_string(na->na_regexp = s, len[2], m, offset[2]), s += len[2];
-    m_get_domain(na->na_replace = s, len[3], m, offset[3]), s += len[3];
+    m_get_domain(na->na_replace = s, len[3], m, offset[3]);
   }
 
   return (sres_record_t *)na;
