@@ -736,7 +736,6 @@ sres_sip_try_a_aaaa_steps(sres_sip_t *srs)
 static int
 sres_sip_send_steps(sres_sip_t *srs)
 {
-  int process = 0;
 
   /* New queries to send */
   while (*srs->srs_send) {
@@ -786,10 +785,12 @@ sres_sip_send_steps(sres_sip_t *srs)
     }
 
     sres_sip_answer(step, NULL, answers);
-    return process = 1;
+    /* process = 1 */
+    return 1;
   }
 
-  return process = 0;
+  /* process = 0 */
+  return 0;
 }
 
 static void
@@ -1429,9 +1430,9 @@ sres_sip_process_aaaa(sres_sip_t *srs,
   struct sres_sip_tport const *stp = hint->hint_stp;
   su_addrinfo_t ai[1];
   su_sockaddr_t su[1];
-  size_t i, j;
+  size_t i;
 
-  for (i = j = 0; answers && answers[i]; i++) {
+  for (i = 0; answers && answers[i]; i++) {
     sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
 
     if (aaaa->aaaa_record->r_status ||
@@ -1466,9 +1467,9 @@ sres_sip_process_a(sres_sip_t *srs,
   struct sres_sip_tport const *stp = hint->hint_stp;
   su_addrinfo_t ai[1];
   su_sockaddr_t su[1];
-  int i, j;
+  int i;
 
-  for (i = j = 0; answers[i]; i++) {
+  for (i = 0; answers[i]; i++) {
     sres_a_record_t const *a = answers[i]->sr_a;
 
     if (a->a_record->r_status ||
