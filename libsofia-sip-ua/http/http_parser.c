@@ -280,7 +280,7 @@ issize_t http_extract_chunk(msg_t *msg, http_t *http, char b[], isize_t bsiz, in
   else {
     issize_t chunk;
 
-    b += n + crlf, bsiz -= n + crlf;
+    b += n + crlf;
 
     /* Extract chunk */
     chunk = msg_extract_payload(msg, http,
