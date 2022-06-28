@@ -469,7 +469,7 @@ void s2_dns_domain(char const *domain, int use_naptr,
 
     va_copy(va, va0);
 
-    for (;(prefix = va_arg(va, char *));) {
+    for (;va_arg(va, char *);) {
       char *services = NULL;
 
       priority = va_arg(va, int);

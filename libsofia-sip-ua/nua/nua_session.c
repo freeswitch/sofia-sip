@@ -1376,7 +1376,7 @@ int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags)
 			NULL);
     }
     else if (!reason) {
-      status = 900, phrase = "Cannot send ACK";
+      status = 900;		/* Cannot send ACK */
       reason = "SIP;cause=500;text=\"Internal Error\"";
     }
 

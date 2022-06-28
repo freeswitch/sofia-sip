@@ -3911,7 +3911,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   msg_t *bmsg = NULL;
   sip_t *bsip;
   url_string_t const *ruri;
-  nta_outgoing_t *ack = NULL, *bye = NULL;
+  nta_outgoing_t *ack = NULL;
   sip_cseq_t *cseq;
   sip_request_t *rq;
   sip_route_t *route = NULL, *r, r0[1];
@@ -3982,9 +3982,9 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   else
     msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)rq);
 
-  if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
+  if (!nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
 				   NTATAG_STATELESS(1),
-				   TAG_END())))
+				   TAG_END()))
     goto err;
 
   msg_destroy(msg);
