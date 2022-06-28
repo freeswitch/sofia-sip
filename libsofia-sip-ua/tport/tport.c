@@ -4824,7 +4824,7 @@ int tport_name_dup(su_home_t *home,
     dst->tpn_canon = dst->tpn_host;
 
   if (n_comp)
-    dst->tpn_comp = memcpy(s, src->tpn_comp, n_comp), s += n_comp;
+    dst->tpn_comp = memcpy(s, src->tpn_comp, n_comp);
   else
     dst->tpn_comp = NULL;
 

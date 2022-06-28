@@ -1576,7 +1576,7 @@ int nea_sub_process_incoming(nea_sub_t *s,
 
   default:
     nta_incoming_treply(irq,
-			retval = SIP_405_METHOD_NOT_ALLOWED,
+			SIP_405_METHOD_NOT_ALLOWED,
 			SIPTAG_ALLOW_STR("SUBSCRIBE"),
 			TAG_END());
     retval = 405;

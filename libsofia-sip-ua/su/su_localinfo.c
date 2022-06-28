@@ -269,7 +269,7 @@ int su_getlocalinfo(su_localinfo_t const *hints,
   }
 #endif
 
-  if (ip6) {
+  if (ip6 && ip4) {
     /* Required to make compiler happy */  
   }
   if (!result)

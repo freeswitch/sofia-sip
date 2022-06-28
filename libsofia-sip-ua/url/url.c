@@ -986,7 +986,7 @@ issize_t url_e(char buffer[], isize_t n, url_t const *url)
     }
   }
 
-  if (do_copy && (do_copy = 1 <= n))
+  if (do_copy && (1 <= n))
     *b = '\0';
   else if (buffer && m > 0)
     buffer[m - 1] = '\0';
