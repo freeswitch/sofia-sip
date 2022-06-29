@@ -69,7 +69,7 @@ su_inline tagi_t const *t_next(tagi_t const *t)
 {
   tag_type_t tt = TAG_TYPE_OF(t);
 
-  if (tt->tt_next)
+  if (tt->tt_class && tt->tt_next)
     return tt->tt_next(t);
   else
     return t + 1;

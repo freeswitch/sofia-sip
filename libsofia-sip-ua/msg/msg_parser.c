@@ -1915,6 +1915,8 @@ int msg_serialize(msg_t *msg, msg_pub_t *pub)
   if (pub == NULL)
     pub = msg->m_object;
 
+  assert(pub);
+
   /* There must be a first line */
   if (pub->msg_request)
     h = pub->msg_request;
