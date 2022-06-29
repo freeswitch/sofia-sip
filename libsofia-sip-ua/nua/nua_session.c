@@ -4398,6 +4398,8 @@ void session_timer_store(struct session_timer *t,
   sip_supported_t const *supported = sip->sip_supported;
   sip_session_expires_t const *x = sip->sip_session_expires;
 
+  assert(t);
+
   t->remote.require = require && sip_has_feature(require, "timer");
   t->remote.supported =
     t->remote.supported || (supported && sip_has_feature(supported, "timer"));
