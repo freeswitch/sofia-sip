@@ -515,7 +515,8 @@ static char const *sres_toplevel(char buf[], size_t bsize, char const *domain);
 
 static sres_record_t *sres_create_record(sres_resolver_t *,
 					 sres_message_t *m,
-					 int nth);
+					 int nth,
+					 sres_record_t *);
 
 static sres_record_t *sres_init_rr_soa(sres_cache_t *cache,
 				       sres_soa_record_t *,
@@ -3593,6 +3594,7 @@ sres_decode_msg(sres_resolver_t *res,
   hash_value_t hash;
   int err;
   unsigned i, total, errorcount = 0;
+  sres_record_t sr0[1];
 
   assert(res && m && return_answers);
 
@@ -3678,7 +3680,7 @@ sres_decode_msg(sres_resolver_t *res,
     if (i < errorcount)
       rr = error = sres_create_error_rr(res->res_cache, query, err);
     else
-      rr = sres_create_record(res, m, i - errorcount);
+      rr = sres_create_record(res, m, i - errorcount, &sr0[0]);
 
     if (!rr) {
       SU_DEBUG_5(("sres_create_record: %s\n", m->m_error));
@@ -3746,17 +3748,17 @@ sres_decode_msg(sres_resolver_t *res,
 
 static
 sres_record_t *
-sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth)
+sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth, sres_record_t *sr0)
 {
   sres_cache_t *cache = res->res_cache;
-  sres_record_t *sr, sr0[1];
+  sres_record_t *sr;
 
   uint16_t m_size;
   char name[1025];
   unsigned len;
   char btype[8], bclass[8];
 
-  sr = memset(sr0, 0, sizeof sr0);
+  sr = memset(sr0, 0, sizeof *sr0);
 
   len = m_get_domain(sr->sr_name = name, sizeof(name) - 1, m, 0); /* Name */
   sr->sr_type = m_get_uint16(m);  /* Type */
