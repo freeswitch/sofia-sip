@@ -2592,8 +2592,10 @@ void tport_error_report(tport_t *self, int errcode,
   }
 
   /* Close connection */
-  if (!self->tp_closed && errcode > 0 && tport_has_connection(self))
+  if (!self->tp_closed && errcode > 0 && tport_has_connection(self)) {
     tport_close(self);
+    tport_set_secondary_timer(self);
+  }
 }
 
 /** Accept a new connection.
