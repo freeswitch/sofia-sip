@@ -247,7 +247,7 @@ struct nta_agent_s
   unsigned sa_use_srv : 1;	/**< Use SRV lookup */
 
   unsigned sa_srv_503 : 1;     /**<  SRV: choice another destination on 503 RFC 3263 */
-  
+
   unsigned sa_tport_threadpool:1; /**< Transports use threadpool */
 
   unsigned sa_rport:1;		/**< Use rport at client */
@@ -1634,7 +1634,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 
   if (max_proceeding == 0) max_proceeding = USIZE_MAX;
   agent->sa_max_proceeding = max_proceeding;
-  
+
   agent->sa_max_recv_requests_per_second = max_recv_requests_per_second;
 
   if (max_forwards == 0) max_forwards = 70; /* Default value */
@@ -2867,7 +2867,7 @@ int sip_content_encoding_Xflate(msg_t *msg, sip_t *sip, int inflate, int check)
 		const char *orig_payload = sip->sip_payload->pl_data;
 
 		n = sip->sip_payload->pl_len * 10;
-		  
+
 		decoded = su_alloc(msg_home(msg), n);
 		assert(decoded);
 
@@ -2876,7 +2876,7 @@ int sip_content_encoding_Xflate(msg_t *msg, sip_t *sip, int inflate, int check)
 		} else {
 			compress(decoded, &n, (void *)sip->sip_payload->pl_data, (unsigned long)sip->sip_payload->pl_len);
 		}
-		  
+
 		sip->sip_payload = sip_payload_create(msg_home(msg), decoded, n);
 		sip->sip_content_encoding = sip_content_encoding_make(msg_home(msg), "deflate");
 
@@ -2892,7 +2892,7 @@ int sip_content_encoding_Xflate(msg_t *msg, sip_t *sip, int inflate, int check)
 
 		return 1;
 	}
- 
+
   return 0;
 }
 #endif
@@ -2928,8 +2928,8 @@ void agent_recv_request(nta_agent_t *agent,
       agent->sa_load->last_time = su_now();
       agent->sa_load->as_recv_request_last = agent->sa_stats->as_recv_request;
 
-      if (agent->sa_max_recv_requests_per_second && agent->sa_load->requests_per_second > agent->sa_max_recv_requests_per_second) {          
-          SU_DEBUG_5(("SIP flood: Dropped %u incoming SIP messages, %u message / sec (of %u allowed)\n",              
+      if (agent->sa_max_recv_requests_per_second && agent->sa_load->requests_per_second > agent->sa_max_recv_requests_per_second) {
+          SU_DEBUG_5(("SIP flood: Dropped %u incoming SIP messages, %u message / sec (of %u allowed)\n",
               agent->sa_stats->as_drop_request + 1, agent->sa_load->requests_per_second, agent->sa_max_recv_requests_per_second));
       }
 
@@ -3448,8 +3448,8 @@ void agent_recv_response(nta_agent_t *agent,
              orq->orq_via_branch = branch;
              outgoing_try_another(orq);
              return;
-      }						
-      		
+      }
+
      if (outgoing_recv(orq, status, msg, sip) == 0)
       return;
   }
@@ -6535,14 +6535,8 @@ static int nta_incoming_response_headers(nta_incoming_t *irq,
     clone = 1, sip->sip_call_id = sip_call_id_copy(home, irq->irq_call_id);
   if (!sip->sip_cseq)
     clone = 1, sip->sip_cseq = sip_cseq_copy(home, irq->irq_cseq);
-  if (!sip->sip_via) {
-    clone = 1;
-    /* 100 responses are not forwarded by proxies, so only include the topmost Via header */
-    if (sip->sip_status && sip->sip_status->st_status == 100)
-      sip->sip_via = (sip_via_t *)msg_header_copy_one(home, (msg_header_t const *)irq->irq_via);
-    else
-      sip->sip_via = sip_via_copy(home, irq->irq_via);
-  }
+  if (!sip->sip_via)
+    clone = 1, sip->sip_via = sip_via_copy(home, irq->irq_via);
 
   if (clone)
     msg_set_parent(msg, (msg_t *)irq->irq_home);
@@ -7119,7 +7113,7 @@ _nta_incoming_timer(nta_agent_t *sa)
   }
 
   while ((irq = sa->sa_in.final_failed->q_head)) {
-	  
+
 
     incoming_remove(irq);
     irq->irq_final_failed = 0;
@@ -7228,7 +7222,7 @@ _nta_incoming_timer(nta_agent_t *sa)
     assert(irq->irq_timeout);
     assert(irq->irq_method != sip_method_invite);
 
-	now = su_time_ms(su_now());	
+	now = su_time_ms(su_now());
 
     if ((int32_t)(irq->irq_timeout - now) > 0 ||
 	terminated >= timer_max_terminate)
@@ -7249,7 +7243,7 @@ _nta_incoming_timer(nta_agent_t *sa)
   }
 
   for (irq = sa->sa_in.terminated->q_head; irq; irq = irq_next) {
-	  
+
     irq_next = irq->irq_next;
     if (irq->irq_destroyed)
       incoming_free_queue(rq, irq);
@@ -8439,7 +8433,7 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
   } else if (orq->orq_try_tcp_instead && !tport_is_connected(tp)) {
     outgoing_set_timer(orq, agent->sa_t4); /* Timer N3 */
   } else if (su_casenmatch(orq->orq_tpn->tpn_proto, "tls", 3) && !tport_is_connected(tp)) {
-    unsigned tls_reconect_interval = (orq->orq_call_tls_connect_timeout_is_set) ? 
+    unsigned tls_reconect_interval = (orq->orq_call_tls_connect_timeout_is_set) ?
                                       orq->orq_call_tls_connect_timeout : agent->sa_tls_orq_connect_timeout;
     if (tls_reconect_interval) {
       if (tls_reconect_interval < 1000) tls_reconect_interval = 1000;
@@ -9560,7 +9554,7 @@ int outgoing_recv(nta_outgoing_t *_orq,
     /* Non-INVITE */
     if (orq->orq_queue == sa->sa_out.trying ||
 	orq->orq_queue == sa->sa_out.resolving) {
-	  /* hacked by freeswitch, this is being hit by options 404 status with 404 orq->orq_status and orq_destroyed = 1, orq_completed = 1 */  
+	  /* hacked by freeswitch, this is being hit by options 404 status with 404 orq->orq_status and orq_destroyed = 1, orq_completed = 1 */
 	  /*      assert(orq->orq_status < 200); */
 	  if (orq->orq_status >= 200) {msg_destroy(msg); return 0;}
 
