@@ -357,18 +357,20 @@ int test_sip(void)
   TEST_1(!url_hdup(home, (url_t*)"SIP:#**00**#;foo=/bar;127.0.0.1"));
 
   for (i = 32; i <= 256; i++) {
-    char pu[512];
     char param[512];
+#define URL_PREFIX "sip:test@host;"
+    char pu[512 + strlen(URL_PREFIX)];
 
     for (j = 0; j < i; j++)
       param[j] = 'x';
     param[j] = '\0';
     memcpy(param, "x=", 2);
 
-    snprintf(pu, sizeof(pu), "sip:test@host;%s", param);
+    snprintf(pu, sizeof(pu), URL_PREFIX "%s", param);
     u = url_hdup(home, (url_t*)pu); TEST_1(u);
     s = url_as_string(home, u);
     TEST_S(pu, s);
+#undef URL_PREFIX
   }
 
   s = su_strdup(home, "ttl;transport=tcp;ttl=15;ttl=;method=INVITE;ttl");
