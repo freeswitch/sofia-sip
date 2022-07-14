@@ -92,8 +92,8 @@ tport_vtable_t const tport_ws_vtable =
   /* vtp_connect             */ NULL,
   /* vtp_secondary_size      */ sizeof (tport_ws_t),
   /* vtp_init_secondary      */ tport_ws_init_secondary,
-  /* tp_deinit_secondary    */ tport_ws_deinit_secondary,
-  /* vtp_shutdown            */ NULL,
+  /* tp_deinit_secondary     */ tport_ws_deinit_secondary,
+  /* vtp_shutdown            */ tport_ws_shutdown,
   /* vtp_set_events          */ NULL,
   /* vtp_wakeup              */ NULL,
   /* vtp_recv                */ tport_recv_stream_ws,
@@ -118,7 +118,7 @@ tport_vtable_t const tport_ws_client_vtable =
   /* vtp_secondary_size      */ sizeof (tport_ws_t),
   /* vtp_init_secondary      */ tport_ws_init_secondary,
   /* vtp_deinit_secondary    */ NULL,
-  /* vtp_shutdown            */ NULL,
+  /* vtp_shutdown            */ tport_ws_shutdown,
   /* vtp_set_events          */ NULL,
   /* vtp_wakeup              */ NULL,
   /* vtp_recv                */ tport_recv_stream_ws,
@@ -143,7 +143,7 @@ tport_vtable_t const tport_wss_vtable =
   /* vtp_secondary_size      */ sizeof (tport_ws_t),
   /* vtp_init_secondary      */ tport_ws_init_secondary,
   /* vtp_deinit_secondary    */ tport_ws_deinit_secondary,
-  /* vtp_shutdown            */ NULL,
+  /* vtp_shutdown            */ tport_ws_shutdown,
   /* vtp_set_events          */ NULL,
   /* vtp_wakeup              */ NULL,
   /* vtp_recv                */ tport_recv_stream_ws,
@@ -168,7 +168,7 @@ tport_vtable_t const tport_wss_client_vtable =
   /* vtp_secondary_size      */ sizeof (tport_ws_t),
   /* vtp_init_secondary      */ tport_ws_init_secondary,
   /* vtp_deinit_secondary    */ NULL,
-  /* vtp_shutdown            */ NULL,
+  /* vtp_shutdown            */ tport_ws_shutdown,
   /* vtp_set_events          */ NULL,
   /* vtp_wakeup              */ NULL,
   /* vtp_recv                */ tport_recv_stream_ws,
@@ -531,6 +531,13 @@ static void tport_ws_deinit_secondary(tport_t *self)
 		ws_destroy(&wstp->ws);
 		wstp->ws_initialized = -1;
 	}
+}
+
+void tport_ws_shutdown(tport_t *self, int how)
+{
+	tport_ws_t *wstp = (tport_ws_t *)self;
+
+	ws_shutdown(&wstp->ws, how);
 }
 
 static int tport_ws_setsndbuf(int socket, int atleast)

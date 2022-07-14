@@ -130,6 +130,7 @@ ssize_t ws_write_frame(wsh_t *wsh, ws_opcode_t oc, void *data, size_t bytes);
 int ws_init(wsh_t *wsh, ws_socket_t sock, SSL_CTX *ssl_ctx, int close_sock, int block, int stay_open);
 ssize_t ws_close(wsh_t *wsh, int16_t reason);
 void ws_destroy(wsh_t *wsh);
+void ws_shutdown(wsh_t *wsh, int how);
 void init_ssl(void);
 void deinit_ssl(void);
 int xp_errno(void);

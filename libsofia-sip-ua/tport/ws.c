@@ -755,6 +755,34 @@ int ws_init(wsh_t *wsh, ws_socket_t sock, SSL_CTX *ssl_ctx, int close_sock, int 
 	return 0;
 }
 
+void ws_shutdown(wsh_t *wsh, int how) 
+{
+	if (!wsh) {
+		return;
+	}
+
+	if (wsh->down) { 
+		return;
+	}
+
+	if (wsh->ssl) {
+		int code = 0;
+		do {
+			if (code == -1) {
+				int ssl_err = SSL_get_error(wsh->ssl, code);
+				wss_error(wsh, ssl_err, "ws_shutdown: SSL_shutdown");
+				break;
+			}
+			code = SSL_shutdown(wsh->ssl);
+		} while (code == -1);
+
+		SSL_free(wsh->ssl);
+		wsh->ssl = NULL;
+	}
+
+	shutdown(wsh->sock, how);
+}
+
 void ws_destroy(wsh_t *wsh)
 {
 

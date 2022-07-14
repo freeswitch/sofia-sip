@@ -89,6 +89,7 @@ int tport_ws_init_client(tport_primary_t *,
  			 char const **return_culprit);
 int tport_ws_init_secondary(tport_t *self, int socket, int accepted,
 			     char const **return_reason);
+void tport_ws_shutdown(tport_t *self, int how);
 
 int tport_ws_next_timer(tport_t *self, su_time_t *, char const **);
 void tport_ws_timer(tport_t *self, su_time_t);
