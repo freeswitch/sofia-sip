@@ -454,6 +454,10 @@ sip_method_t sip_method_d(char **ss, char const **return_name)
 
 #undef MATCH
 
+  if (strlen(s) < n) {
+    return sip_method_invalid;
+  }
+
   if (IS_NON_WS(s[n]))
     /* Unknown method */
     code = sip_method_unknown;

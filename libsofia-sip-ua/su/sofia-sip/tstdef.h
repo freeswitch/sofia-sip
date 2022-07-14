@@ -195,8 +195,10 @@ enum {
   if (flags & tst_verbatim) { \
     printf("%s: %s%stesting %s\n", TSTNAME, #suite); \
     fflush(stdout); } \
-  if ((suite)) { if (flags & tst_verbatim) \
-  printf("%s: %s%sok: (%s)\n", TSTNAME, #suite); break ; } \
+  if ((suite)) { \
+    if (flags & tst_verbatim) \
+      printf("%s: %s%sok: (%s)\n", TSTNAME, #suite); \
+    break; } \
   fprintf(stderr, "%s:%u: %s %s%sFAILED: (%s)\n", \
           __FILE__, __LINE__, TSTNAME, #suite); fflush(stderr); \
   TEST_FAILED(flags); }						\
@@ -255,9 +257,10 @@ enum {
     printf("%s: %s%stesting %s == %s\n", TSTNAME, #suite, #expect); \
     fflush(stdout); } \
   if ((_value = (size_t)(suite)) == \
-      (_expect = (size_t)(expect))) \
-  { if (flags & tst_verbatim) \
-  printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); break; } \
+      (_expect = (size_t)(expect))) { \
+    if (flags & tst_verbatim) \
+      printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); \
+    break; } \
   fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or "MOD_ZU" != "MOD_ZU"\n", \
 	 __FILE__, __LINE__, TSTNAME, \
 	  #suite, #expect, _value, _expect); fflush(stderr);		\
@@ -271,9 +274,10 @@ enum {
   if (flags & tst_verbatim) { \
     printf("%s: %s%stesting %s == %s\n", TSTNAME, #suite, #expect); \
     fflush(stdout); } \
-  if ((_value = (uint64_t)(suite)) == (_expect = (uint64_t)(expect))) \
-  { if (flags & tst_verbatim) \
-  printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); break; } \
+  if ((_value = (uint64_t)(suite)) == (_expect = (uint64_t)(expect))) { \
+    if (flags & tst_verbatim) \
+      printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); \
+    break; } \
   fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or "LLU" != "LLU"\n", \
 	 __FILE__, __LINE__, TSTNAME, \
 	  #suite, #expect, (unsigned longlong)_value,	\
@@ -287,9 +291,10 @@ enum {
   if (flags & tst_verbatim) { \
     printf("%s: %s%stesting %s == %s\n", TSTNAME, #suite, #expect); \
     fflush(stdout); } \
-  if ((_value = (double)(suite)) == (_expect = (double)(expect))) \
-  { if (flags & tst_verbatim) \
-  printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); break; } \
+  if ((_value = (double)(suite)) == (_expect = (double)(expect))) { \
+    if (flags & tst_verbatim) \
+      printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); \
+    break; } \
   fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or %g != %g\n", \
 	 __FILE__, __LINE__, TSTNAME, \
          #suite, #expect, _value, _expect); fflush(stderr); \
@@ -305,9 +310,10 @@ enum {
   _value = (suite); \
   _expect = (expect); \
   if (((_value == NULL || _expect == NULL) && _value == _expect) || \
-      (_value != NULL && _expect != NULL && strcmp(_value, _expect) == 0)) \
-  { if (flags & tst_verbatim) \
-  printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect);break;}\
+      (_value != NULL && _expect != NULL && strcmp(_value, _expect) == 0)) { \
+    if (flags & tst_verbatim) \
+      printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); \
+    break; } \
   fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s or %s%s%s != \"%s\"\n", \
 	 __FILE__, __LINE__, TSTNAME, \
 	  #suite, #expect, \
@@ -327,9 +333,10 @@ enum {
   _expect = (expect); \
   _len = (size_t)(len); \
   if (((_value == NULL || _expect == NULL) && _value == _expect) || \
-      memcmp(_value, _expect, _len) == 0) \
-  { if (flags & tst_verbatim) \
-  printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect);break;}\
+      memcmp(_value, _expect, _len) == 0) { \
+    if (flags & tst_verbatim) \
+      printf("%s: %s%sok: %s == %s \n", TSTNAME, #suite, #expect); \
+    break; } \
   fprintf(stderr, "%s:%u: %s %s%sFAILED: %s != %s "\
                   "or \"%.*s\" != \"%.*s\"\n", \
 	 __FILE__, __LINE__, TSTNAME, \

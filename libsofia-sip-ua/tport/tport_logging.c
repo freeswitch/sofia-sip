@@ -402,7 +402,7 @@ void tport_capt_msg(tport_t const *self, msg_t *msg, size_t n,
                     su_iovec_t const iov[], size_t iovused, char const *what)
 {
 
-   int buflen = 0, error;
+   int buflen = 0;
    char* buffer = NULL;
    tport_master_t *mr;
 
@@ -435,7 +435,7 @@ void tport_capt_msg(tport_t const *self, msg_t *msg, size_t n,
 
    if(buflen > 0) {
             /* check if we have error i.e. capture server is down */
-            if ((error = su_soerror(mr->mr_capt_sock))) {
+            if (su_soerror(mr->mr_capt_sock)) {
                      su_perror("error: tport_logging: capture socket error");
                      goto done;
             }              

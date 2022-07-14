@@ -68,23 +68,23 @@ name: scan-build
 
 steps:
     - name: bootstrap
-      image: signalwire/freeswitch-public-base:stretch
+      image: signalwire/freeswitch-public-base:bullseye
       pull: always
       commands:
       - ./autogen.sh
 
     - name: configure
-      image: signalwire/freeswitch-public-base:stretch
+      image: signalwire/freeswitch-public-base:bullseye
       pull: always
       commands:
       - ./configure --with-pic --without-doxygen --disable-stun
 
     - name: scan-build
-      image: signalwire/freeswitch-public-base:stretch
+      image: signalwire/freeswitch-public-base:bullseye
       pull: always
       commands:
       - mkdir -p scan-build
-      - echo '#!/bin/bash\nscan-build-4.0 -o ./scan-build/ make -j`nproc --all` |& tee ./scan-build-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./scan-build-status.txt\n' > scan.sh
+      - echo '#!/bin/bash\nscan-build-11 -o ./scan-build/ make -j`nproc --all` |& tee ./scan-build-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./scan-build-status.txt\n' > scan.sh
       - chmod +x scan.sh
       - ./scan.sh
       - exitstatus=`cat ./scan-build-status.txt`
@@ -110,6 +110,6 @@ trigger:
 
 ---
 kind: signature
-hmac: 7a77efc692a53c1574bce1f2f53aadda0610629195eb7e71916505a63545a557
+hmac: 5d5329338612d55fff2bf6250f5b16ac56760b238b390df7974b8b42ce4b8071
 
 ...

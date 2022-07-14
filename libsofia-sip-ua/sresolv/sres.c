@@ -515,7 +515,8 @@ static char const *sres_toplevel(char buf[], size_t bsize, char const *domain);
 
 static sres_record_t *sres_create_record(sres_resolver_t *,
 					 sres_message_t *m,
-					 int nth);
+					 int nth,
+					 sres_record_t *);
 
 static sres_record_t *sres_init_rr_soa(sres_cache_t *cache,
 				       sres_soa_record_t *,
@@ -782,7 +783,7 @@ sres_resolver_new_internal(sres_cache_t *cache,
   if (conf_file_path && conf_file_path != sres_conf_file_path)
     res->res_cnffile = su_strdup(res->res_home, conf_file_path);
   else
-    res->res_cnffile = conf_file_path = sres_conf_file_path;
+    res->res_cnffile = sres_conf_file_path;
 
   if (!res->res_cache || !res->res_cnffile) {
     perror("sres: malloc");
@@ -3299,7 +3300,6 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 	|| (c->cmsg_level == SOL_IPV6 && c->cmsg_type == IPV6_RECVERR)
 #endif
 	) {
-      char const *origin;
 
       ee = (struct sock_extended_err *)CMSG_DATA(c);
       from = (void *)SO_EE_OFFENDER(ee);
@@ -3307,21 +3307,21 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 
       switch (ee->ee_origin) {
       case SO_EE_ORIGIN_LOCAL:
-	strcpy(info, origin = "local");
+	strcpy(info, "local");
 	break;
       case SO_EE_ORIGIN_ICMP:
 	snprintf(info, sizeof(info), "%s type=%u code=%u",
-		 origin = "icmp", ee->ee_type, ee->ee_code);
+			"icmp", ee->ee_type, ee->ee_code);
 	break;
       case SO_EE_ORIGIN_ICMP6:
 	snprintf(info, sizeof(info), "%s type=%u code=%u",
-		 origin = "icmp6", ee->ee_type, ee->ee_code);
+			"icmp6", ee->ee_type, ee->ee_code);
 	break;
       case SO_EE_ORIGIN_NONE:
-	strcpy(info, origin = "none");
+	strcpy(info, "none");
 	break;
       default:
-	strcpy(info, origin = "unknown");
+	strcpy(info, "unknown");
 	break;
       }
 
@@ -3594,6 +3594,7 @@ sres_decode_msg(sres_resolver_t *res,
   hash_value_t hash;
   int err;
   unsigned i, total, errorcount = 0;
+  sres_record_t sr0[1];
 
   assert(res && m && return_answers);
 
@@ -3679,7 +3680,7 @@ sres_decode_msg(sres_resolver_t *res,
     if (i < errorcount)
       rr = error = sres_create_error_rr(res->res_cache, query, err);
     else
-      rr = sres_create_record(res, m, i - errorcount);
+      rr = sres_create_record(res, m, i - errorcount, &sr0[0]);
 
     if (!rr) {
       SU_DEBUG_5(("sres_create_record: %s\n", m->m_error));
@@ -3747,17 +3748,17 @@ sres_decode_msg(sres_resolver_t *res,
 
 static
 sres_record_t *
-sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth)
+sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth, sres_record_t *sr0)
 {
   sres_cache_t *cache = res->res_cache;
-  sres_record_t *sr, sr0[1];
+  sres_record_t *sr;
 
   uint16_t m_size;
   char name[1025];
   unsigned len;
   char btype[8], bclass[8];
 
-  sr = memset(sr0, 0, sizeof sr0);
+  sr = memset(sr0, 0, sizeof *sr0);
 
   len = m_get_domain(sr->sr_name = name, sizeof(name) - 1, m, 0); /* Name */
   sr->sr_type = m_get_uint16(m);  /* Type */
@@ -4050,7 +4051,7 @@ static sres_record_t *sres_init_rr_naptr(sres_cache_t *cache,
     m_get_string(na->na_flags = s, len[0], m, offset[0]), s += len[0];
     m_get_string(na->na_services = s, len[1], m, offset[1]), s += len[1];
     m_get_string(na->na_regexp = s, len[2], m, offset[2]), s += len[2];
-    m_get_domain(na->na_replace = s, len[3], m, offset[3]), s += len[3];
+    m_get_domain(na->na_replace = s, len[3], m, offset[3]);
   }
 
   return (sres_record_t *)na;
