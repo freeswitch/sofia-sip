@@ -951,8 +951,9 @@ int test_codec_selection(struct context *ctx)
   TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
   TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 3);
   TEST_S(rm->rm_encoding, "GSM");
-  /* Using payload type 96 from offer */
-  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 96);
+  /* We do not expect payload type as 96 here anymore as we stopped using the same payload type as remote had
+     since 4703f3ade78a89cdc37f673b5bde3435ab71dc27 so 97 stays. */
+  TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 97);
   TEST_S(rm->rm_encoding, "G729");
   TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 111);
   TEST_S(rm->rm_encoding, "telephone-event");
@@ -1007,11 +1008,12 @@ int test_codec_selection(struct context *ctx)
   TEST_S(rm->rm_encoding, "CN");
   TEST_1(!rm->rm_next);
 
-  /* Answering end matches payload types
-     then sorts by local preference,
-     then select best codec => GSM with pt 97 */
+  /* Answering end matches payload types then sorts by local preference,
+     then select best codec => GSM with pt 3
+     Note : we stopped using the same payload type as remote had
+     since 4703f3ade78a89cdc37f673b5bde3435ab71dc27 so not expect 97 here. */
   TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
-  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 3);
   TEST_S(rm->rm_encoding, "GSM");
   TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 111);
   TEST_S(rm->rm_encoding, "telephone-event");
@@ -1263,7 +1265,9 @@ int test_codec_selection(struct context *ctx)
   TEST_1(!m->m_next);
 
   TEST_1(m = b_sdp->sdp_media); TEST_1(!m->m_rejected);
-  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 96);
+  /* We do not expect payload type as 96 here anymore as we stopped using the same payload type as remote had
+     since 4703f3ade78a89cdc37f673b5bde3435ab71dc27 so 97 stays. */
+  TEST_1(rm = m->m_rtpmaps); TEST(rm->rm_pt, 97);
   TEST_S(rm->rm_encoding, "G729");
   TEST_1(rm = rm->rm_next); TEST(rm->rm_pt, 111);
   TEST_S(rm->rm_encoding, "telephone-event");
@@ -2240,11 +2244,11 @@ int test_address_selection(struct context *ctx)
   TEST_OC_ADDRESS(a, "2001:1508:1003::21a:a0ff:fe71:813", ip6);
   TEST_VOID(soa_terminate(a, NULL));
 
-  /* SOATAG_AF(SOA_AF_IP4_IP6), o= mentions IP6 => select IP4  */
+  /* SOATAG_AF(SOA_AF_IP4_IP6) and SOATAG_USER_O_LINE() tag remove from so, o= mentions IP6 => select IP6  */
   n = soa_set_user_sdp(a, 0, "o=- 1 1 IN IP6 ::\r\n"
 		       "m=audio 5008 RTP/AVP 0 8", -1); TEST(n, 1);
   n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
-  TEST_OC_ADDRESS(a, "11.12.13.14", ip4);
+  TEST_OC_ADDRESS(a, "2001:1508:1003::21a:a0ff:fe71:813", ip6);
   TEST_VOID(soa_process_reject(a, NULL));
 
   /* SOATAG_AF(SOA_AF_IP4_IP6), c= uses non-local IP6

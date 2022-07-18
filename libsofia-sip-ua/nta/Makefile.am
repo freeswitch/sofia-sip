@@ -30,7 +30,8 @@ dist_noinst_SCRIPTS =	run_test_nta_api run_test_nta
 
 TESTS =			run_check_nta run_test_nta_api run_test_nta
 
-TESTS_ENVIRONMENT =	$(SHELL)
+#TESTS_ENVIRONMENT =	$(SHELL)
+TESTS_ENVIRONMENT =
 
 # ----------------------------------------------------------------------
 # Rules for building the targets

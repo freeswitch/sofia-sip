@@ -400,7 +400,7 @@ msg_t *tp_test_msg(tp_test_t *tt, int flags,
 {
   msg_t *msg = msg_create(tt->tt_mclass, flags);
 
-  msg_maxsize(msg, 2 * 1024 * 1024);
+  msg_maxsize(msg, 5 * 1024 * 1024);
 
   return msg;
 }
@@ -869,7 +869,7 @@ static int tcp_test(tp_test_t *tt)
 #ifndef WIN32			/* Windows seems to be buffering too much */
 
   /* Create a large message, just to force queueing in sending end */
-  TEST(new_test_msg(tt, &msg, "tcp-0", 1, 16 * 64 * 1024), 0);
+  TEST(new_test_msg(tt, &msg, "tcp-0", 1, 4 * 1024 * 1024), 0);
   test_create_md5(tt, msg);
   TEST_1(tp = tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
   N++;
