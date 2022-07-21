@@ -191,7 +191,7 @@ int tport_open_log(tport_master_t *mr, tagi_t *tags)
         /* default values for capture protocol and agent id */
         mr->mr_prot_ver = 3;
         mr->mr_agent_id = 200;                         
-        
+        mr->mr_agent_nodename = "default";
         /* get all params */      
         while(p) 
         {        
@@ -224,6 +224,10 @@ int tport_open_log(tport_master_t *mr, tagi_t *tags)
                                 su_log("invalid capture id number; must be uint32 \n");
                                 return n;
                         }
+                }
+                else if(strncmp(p, "capture_nodename=", 17) == 0) {
+                        p+=17;
+                        mr->mr_agent_nodename = p;
                 }
                 else {
                        su_log("unsupported capture param\n"); 
@@ -737,6 +741,11 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
     hg->capt_id.data = htonl(mr->mr_agent_id);
     hg->capt_id.chunk.length = htons(sizeof(hg->capt_id));
 
+    /* Capture NODE NAME */
+    hg->capt_nodename.chunk.vendor_id = htons(0x0000);
+    hg->capt_nodename.chunk.type_id   = htons(0x0013);
+    hg->capt_nodename.data = htonl(mr->mr_agent_nodename);
+    hg->capt_nodename.chunk.length = htons(sizeof(hg->capt_nodename));
 
     /* Payload caclulation */
     orig_n = n;

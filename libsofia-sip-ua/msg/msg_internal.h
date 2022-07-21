@@ -231,6 +231,7 @@ struct hep_generic {
         hep_chunk_uint32_t time_usec;
         hep_chunk_uint8_t  proto_t;
         hep_chunk_uint32_t capt_id;
+        hep_chunk_uint32_t capt_nodename;
 } PACKED;
 
 #ifdef _MSC_VER
