@@ -80,6 +80,10 @@ static int tport_ws_init_primary_secure(tport_primary_t *pri,
 
 static int tport_ws_setsndbuf(int socket, int atleast);
 static void tport_ws_deinit_primary(tport_primary_t *pri);
+static tport_t *tport_ws_connect(tport_primary_t *pri, su_addrinfo_t *ai,
+                                 tp_name_t const *tpn);
+static tport_t *tport_wss_connect(tport_primary_t *pri, su_addrinfo_t *ai,
+                                  tp_name_t const *tpn);
 
 tport_vtable_t const tport_ws_vtable =
 {
@@ -89,7 +93,7 @@ tport_vtable_t const tport_ws_vtable =
   /* vtp_init_primary        */ tport_ws_init_primary,
   /* vtp_deinit_primary      */ tport_ws_deinit_primary,
   /* vtp_wakeup_pri          */ tport_accept,
-  /* vtp_connect             */ NULL,
+  /* vtp_connect             */ tport_ws_connect,
   /* vtp_secondary_size      */ sizeof (tport_ws_t),
   /* vtp_init_secondary      */ tport_ws_init_secondary,
   /* tp_deinit_secondary    */ tport_ws_deinit_secondary,
@@ -114,7 +118,7 @@ tport_vtable_t const tport_ws_client_vtable =
   /* vtp_init_primary        */ tport_ws_init_client,
   /* vtp_deinit_primary      */ tport_ws_deinit_primary,
   /* vtp_wakeup_pri          */ NULL,
-  /* vtp_connect             */ NULL,
+  /* vtp_connect             */ tport_ws_connect,
   /* vtp_secondary_size      */ sizeof (tport_ws_t),
   /* vtp_init_secondary      */ tport_ws_init_secondary,
   /* vtp_deinit_secondary    */ NULL,
@@ -139,7 +143,7 @@ tport_vtable_t const tport_wss_vtable =
   /* vtp_init_primary        */ tport_ws_init_primary_secure,
   /* vtp_deinit_primary      */ tport_ws_deinit_primary,
   /* vtp_wakeup_pri          */ tport_accept,
-  /* vtp_connect             */ NULL,
+  /* vtp_connect             */ tport_wss_connect,
   /* vtp_secondary_size      */ sizeof (tport_ws_t),
   /* vtp_init_secondary      */ tport_ws_init_secondary,
   /* vtp_deinit_secondary    */ tport_ws_deinit_secondary,
@@ -164,7 +168,7 @@ tport_vtable_t const tport_wss_client_vtable =
   /* vtp_init_primary        */ tport_ws_init_client,
   /* vtp_deinit_primary      */ tport_ws_deinit_primary,
   /* vtp_wakeup_pri          */ NULL,
-  /* vtp_connect             */ NULL,
+  /* vtp_connect             */ tport_wss_connect,
   /* vtp_secondary_size      */ sizeof (tport_ws_t),
   /* vtp_init_secondary      */ tport_ws_init_secondary,
   /* vtp_deinit_secondary    */ NULL,
@@ -656,4 +660,20 @@ void tport_ws_timer(tport_t *self, su_time_t now)
     tport_keepalive_timer(self, now);
   }
   tport_base_timer(self, now);
+}
+
+static tport_t *tport_ws_connect(tport_primary_t *pri,
+                                 su_addrinfo_t *ai,
+                                 tp_name_t const *tpn)
+{
+  SU_DEBUG_9(("%s(%p): Outgoing websockets are not supported\n", __func__, (void *)pri));
+
+  return NULL;
+}
+
+static tport_t *tport_wss_connect(tport_primary_t *pri,
+                                  su_addrinfo_t *ai,
+                                  tp_name_t const *tpn)
+{
+  return tport_ws_connect(pri, ai, tpn);
 }
