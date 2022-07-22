@@ -744,7 +744,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
     /* Capture NODE NAME */
     hg->capt_nodename.chunk.vendor_id = htons(0x0000);
     hg->capt_nodename.chunk.type_id   = htons(0x0013);
-    hg->capt_nodename.data = htonl(mr->mr_agent_nodename);
+    hg->capt_nodename.data = mr->mr_agent_nodename;
     hg->capt_nodename.chunk.length = htons(sizeof(hg->capt_nodename));
 
     /* Payload caclulation */
