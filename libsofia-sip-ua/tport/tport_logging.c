@@ -604,6 +604,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
    su_time_t now;
    hep_chunk_ip4_t src_ip4 = {{0}}, dst_ip4 = {{0}};
    hep_chunk_t payload_chunk;
+   hep_chunk_t nodename_chunk;
    int orig_n = 0;
       
 #if SU_HAVE_IN6
@@ -741,11 +742,6 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
     hg->capt_id.data = htonl(mr->mr_agent_id);
     hg->capt_id.chunk.length = htons(sizeof(hg->capt_id));
 
-    /* Capture NODE NAME */
-    hg->capt_nodename.chunk.vendor_id = htons(0x0000);
-    hg->capt_nodename.chunk.type_id   = htons(0x0013);
-    hg->capt_nodename.data = mr->mr_agent_nodename;
-    hg->capt_nodename.chunk.length = htons(sizeof(hg->capt_nodename));
 
     /* Payload caclulation */
     orig_n = n;
@@ -765,6 +761,13 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
     payload_chunk.length    = htons(sizeof(payload_chunk) + payload_len);
 
     tlen = sizeof(struct hep_generic) + payload_len + iplen + sizeof(hep_chunk_t);
+
+    /* NODE NAME */
+    tlen += sizeof(hep_chunk_t);
+    nodename_chunk.vendor_id = htons(0x0000);
+    nodename_chunk.type_id = htons(0x0013);
+    nodename_chunk.length = htons(sizeof(nodename_chunk) + strlen(mr->mr_agent_nodename));
+    tlen += strlen(mr->mr_agent_nodename);
 
     /* total */
     hg->header.length = htons(tlen);    
@@ -799,6 +802,13 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
         buflen += sizeof(struct hep_chunk_ip6);
     }
 #endif
+
+    /* NODE NAME */
+    memcpy((void*) buffer + buflen, &nodename_chunk, sizeof(struct hep_chunk));
+    buflen += sizeof(struct hep_chunk);
+    /* Now copying payload self */
+    memcpy((void*) buffer + buflen, mr->mr_agent_nodename, strlen(mr->mr_agent_nodename));
+    buflen += strlen(mr->mr_agent_nodename);
 
     /* PAYLOAD CHUNK */
     memcpy((char*) *buffer+buflen, &payload_chunk,  sizeof(struct hep_chunk));
