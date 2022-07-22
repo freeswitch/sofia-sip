@@ -308,7 +308,7 @@ struct tport_master {
   tport_primary_t    *mr_primaries;        /**< List of primary contacts */
   unsigned	      mr_prot_ver;	/* hep version */
   unsigned	      mr_agent_id;      /* agent version */
-  char	          mr_agent_nodename;      /* agent node name */
+  char	          *mr_agent_nodename;      /* agent node name */
 
   tport_params_t      mr_params[1];
 
