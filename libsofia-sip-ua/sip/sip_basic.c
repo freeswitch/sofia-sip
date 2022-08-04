@@ -1255,7 +1255,7 @@ char *sip_cseq_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /**@ingroup sip_cseq
  *
- * Create a @CSeq header object.
+ *ï¿½Create a @CSeq header object.
  *
  * Create a @CSeq header object with the
  * sequence number @a seq, method enum @a method and method name @a
@@ -1554,7 +1554,7 @@ issize_t sip_content_length_e(char b[], isize_t bsiz, sip_header_t const *h, int
 
 /**@ingroup sip_content_length
  *
- * Create a @ContentLength header object.
+ *ï¿½Create a @ContentLength header object.
  *
  * Create a @ContentLength
  * header object with the value @a n.  The memory for the header is
@@ -2831,9 +2831,9 @@ char const *sip_via_port(sip_via_t const *v, int *using_rport)
  * @code
  * typedef struct {
  *   sip_common_t       id_common[1];    // Common fragment info
- *   sip_error_t		*id_next;        // Link to next (dummy)
- *   char const			*id_value;       // Identity
- *   char const			*id_info;        // Info param containing URL of the cert, with no '<','>'
+ *   sip_identity_t     *id_next;		// Link to next Identity
+ *   char const			    *id_value;       // Identity
+ *   char const			    *id_info;        // Info param containing URL of the cert, with no '<','>'
  *   char const         *id_signed_identity_digest;	// Digest 
  *   char const         *id_info_alg;    // Field containing alg of the cert
  *   char const         *id_info_ppt;    // Field containing PASSporT Type
