@@ -2831,7 +2831,7 @@ char const *sip_via_port(sip_via_t const *v, int *using_rport)
  * @code
  * typedef struct {
  *   sip_common_t       id_common[1];    // Common fragment info
- *   sip_identity_t     *id_next;		// Link to next Identity
+ *   sip_identity_t     *id_next;		     // Link to next Identity
  *   char const			    *id_value;       // Identity
  *   char const			    *id_info;        // Info param containing URL of the cert, with no '<','>'
  *   char const         *id_signed_identity_digest;	// Digest 
@@ -2848,7 +2848,7 @@ static msg_dup_f sip_identity_dup_one;
 static msg_update_f sip_identity_update;
 
 msg_hclass_t sip_identity_class[] =
-SIP_HEADER_CLASS(identity, "Identity", "", id_common, single, identity);
+SIP_HEADER_CLASS(identity, "Identity", "", id_common, non_compact_append, identity);
 
 issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
