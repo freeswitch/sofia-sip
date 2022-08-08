@@ -1255,7 +1255,7 @@ char *sip_cseq_dup_one(sip_header_t *dst, sip_header_t const *src,
 
 /**@ingroup sip_cseq
  *
- *�Create a @CSeq header object.
+ * Create a @CSeq header object.
  *
  * Create a @CSeq header object with the
  * sequence number @a seq, method enum @a method and method name @a
@@ -1554,7 +1554,7 @@ issize_t sip_content_length_e(char b[], isize_t bsiz, sip_header_t const *h, int
 
 /**@ingroup sip_content_length
  *
- *�Create a @ContentLength header object.
+ * Create a @ContentLength header object.
  *
  * Create a @ContentLength
  * header object with the value @a n.  The memory for the header is
