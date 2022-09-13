@@ -82,12 +82,11 @@ extern char const TPORT_DUMP[];	/* dummy declaration for Doxygen */
  * environment variable. This can be used to save message traces into database and help
  * hairy debugging tasks.
  *
- * @sa TPORT_LOG, TPORT_DEBUG, TPORT_CAPT, tport_log
+ * @sa TPORT_LOG, TPORT_DEBUG, TPORT_CAPT, TPORT_CAPT_SRC, tport_log
  */
 #ifdef DOXYGEN
 extern char const TPORT_CAPT[];	/* dummy declaration for Doxygen */
 #endif
-
 
 /**@var TPORT_DEBUG
  *
@@ -120,13 +119,15 @@ int tport_open_log(tport_master_t *mr, tagi_t *tags)
   int log_msg = mr->mr_log != 0;
   char const *dump = NULL;
   char const *capt = NULL;;
-  
+  char const *capt_src = NULL;
+
   if(mr->mr_capt_name) capt = mr->mr_capt_name;
   
   n = tl_gets(tags,
 	      TPTAG_LOG_REF(log_msg),
 	      TPTAG_DUMP_REF(dump),
 	      TPTAG_CAPT_REF(capt),
+        TPTAG_CAPT_SRC_REF(capt_src),
 	      TAG_END());
 
   if (getenv("MSG_STREAM_LOG") != NULL || getenv("TPORT_LOG") != NULL)
@@ -456,7 +457,7 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
 {
 
    int buflen = 0;
-   su_sockaddr_t const *su, *su_self;
+   su_sockaddr_t const *su, *su_self, *su_self_ext;
    struct hep_hdr hep_header;
    struct hep_timehdr hep_time = {0};    
    su_time_t now;
@@ -478,6 +479,7 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
    su_self = self->tp_pri->pri_primary->tp_addr;
 
    mr = self->tp_master;
+   su_self_ext = mr->mr_capt_src_addr;
 
    /* If we don't have socket, go out */
    if (!mr->mr_capt_sock) {
@@ -509,13 +511,13 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
    if(su->su_family == AF_INET) {
 
        memcpy(dst ? &hep_ipheader.hp_src : &hep_ipheader.hp_dst, &su->su_sin.sin_addr.s_addr, sizeof(su->su_sin.sin_addr.s_addr));
-       memcpy(dst ? &hep_ipheader.hp_dst : &hep_ipheader.hp_src, &su_self->su_sin.sin_addr.s_addr, sizeof(su_self->su_sin.sin_addr.s_addr));
+       memcpy(dst ? &hep_ipheader.hp_dst : &hep_ipheader.hp_src, &su_self_ext->su_sin.sin_addr.s_addr, sizeof(su_self_ext->su_sin.sin_addr.s_addr));
        hep_header.hp_l += sizeof(struct hep_iphdr);
    }
 #if SU_HAVE_IN6
    else {   
        memcpy(dst ? &hep_ip6header.hp6_src : &hep_ip6header.hp6_dst, &su->su_sin.sin_addr.s_addr, sizeof(su->su_sin.sin_addr.s_addr));
-       memcpy(dst ? &hep_ip6header.hp6_dst : &hep_ip6header.hp6_src, &su_self->su_sin.sin_addr.s_addr, sizeof(su_self->su_sin.sin_addr.s_addr));
+       memcpy(dst ? &hep_ip6header.hp6_dst : &hep_ip6header.hp6_src, &su_self_ext->su_sin.sin_addr.s_addr, sizeof(su_self_ext->su_sin.sin_addr.s_addr));
        hep_header.hp_l += sizeof(struct hep_ip6hdr);       
    }
 #endif     
@@ -594,7 +596,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
         su_iovec_t const iov[], size_t iovused, char const *what, char **buffer)
 {
 
-   su_sockaddr_t const *su, *su_self;
+   su_sockaddr_t const *su, *su_self, *su_self_ext;
    struct hep_generic *hg=NULL;
    unsigned int buflen=0, iplen=0,tlen=0, payload_len = 0;
    su_time_t now;
@@ -616,6 +618,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
    su_self = self->tp_pri->pri_primary->tp_addr;
 
    mr = self->tp_master;
+   su_self_ext = mr->mr_capt_src_addr;
 
    /* If we don't have socket, go out */
    if (!mr->mr_capt_sock) {
@@ -665,7 +668,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
         /* DST IP */
         dst_ip4.chunk.vendor_id = htons(0x0000);
         dst_ip4.chunk.type_id   = htons(0x0004);
-        memcpy(dst ? &dst_ip4.data : &src_ip4.data,  &su_self->su_sin.sin_addr.s_addr, sizeof(su_self->su_sin.sin_addr.s_addr));
+        memcpy(dst ? &dst_ip4.data : &src_ip4.data,  &su_self_ext->su_sin.sin_addr.s_addr, sizeof(su_self_ext->su_sin.sin_addr.s_addr));
         dst_ip4.chunk.length = htons(sizeof(dst_ip4));
 
         iplen = sizeof(dst_ip4) + sizeof(src_ip4);
@@ -682,7 +685,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
         /* DST IPv6 */
         dst_ip6.chunk.vendor_id = htons(0x0000);
         dst_ip6.chunk.type_id   = htons(0x0006);
-        memcpy(dst ? &dst_ip6.data : &src_ip6.data, &su_self->su_sin.sin_addr.s_addr, sizeof(su_self->su_sin.sin_addr.s_addr));
+        memcpy(dst ? &dst_ip6.data : &src_ip6.data, &su_self_ext->su_sin.sin_addr.s_addr, sizeof(su_self_ext->su_sin.sin_addr.s_addr));
         dst_ip6.chunk.length = htons(sizeof(dst_ip6));
 
         iplen = sizeof(dst_ip6) + sizeof(src_ip6);

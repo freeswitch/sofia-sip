@@ -339,6 +339,12 @@ TPORT_DLL extern tag_typedef_t tptag_capt;
 TPORT_DLL extern tag_typedef_t tptag_capt_ref;
 #define TPTAG_CAPT_REF(x) tptag_capt_ref, tag_str_vr(&(x))
 
+TPORT_DLL extern tag_typedef_t tptag_capt_src;
+#define TPTAG_CAPT_SRC(x) tptag_capt_src, tag_str_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_capt_src_ref;
+#define TPTAG_CAPT_SRC_REF(x) tptag_capt_src_ref, tag_str_vr(&(x))
+
 SOFIA_END_DECLS
 
 #endif /* !defined TPORT_TAG_H */
