@@ -127,7 +127,7 @@ int tport_open_log(tport_master_t *mr, tagi_t *tags)
 	      TPTAG_LOG_REF(log_msg),
 	      TPTAG_DUMP_REF(dump),
 	      TPTAG_CAPT_REF(capt),
-        TPTAG_CAPT_SRC_REF(capt_src),
+	      TPTAG_CAPT_SRC_REF(capt_src),
 	      TAG_END());
 
   if (getenv("MSG_STREAM_LOG") != NULL || getenv("TPORT_LOG") != NULL)
@@ -141,6 +141,18 @@ int tport_open_log(tport_master_t *mr, tagi_t *tags)
   if (getenv("TPORT_DUMP"))
     dump = getenv("TPORT_DUMP");
  
+  /* Overriding src address for HEP */
+  if (capt_src && !mr->mr_capt_src_addr) {
+    su_addrinfo_t *ai = NULL, hints[1] = {{ 0 }};
+    hints->ai_flags = AI_NUMERICSERV;
+    hints->ai_family = AF_UNSPEC;
+    if (su_getaddrinfo(capt_src, "", hints, &ai)) {
+      su_perror("capture_src: su_getaddrinfo()");
+    } else {
+      mr->mr_capt_src_addr = ai;
+    }
+  }
+
   if(capt) {
 
         char *captname, *p, *host_s;
@@ -479,7 +491,13 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
    su_self = self->tp_pri->pri_primary->tp_addr;
 
    mr = self->tp_master;
-   su_self_ext = mr->mr_capt_src_addr;
+   if (mr->mr_capt_src_addr) {
+     /* override SRC address with configuration */
+     su_self_ext = (void *)mr->mr_capt_src_addr->ai_addr;
+   } else {
+     /* use the SRC address from the socket */
+     su_self_ext = su_self;
+   }
 
    /* If we don't have socket, go out */
    if (!mr->mr_capt_sock) {
@@ -618,7 +636,13 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
    su_self = self->tp_pri->pri_primary->tp_addr;
 
    mr = self->tp_master;
-   su_self_ext = mr->mr_capt_src_addr;
+   if (mr->mr_capt_src_addr) {
+     /* override SRC address with configuration */
+     su_self_ext = (void *)mr->mr_capt_src_addr->ai_addr;
+   } else {
+     /* use the SRC address from the socket */
+     su_self_ext = su_self;
+   }
 
    /* If we don't have socket, go out */
    if (!mr->mr_capt_sock) {
