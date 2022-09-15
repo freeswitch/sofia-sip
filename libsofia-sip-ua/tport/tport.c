@@ -577,6 +577,11 @@ void tport_destroy(tport_t *self)
   if (mr->mr_timer)
     su_timer_destroy(mr->mr_timer), mr->mr_timer = NULL;
 
+  if (mr->mr_capt_src_addr) {
+    su_freeaddrinfo(mr->mr_capt_src_addr);
+    mr->mr_capt_src_addr = NULL;
+  }
+
   su_home_zap(mr->mr_home);
 }
 
