@@ -384,6 +384,11 @@ static int tport_ws_init_primary_secure(tport_primary_t *pri,
 	if (access(chain, R_OK) != 0) chain = NULL;
   }
 
+  if (!(key && cert && chain)) {
+    tls_log_errors(3, "tport_ws_init_primary_secure", 0);
+    goto done;
+  }
+
   init_ssl();
 
   //  OpenSSL_add_all_algorithms();   /* load & register cryptos */                                                                                       
