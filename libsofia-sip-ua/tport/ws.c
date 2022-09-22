@@ -778,22 +778,6 @@ void ws_destroy(wsh_t *wsh)
 		wsh->write_buffer_len = 0;
 	}
 
-	if (wsh->ssl) {
-		int code = 0;
-		do {
-			if (code == -1) {
-				int ssl_err = SSL_get_error(wsh->ssl, code);
-				wss_error(wsh, ssl_err, "ws_destroy: SSL_shutdown");
-				break;
-			}
-			code = SSL_shutdown(wsh->ssl);
-		// } while (code == -1 && SSL_get_error(wsh->ssl, code) == SSL_ERROR_WANT_READ);
-		} while (code == -1);
-
-		SSL_free(wsh->ssl);
-		wsh->ssl = NULL;
-	}
-
 	if (wsh->buffer) free(wsh->buffer);
 	if (wsh->bbuffer) free(wsh->bbuffer);
 
@@ -825,6 +809,30 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 	}
 
 	restore_socket(wsh->sock);
+
+	if (wsh->ssl) {
+		int code = 0;
+		int ssl_error = 0;
+		const char* buf = "0";
+
+		/* check if no fatal error occurs on connection */
+		code = SSL_write(wsh->ssl, buf, 1);
+		ssl_error = SSL_get_error(wsh->ssl, code);
+
+		if (ssl_error == SSL_ERROR_SYSCALL || ssl_error == SSL_ERROR_SSL) {
+			goto ssl_finish_it;
+		}
+
+		code = SSL_shutdown(wsh->ssl);
+		if (code == 0) {
+			/* need to make sure there is no more data to read */
+			ws_raw_read(wsh, wsh->buffer, 9, WS_BLOCK);
+		}
+
+ssl_finish_it:
+		SSL_free(wsh->ssl);
+		wsh->ssl = NULL;
+	}
 
 	if (wsh->close_sock && wsh->sock != ws_sock_invalid) {
 #ifndef WIN32
