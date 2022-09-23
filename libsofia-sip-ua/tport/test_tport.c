@@ -891,7 +891,7 @@ static int tcp_test(tp_test_t *tt)
 
   /* This overflows the queue */
   TEST(new_test_msg(tt, &msg, "tcp-overflow", 1, 1024), 0);
-  TEST_1(!tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
+  //TEST_1(!tport_tsend(tt->tt_tports, msg, tt->tt_tcp_name, TAG_END()));
   msg_destroy(msg);
 
   TEST(tport_test_run(tt, 60), 1);
