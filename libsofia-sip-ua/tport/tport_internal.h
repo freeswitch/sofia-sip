@@ -304,7 +304,8 @@ struct tport_master {
   char               *mr_dump;	/**< Filename for dumping received/sent data */
   /** SOCK to dump received and sent data */
   su_socket_t         mr_capt_sock;
-  char               *mr_capt_name;	/**< Servername for capturing received/sent data */  
+  char               *mr_capt_name;	/**< Servername for capturing received/sent data */
+  su_addrinfo_t      *mr_capt_src_addr;
   tport_primary_t    *mr_primaries;        /**< List of primary contacts */
   unsigned	      mr_prot_ver;	/* hep version */
   unsigned	      mr_agent_id;      /* agent version */

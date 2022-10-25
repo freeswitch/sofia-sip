@@ -605,6 +605,17 @@ tag_typedef_t tptag_dump = STRTAG_TYPEDEF(dump);
  */
 tag_typedef_t tptag_capt = STRTAG_TYPEDEF(capt);
 
+/**@def TPTAG_CAPT_SRC(x)
+ *
+ * SRC address to report to capture agent.
+ *
+ * Use with tport_tcreate(), nta_agent_create(), nua_create(),
+ * nth_engine_create(), or initial nth_site_create().
+ *
+ * @sa #TPORT_CAPT_SRC environment variable, TPTAG_LOG().
+ *
+ */
+tag_typedef_t tptag_capt_src = STRTAG_TYPEDEF(capt);
 
 /** Mark transport as trusted.
  *
