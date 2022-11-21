@@ -192,7 +192,7 @@ typedef struct stun_attr_unknownattributes_s{
 
 /* Common functions */
 int stun_parse_message(stun_msg_t *msg);
-int stun_parse_attribute(stun_msg_t *msg, unsigned char *p);
+int stun_parse_attribute(stun_msg_t *msg, unsigned char *p, size_t left_len);
 int stun_parse_attr_address(stun_attr_t *attr, const unsigned char *p, unsigned len);
 int stun_parse_attr_error_code(stun_attr_t *attr, const unsigned char *p, unsigned len);
 int stun_parse_attr_unknown_attributes(stun_attr_t *attr, const unsigned char *p, unsigned len);
