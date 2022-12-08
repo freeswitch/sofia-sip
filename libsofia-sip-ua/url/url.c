@@ -364,7 +364,12 @@ char *url_canonize2(char *d, char const * const s, size_t n,
       continue;
     }
 
-    h1 = s[i + 1], h2 = s[i + 2];
+    h1 = s[i + 1];
+    if (!h1) {
+        *d = '\0';
+        return NULL;
+    }
+    h2 = s[i + 2];
 
     if (!IS_HEX(h1) || !IS_HEX(h2)) {
       *d = '\0';
@@ -422,7 +427,12 @@ char *url_canonize3(char *d, char const * const s, size_t n,
       continue;
     }
 
-    h1 = s[i + 1], h2 = s[i + 2];
+    h1 = s[i + 1];
+    if (!h1) {
+        *d = '\0';
+        return NULL;
+    }
+    h2 = s[i + 2];
 
     if (!IS_HEX(h1) || !IS_HEX(h2)) {
       *d = '\0';
@@ -976,7 +986,7 @@ issize_t url_e(char buffer[], isize_t n, url_t const *url)
     }
   }
 
-  if (do_copy && (do_copy = 1 <= n))
+  if (do_copy && (1 <= n))
     *b = '\0';
   else if (buffer && m > 0)
     buffer[m - 1] = '\0';
@@ -1942,7 +1952,7 @@ void url_string_update(su_md5_t *md5, char const *s)
   int have_authority = 1;
   enum url_type_e type = url_any;
   char const *at, *colon;
-  char schema[48];
+  char schema[48] = { 0 };
 
   if (s == NULL || strlen(s) == 0 || strcmp(s, "*") == 0) {
     su_md5_update(md5, "*\0\0*", 4);

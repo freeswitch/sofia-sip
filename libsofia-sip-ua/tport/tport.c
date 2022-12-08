@@ -577,6 +577,11 @@ void tport_destroy(tport_t *self)
   if (mr->mr_timer)
     su_timer_destroy(mr->mr_timer), mr->mr_timer = NULL;
 
+  if (mr->mr_capt_src_addr) {
+    su_freeaddrinfo(mr->mr_capt_src_addr);
+    mr->mr_capt_src_addr = NULL;
+  }
+
   su_home_zap(mr->mr_home);
 }
 
@@ -2592,8 +2597,10 @@ void tport_error_report(tport_t *self, int errcode,
   }
 
   /* Close connection */
-  if (!self->tp_closed && errcode > 0 && tport_has_connection(self))
+  if (!self->tp_closed && errcode > 0 && tport_has_connection(self)) {
     tport_close(self);
+    tport_set_secondary_timer(self);
+  }
 }
 
 /** Accept a new connection.
@@ -2605,7 +2612,7 @@ int tport_accept(tport_primary_t *pri, int events)
 {
   tport_t *self;
   su_addrinfo_t ai[1];
-  su_sockaddr_t su[1];
+  su_sockaddr_t su[1] = { 0 };
   socklen_t sulen = sizeof su;
   su_socket_t s = INVALID_SOCKET, l = pri->pri_primary->tp_socket;
   char const *reason = "accept";
@@ -4824,7 +4831,7 @@ int tport_name_dup(su_home_t *home,
     dst->tpn_canon = dst->tpn_host;
 
   if (n_comp)
-    dst->tpn_comp = memcpy(s, src->tpn_comp, n_comp), s += n_comp;
+    dst->tpn_comp = memcpy(s, src->tpn_comp, n_comp);
   else
     dst->tpn_comp = NULL;
 

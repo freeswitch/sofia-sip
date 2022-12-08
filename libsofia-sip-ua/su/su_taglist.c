@@ -527,7 +527,7 @@ tagi_t *tl_filter(tagi_t dst[],
   else {
     size_t rv = 0;
 
-    for (s = src, d = dst; s; s = t_next(s)) {
+    for (s = src; s; s = t_next(s)) {
       d = t_filter(NULL, filter, s, b);
       rv += (char *)d - (char *)NULL;
     }

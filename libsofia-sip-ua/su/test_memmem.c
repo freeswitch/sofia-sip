@@ -94,7 +94,8 @@ static int test_notfound(void)
 
   TEST_P(memmem(haystack + 2, 3, needle, 3), haystack + 2);
   TEST_P(memmem(haystack + 2, 2, needle, 3), NULL);
-  TEST_P(memmem(a = "a\0bc", 4, "a\0bc", 4), a);
+  a = "a\0bc";
+  TEST_P(memmem(a, 4, "a\0bc", 4), a);
   TEST_P(memmem(a, 4, "\0bc", 3), a + 1);
 
   END();

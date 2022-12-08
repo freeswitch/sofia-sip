@@ -228,6 +228,7 @@ su_timer_set0(su_timer_queue_t *timers,
 	      su_duration_t offset)
 {
   int retval;
+  int res;
 
   if (timers == NULL)
     return -1;
@@ -240,7 +241,8 @@ su_timer_set0(su_timer_queue_t *timers,
   t->sut_when = su_time_add(when, offset);
 
   if (timers_is_full(timers[0])) {
-    timers_resize(NULL, timers, 0);
+    res = timers_resize(NULL, timers, 0);
+    assert(res == 0);
     assert(!timers_is_full(timers[0]));
     if (timers_is_full(timers[0]))
       return -1;

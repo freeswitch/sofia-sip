@@ -110,8 +110,12 @@ static int parsing_error(sdp_parser_t *p, char const *fmt, ...);
 /** Parse an SDP message.
  *
  * The function sdp_parse() parses an SDP message @a msg of size @a
- * msgsize. Parsing is done according to the given @a flags. The SDP message
- * may not contain a NUL.
+ * msgsize. If msgsize is -1, the size of message is calculated using
+ * strlen().
+ *
+ * Parsing is done according to the given @a flags.
+ *
+ * The SDP message may not contain a NUL.
  *
  * The parsing result is stored to an #sdp_session_t structure.
  *
@@ -147,7 +151,7 @@ sdp_parse(su_home_t *home, char const msg[], issize_t msgsize, int flags)
   char *b;
   size_t len;
 
-  if (msgsize == -1 || msg == NULL) {
+  if (msg == NULL) {
     p = su_home_clone(home, sizeof(*p));
     if (p)
       parsing_error(p, "invalid input message");
@@ -156,7 +160,7 @@ sdp_parse(su_home_t *home, char const msg[], issize_t msgsize, int flags)
     return p;
   }
 
-  if (msgsize == -1 && msg)
+  if (msgsize == -1)
     len = strlen(msg);
   else
     len = msgsize;
@@ -395,6 +399,10 @@ static void parse_message(sdp_parser_t *p)
        record && p->pr_ok;
        record = next(&message, CRLF, strip)) {
     field = record[0];
+
+    if (strlen(record) < 2) {
+      return;
+    }
 
     rest = record + 2; rest += strspn(rest, strip);
 
@@ -1762,6 +1770,10 @@ static void parse_descs(sdp_parser_t *p,
        record && p->pr_ok;
        record = next(&message, CRLF, strip)) {
     char field = record[0];
+
+    if (strlen(record) < 2) {
+      return;
+    }
 
     rest = record + 2; rest += strspn(rest, strip);
 

@@ -349,7 +349,6 @@ static int tport_ws_init_primary_secure(tport_primary_t *pri,
   const char *key = "/ssl.pem";
   const char *chain = NULL;
   char *homedir;
-  char *tbf = NULL;
   su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
   char const *path = NULL;
   int ret = -1;
@@ -364,7 +363,7 @@ static int tport_ws_init_primary_secure(tport_primary_t *pri,
     homedir = getenv("HOME");
     if (!homedir)
       homedir = "";
-    path = tbf = su_sprintf(autohome, "%s/.sip/auth", homedir);
+    path = su_sprintf(autohome, "%s/.sip/auth", homedir);
   }
 
   if (path) {
@@ -383,6 +382,11 @@ static int tport_ws_init_primary_secure(tport_primary_t *pri,
 	if (access(key, R_OK) != 0) key = NULL;
 	if (access(cert, R_OK) != 0) cert = NULL;
 	if (access(chain, R_OK) != 0) chain = NULL;
+  }
+
+  if (!(key && cert && chain)) {
+    tls_log_errors(3, "tport_ws_init_primary_secure", 0);
+    goto done;
   }
 
   init_ssl();

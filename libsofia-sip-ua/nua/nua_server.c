@@ -181,7 +181,7 @@ int nua_stack_process_request(nua_handle_t *nh,
 			SIPTAG_SUPPORTED(supported),
 			SIPTAG_USER_AGENT_STR(user_agent),
 			TAG_END());
-    return 481;
+    return status;
   }
 
   create_dialog = sm->sm_flags.create_dialog;
