@@ -1100,6 +1100,15 @@ void nta_agent_destroy(nta_agent_t *agent)
   }
 }
 
+void nta_agent_resolver_clean_cache(nta_agent_t *agent) 
+{
+#if HAVE_SOFIA_SRESOLV
+  if (agent && agent->sa_resolver) {
+    sres_resolver_clean_cache(agent->sa_resolver);
+  }
+#endif
+}
+
 /** Return agent context. */
 nta_agent_magic_t *nta_agent_magic(nta_agent_t const *agent)
 {

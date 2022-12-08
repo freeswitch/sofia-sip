@@ -803,6 +803,17 @@ sres_resolver_new_internal(sres_cache_t *cache,
   return NULL;
 }
 
+/** Clean cache of a resolver object. */
+void sres_resolver_clean_cache(sres_resolver_t *res)
+{
+#if HAVE_SOFIA_SRESOLV
+  if (res->res_cache) {
+    sres_cache_unref(res->res_cache);
+    res->res_cache = sres_cache_new(0);
+  }
+#endif
+}
+
 /** Increase reference count on a resolver object. */
 sres_resolver_t *
 sres_resolver_ref(sres_resolver_t *res)

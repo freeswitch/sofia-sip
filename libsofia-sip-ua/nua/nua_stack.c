@@ -696,6 +696,9 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
   case nua_r_handle_unref:
     nua_handle_unref(nh);
     break;
+  case nua_r_nta_agent_resolver_clean_dns_cache:
+    nta_agent_resolver_clean_cache(nua->nua_nta);
+    break;
   default:
     break;
   }

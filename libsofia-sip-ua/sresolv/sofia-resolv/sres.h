@@ -131,6 +131,9 @@ SRESPUBFUN sres_resolver_t *sres_resolver_ref(sres_resolver_t *res);
 /** Decrease the reference count on a resolver object.  */
 SRESPUBFUN void sres_resolver_unref(sres_resolver_t *res);
 
+/** Clean cache of a resolver object. */
+SRESPUBFUN void sres_resolver_clean_cache(sres_resolver_t *res);
+
 /** Re-read resolv.conf if needed */
 SRESPUBFUN int sres_resolver_update(sres_resolver_t *res, int always);
 
