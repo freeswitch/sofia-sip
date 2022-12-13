@@ -171,9 +171,9 @@ int sres_blocking_complete(sres_blocking_context_t *c)
       sres_resolver_timer(c->resolver, -1);
     }
     else for (i = 0; i < c->block->n_sockets; i++) {
-      if (c->block->fds[i].revents | POLLERR)
+      if (c->block->fds[i].revents & POLLERR)
 	sres_resolver_error(c->resolver, c->block->fds[i].fd);
-      if (c->block->fds[i].revents | POLLIN)
+      if (c->block->fds[i].revents & POLLIN)
 	sres_resolver_receive(c->resolver, c->block->fds[i].fd);
     }
 #elif HAVE_SELECT
