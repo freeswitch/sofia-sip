@@ -87,6 +87,13 @@ int stun_parse_message(stun_msg_t *msg)
 
   /* parse header first */
   p = msg->enc_buf.data;
+
+  if (get16(p, 2) > (msg->enc_buf.size - 20))
+  {
+    SU_DEBUG_3(("%s: Error STUN Message Length is too big.\n", __func__));
+    return -1;
+  }
+
   msg->stun_hdr.msg_type = get16(p, 0);
   msg->stun_hdr.msg_len = get16(p, 2);
   memcpy(msg->stun_hdr.tran_id, p + 4, STUN_TID_BYTES);
@@ -98,8 +105,8 @@ int stun_parse_message(stun_msg_t *msg)
   len = msg->stun_hdr.msg_len;
   p = msg->enc_buf.data + 20;
   msg->stun_attr = NULL;
-  while (len > 0) {
-    i = stun_parse_attribute(msg, p);
+  while (len >= 4) {  // Type (2) + Length (2) + Value (variable) min attribute size
+    i = stun_parse_attribute(msg, p, len);
     if (i <= 0 || i > len) {
       SU_DEBUG_3(("%s: Error parsing attribute.\n", __func__));
       return -1;
@@ -111,7 +118,7 @@ int stun_parse_message(stun_msg_t *msg)
   return 0;
 }
 
-int stun_parse_attribute(stun_msg_t *msg, unsigned char *p)
+int stun_parse_attribute(stun_msg_t *msg, unsigned char *p, size_t left_len)
 {
   int len;
   uint16_t attr_type;
@@ -119,6 +126,12 @@ int stun_parse_attribute(stun_msg_t *msg, unsigned char *p)
 
   attr_type = get16(p, 0);
   len = get16(p, 2);
+
+  if ((left_len - 4) < len) // make sure we have enough space for attribute
+  {
+    SU_DEBUG_3(("%s: Error STUN attr len is too big.\n", __func__));
+    return -1;
+  }
 
   SU_DEBUG_5(("%s: received attribute: Type %02X, Length %d - %s\n",
 	      __func__, attr_type, len, stun_attr_phrase(attr_type)));
