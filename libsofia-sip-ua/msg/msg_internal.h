@@ -258,6 +258,7 @@ su_inline int msg_is_append(msg_header_t const *h)
 {
   return
     h->sh_class->hc_kind == msg_kind_append ||
+    h->sh_class->hc_kind == msg_kind_non_compact_append ||
     h->sh_class->hc_kind == msg_kind_apndlist;
 }
 
