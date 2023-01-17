@@ -29,6 +29,7 @@
 
 #define SHA1_HASH_SIZE 20
 static struct ws_globals_s ws_globals;
+ssize_t ws_global_payload_size_max = 0;
 
 #ifndef WSS_STANDALONE
 
@@ -712,11 +713,16 @@ int establish_logical_layer(wsh_t *wsh)
 	return 0;
 }
 
+void ws_set_global_payload_size_max(ssize_t bytes)
+{
+	ws_global_payload_size_max = bytes;
+}
 
 int ws_init(wsh_t *wsh, ws_socket_t sock, SSL_CTX *ssl_ctx, int close_sock, int block, int stay_open)
 {
 	memset(wsh, 0, sizeof(*wsh));
 
+	wsh->payload_size_max = ws_global_payload_size_max;
 	wsh->sock = sock;
 	wsh->block = block;
 	wsh->sanity = WS_INIT_SANITY;
@@ -1006,6 +1012,12 @@ ssize_t ws_read_frame(wsh_t *wsh, ws_opcode_t *oc, uint8_t **data)
 				void *tmp;
 
 				wsh->bbuflen = need + blen + wsh->rplen;
+
+				if (wsh->payload_size_max && wsh->bbuflen > wsh->payload_size_max) {
+					/* size limit */
+					*oc = WSOC_CLOSE;
+					return ws_close(wsh, WS_NONE);
+				}
 
 				if ((tmp = realloc(wsh->bbuffer, wsh->bbuflen))) {
 					wsh->bbuffer = tmp;
