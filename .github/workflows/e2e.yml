@@ -1,4 +1,4 @@
-name: Build Sofi-Sip
+name: Build and Distribute Sofia-Sip
 
 
 on:
