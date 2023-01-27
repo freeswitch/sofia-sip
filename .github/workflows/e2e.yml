@@ -34,9 +34,6 @@ jobs:
       RUNNER: ubuntu-latest
       TARGET_FOLDER: x86_x64
       GPG_NAME: packages@freeswitch.org
-      FILES: 'rpms.tar.gz'
-      EXEC_COMMANDS: sudo tar -zxvf /tmp/rpms.tar.gz -C /
-      FILES_FOLDER: /tmp
     secrets: 
       # Explicit define secrets for better understanding but it could be just inherit 
       PROXY_URL: ${{ secrets.PROXY_URL }}
