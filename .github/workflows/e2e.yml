@@ -1,0 +1,40 @@
+name: Build Sofi-Sip
+
+
+on:
+  push:
+    branches: [ master ] 
+    
+jobs:
+
+  sofia_build:
+    name: 'Build'
+    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@feat/packages
+    with:
+      PROJECT_NAME: sofia-sip
+      RUNNER: ubuntu-latest
+      PACKAGER: 'packager Andrey Volk <andrey@signalwire.com>'
+    secrets: inherit 
+  
+  sofia_distribute:
+    permissions: write-all
+    name: 'Sign & Distribute'
+    needs: sofia_build
+    uses: signalwire/actions-template/.github/workflows/cd-rpm-packages.yml@feat/packages
+    with:
+      TARGET_PATH: /var/test
+      RUNNER: ubuntu-latest
+      TARGET_FOLDER: x86_x64
+      GPG_NAME: packages@freeswitch.org
+      FILES: 'rpms.tar.gz'
+      EXEC_COMMANDS: tar -zxvf /tmp/rpms.tar.gz
+      FILES_FOLDER: /tmp
+    secrets: 
+      # Explicit define secrets for better understanding but it could be just inherit 
+      PROXY_URL: ${{ secrets.PROXY_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      HOSTNAME: ${{ secrets.HOSTNAME }}
+      GPG_KEY: ${{ secrets.GPG_PRIVATE }}
+      GPG_CERT: ${{ secrets.GPG_PUBLIC }}
+      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+  
