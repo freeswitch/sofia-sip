@@ -9,7 +9,7 @@ jobs:
 
   sofia_build:
     name: 'Build'
-    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@feat/packages
+    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@main
     with:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
@@ -28,7 +28,7 @@ jobs:
           - /var/www/repo/yum/centos-dev/7
           - /var/www/fsa/repo/yum-stack/fsa/centos-dev/7
     
-    uses: signalwire/actions-template/.github/workflows/cd-rpm-packages.yml@feat/packages
+    uses: signalwire/actions-template/.github/workflows/cd-rpm-packages.yml@main
     with:
       TARGET_PATH: ${{ matrix.target_path }}
       RUNNER: ubuntu-latest
