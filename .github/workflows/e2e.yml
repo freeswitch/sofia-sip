@@ -18,7 +18,7 @@ jobs:
   
   distribute_matrix:
     permissions: write-all
-    name: 'Sign & Distribute'
+    name: 'Copy to remote'
     needs: sofia_build
     strategy:
       matrix:
@@ -28,19 +28,17 @@ jobs:
           - /var/www/repo/yum/centos-dev/7
           - /var/www/fsa/repo/yum-stack/fsa/centos-dev/7
     
-    uses: signalwire/actions-template/.github/workflows/cd-rpm-packages.yml@main
+    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@feat/cd-scp
     with:
-      TARGET_PATH: ${{ matrix.target_path }}
+      ARTIFACT_NAME: rpm-artifact
+      TARGET_FOLDER: ${{ matrix.target_path }}
       RUNNER: ubuntu-latest
-      TARGET_FOLDER: x86_x64
-      GPG_NAME: packages@freeswitch.org
+      FILES: '*.rpm'
     secrets: 
       # Explicit define secrets for better understanding but it could be just inherit 
       PROXY_URL: ${{ secrets.PROXY_URL }}
       USERNAME: ${{ secrets.USERNAME }}
       HOSTNAME: ${{ secrets.HOSTNAME }}
-      GPG_KEY: ${{ secrets.GPG_PRIVATE }}
-      GPG_CERT: ${{ secrets.GPG_PUBLIC }}
       TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
 
     
