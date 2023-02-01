@@ -9,7 +9,7 @@ jobs:
 
   sofia_build:
     name: 'Build'
-    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@main
+    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@feat/cd-ssh
     with:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
