@@ -1,6 +1,5 @@
 name: Build and Distribute Sofia-Sip
 
-
 on:
   push:
     branches: [ master ] 
@@ -9,7 +8,7 @@ jobs:
 
   sofia_build:
     name: 'Build'
-    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@feat/cd-ssh
+    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@main
     with:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
@@ -28,7 +27,7 @@ jobs:
           - /var/www/repo/yum/centos-dev/7
           - /var/www/fsa/repo/yum-stack/fsa/centos-dev/7
     
-    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@feat/cd-ssh
+    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
       ARTIFACT_NAME: rpm-artifact
       TARGET_FOLDER: ${{ matrix.target_path }}
@@ -40,5 +39,3 @@ jobs:
       USERNAME: ${{ secrets.USERNAME }}
       HOSTNAME: ${{ secrets.HOSTNAME }}
       TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
-
-    
