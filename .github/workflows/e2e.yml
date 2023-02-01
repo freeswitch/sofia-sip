@@ -33,7 +33,7 @@ jobs:
       ARTIFACT_NAME: rpm-artifact
       TARGET_FOLDER: ${{ matrix.target_path }}
       RUNNER: ubuntu-latest
-      FILES: ./actions/.github/actions/teleport/action/tml
+      FILES: '*.tar.gz'
     secrets: 
       # Explicit define secrets for better understanding but it could be just inherit 
       PROXY_URL: ${{ secrets.PROXY_URL }}
