@@ -32,7 +32,8 @@ jobs:
       ARTIFACT_NAME: rpm-artifact
       TARGET_FOLDER: ${{ matrix.target_path }}
       RUNNER: ubuntu-latest
-      FILES: '*.tar.gz'
+      EXEC_COMMANDS: find ${{ matrix.target_path }} -type f -name "*.tar.gz" -exec mv "{}" "{}".unlocked \;
+      FILES: '*.tar.gz *.sha1'
     secrets: 
       # Explicit define secrets for better understanding but it could be just inherit 
       PROXY_URL: ${{ secrets.PROXY_URL }}
