@@ -395,7 +395,8 @@ nua_handle_t *nua_handle_by_call_id(nua_t *nua, const char *call_id);
 
 SOFIAPUBFUN const nta_leg_t *nua_get_dialog_state_leg(nua_handle_t *nh);
 SOFIAPUBFUN su_home_t *nua_handle_get_home(nua_handle_t *nh);
-SOFIAPUBFUN void nua_nta_agent_resolver_clean_dns_cache(nua_t *nua);
+SOFIAPUBFUN void nua_nta_agent_resolver_clean_dns_cache_ex(nua_t *nua);
+#define nua_nta_agent_resolver_clean_dns_cache(nua) nua_nta_agent_resolver_clean_dns_cache_ex(nua)
 SOFIAPUBFUN void nua_unref(nua_t *nua);
 /** Destroy reference to nua using dispatcher */
 SOFIAPUBFUN void nua_unref_user(nua_t *nua);
