@@ -1,4 +1,4 @@
-name: Build and Distribute Sofia-Sip
+name: RPM packages
 
 on:
   push:
