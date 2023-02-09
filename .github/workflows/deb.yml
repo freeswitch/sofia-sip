@@ -12,5 +12,7 @@ jobs:
     with:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
+      AUTHOR_EMAIL: lucas.carlos@signalwire.com
+      TARGET_BRANCH: master
     secrets: inherit 
   
