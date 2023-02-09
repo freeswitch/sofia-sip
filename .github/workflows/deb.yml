@@ -8,6 +8,7 @@ jobs:
 
   sofia_build:
     name: 'Build'
+    permissions: write-all
     uses: signalwire/actions-template/.github/workflows/ci-deb-packages.yml@feat/deb
     with:
       PROJECT_NAME: sofia-sip
