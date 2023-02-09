@@ -1158,7 +1158,7 @@ void nua_unref_user(nua_t *nua)
 	nua_signal(nua, NULL, NULL, nua_r_unref, 0, NULL, TAG_NULL());
 }
 
-void nua_nta_agent_resolver_clean_dns_cache(nua_t *nua)
+void nua_nta_agent_resolver_clean_dns_cache_ex(nua_t *nua)
 {
 	enter;
 	nua_signal(nua, NULL, NULL, nua_r_nta_agent_resolver_clean_dns_cache, 0, NULL, TAG_NULL());
