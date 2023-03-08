@@ -22,6 +22,8 @@ jobs:
     with:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
+      BASE_IMAGE: ${{matrix.BASE_IMAGE}}
+      PLATFORM: ${{matrix.PLATFORM}}
       # AUTHOR_EMAIL: lucas.carlos@signalwire.com
       # TARGET_BRANCH: master
       # OS_FAMILIES: stretch,bullseye,buster 
