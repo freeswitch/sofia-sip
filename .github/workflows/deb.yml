@@ -19,7 +19,7 @@ jobs:
           - debian:buster
           - debian:strech
         PLATFORM:
-          - arm64
+          # - arm64
           - amd64
     with:
       PROJECT_NAME: sofia-sip
