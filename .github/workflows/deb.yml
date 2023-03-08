@@ -11,6 +11,7 @@ jobs:
     name: 'Build'
     uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@feat/ci-deb
     strategy:
+      fail-fast: false
       matrix:
         BASE_IMAGE:
           - debian:bullseye-20210927
