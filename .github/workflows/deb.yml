@@ -12,6 +12,7 @@ jobs:
     uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@feat/ci-deb
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         BASE_IMAGE:
           - debian:bullseye-20210927
