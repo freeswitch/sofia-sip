@@ -36,11 +36,11 @@ jobs:
           - arm32v7/debian:buster
           - arm32v7/debian:stretch
         PLATFORM:
-          - arm/v7
+          - arm
           
     with:
       PROJECT_NAME: sofia-sip
-      RUNNER: ubuntu-latest
+      RUNNER: self-hosted
       BASE_IMAGE: ${{matrix.BASE_IMAGE}}
       PLATFORM: ${{matrix.PLATFORM}}
   
