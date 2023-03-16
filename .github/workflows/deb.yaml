@@ -40,7 +40,7 @@ jobs:
           
     with:
       PROJECT_NAME: sofia-sip
-      RUNNER: ubuntu-latest
+      RUNNER: self-hosted
       BASE_IMAGE: ${{matrix.BASE_IMAGE}}
       PLATFORM: ${{matrix.PLATFORM}}
       # AUTHOR_EMAIL: lucas.carlos@signalwire.com

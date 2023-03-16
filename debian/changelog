@@ -1,3 +1,15 @@
+sofia-sip (1.13.14-bva3f~123r~stretch) stretch; urgency=medium
+
+  * Nightly build,
+
+ -- FreeSWITCH Solutions <packages@freeswitch.com>  Thu, 16 Mar 2023 19:54:01 +0000
+
+sofia-sip (1.13.14-~~stretch) stretch; urgency=medium
+
+  * Nightly build,
+
+ -- FreeSWITCH Solutions <packages@freeswitch.com>  Thu, 16 Mar 2023 19:53:36 +0000
+
 sofia-sip (1.13.14-1) unstable; urgency=medium
 
   * New Release.
