@@ -39,10 +39,10 @@ jobs:
           - arm32v7/debian:strech
         PLATFORM:
           - arm/v7
-          - arm64
+          # - arm64
     with:
       PROJECT_NAME: sofia-sip
-      RUNNER: self-hosted
+      RUNNER: ubuntu-latest
       BASE_IMAGE: ${{matrix.BASE_IMAGE}}
       PLATFORM: ${{matrix.PLATFORM}}
       # AUTHOR_EMAIL: lucas.carlos@signalwire.com
