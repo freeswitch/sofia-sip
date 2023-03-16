@@ -40,7 +40,7 @@ jobs:
           
     with:
       PROJECT_NAME: sofia-sip
-      RUNNER: self-hosted
+      RUNNER: ubuntu-latest
       BASE_IMAGE: ${{matrix.BASE_IMAGE}}
       PLATFORM: ${{matrix.PLATFORM}}
   
