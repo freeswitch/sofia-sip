@@ -19,7 +19,6 @@ jobs:
           - debian:buster
           - debian:strech
         PLATFORM:
-          # - arm64
           - amd64
     with:
       PROJECT_NAME: sofia-sip
@@ -35,11 +34,11 @@ jobs:
       max-parallel: 2
       matrix:
         BASE_IMAGE:
-          - debian:bullseye-20210927
-          - debian:buster
-          - debian:strech
+          - arm32v7/debian:bullseye-20210927
+          - arm32v7/debian:buster
+          - arm32v7/debian:strech
         PLATFORM:
-          - arm64
+          - arm
           # - amd64
     with:
       PROJECT_NAME: sofia-sip
