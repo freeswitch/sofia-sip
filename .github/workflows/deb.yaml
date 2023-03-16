@@ -1,0 +1,80 @@
+name: Deb packages
+
+on:
+  push:
+    branches: [ master ] 
+  workflow_dispatch:
+    
+jobs:
+
+  sofia_build:
+    name: 'Build'
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@feat/ci-deb
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        BASE_IMAGE:
+          - debian:bullseye-20210927
+          - debian:buster
+          - debian:strech
+        PLATFORM:
+          # - arm64
+          - amd64
+    with:
+      PROJECT_NAME: sofia-sip
+      RUNNER: ubuntu-latest
+      BASE_IMAGE: ${{matrix.BASE_IMAGE}}
+      PLATFORM: ${{matrix.PLATFORM}}
+  
+  sofia_build_arm:
+    name: 'Build'
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@feat/ci-deb
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        BASE_IMAGE:
+          - debian:bullseye-20210927
+          - debian:buster
+          - debian:strech
+        PLATFORM:
+          - arm64
+          # - amd64
+    with:
+      PROJECT_NAME: sofia-sip
+      RUNNER: self-hosted
+      BASE_IMAGE: ${{matrix.BASE_IMAGE}}
+      PLATFORM: ${{matrix.PLATFORM}}
+      # AUTHOR_EMAIL: lucas.carlos@signalwire.com
+      # TARGET_BRANCH: master
+      # OS_FAMILIES: stretch,bullseye,buster 
+    # secrets: 
+    #   PAT: ${{ secrets.PAT }}
+  
+  # distribute_matrix:
+  #   permissions: write-all
+  #   name: 'Copy to remote'
+  #   needs: sofia_build
+  #   strategy:
+  #     matrix:
+  #       target_path: 
+  #         - /var/www/fsa/repo/deb/fsa/incoming
+  #         - /var/www/fsa/repo/debian/release/incoming
+  #         - /var/www/fsa/repo/debian/unstable/incoming
+  #         - /var/www/repo/deb/freeswitch-1.8/incoming
+  #         - /var/www/deb-public-unstable/incoming
+    
+  #   uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
+  #   with:
+  #     ARTIFACT_NAME: rpm-artifact
+  #     TARGET_FOLDER: ${{ matrix.target_path }}
+  #     RUNNER: ubuntu-latest
+  #     EXEC_COMMANDS: find ${{ matrix.target_path }} -type f -name "*.tar.gz" -exec mv "{}" "{}".unlocked \;
+  #     FILES: '*.tar.gz *.sha1'
+  #   secrets: 
+  #     # Explicit define secrets for better understanding but it could be just inherit 
+  #     PROXY_URL: ${{ secrets.PROXY_URL }}
+  #     USERNAME: ${{ secrets.USERNAME }}
+  #     HOSTNAME: ${{ secrets.HOSTNAME }}
+  #     TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
