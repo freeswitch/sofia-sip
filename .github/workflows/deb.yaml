@@ -65,3 +65,13 @@ jobs:
       USERNAME: ${{ secrets.USERNAME }}
       HOSTNAME: ${{ secrets.HOSTNAME }}
       TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+  
+  sync_changelog:
+    name: 'Copy to remote'
+    needs: [sofia_build_amd64, sofia_build_arm]
+    uses: signalwire/actions-template/.github/workflows/cd-deb-syncchangelog.yml@main
+    with:
+      AUTHOR_EMAIL: 'no-reply@github.com'
+      TARGET_BRANCH: 'master'
+    secrets: 
+      PAT: ${{ secrets.PAT }}
