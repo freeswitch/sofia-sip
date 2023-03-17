@@ -27,7 +27,7 @@ jobs:
   
   sofia_build_arm:
     name: 'Build ARM'
-    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@feat/ci-deb
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
     strategy:
       fail-fast: false
       matrix:
