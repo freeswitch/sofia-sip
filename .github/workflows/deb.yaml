@@ -9,7 +9,7 @@ jobs:
 
   sofia_build_amd64:
     name: 'Build AMD64'
-    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@feat/ci-deb
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
     strategy:
       fail-fast: false
       matrix:
