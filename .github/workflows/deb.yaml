@@ -47,7 +47,8 @@ jobs:
   distribute_matrix:
     permissions: write-all
     name: 'Copy to remote'
-    needs: [sofia_build_amd64, sofia_build_arm]
+    # needs: [sofia_build_amd64, sofia_build_arm]
+    needs: [sofia_build_amd64]
     strategy:
       matrix:
         target_path: 
