@@ -25,30 +25,29 @@ jobs:
       BASE_IMAGE: ${{matrix.BASE_IMAGE}}
       PLATFORM: ${{matrix.PLATFORM}}
   
-  # sofia_build_arm:
-  #   name: 'Build ARM'
-  #   uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       BASE_IMAGE:
-  #         - arm32v7/debian:bullseye-20210927
-  #         - arm32v7/debian:buster
-  #         - arm32v7/debian:stretch
-  #       PLATFORM:
-  #         - arm
+  sofia_build_arm:
+    name: 'Build ARM'
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
+    strategy:
+      fail-fast: false
+      matrix:
+        BASE_IMAGE:
+          - arm32v7/debian:bullseye-20210927
+          - arm32v7/debian:buster
+          - arm32v7/debian:stretch
+        PLATFORM:
+          - arm
           
-  #   with:
-  #     PROJECT_NAME: sofia-sip
-  #     RUNNER: self-hosted
-  #     BASE_IMAGE: ${{matrix.BASE_IMAGE}}
-  #     PLATFORM: ${{matrix.PLATFORM}}
+    with:
+      PROJECT_NAME: sofia-sip
+      RUNNER: self-hosted
+      BASE_IMAGE: ${{matrix.BASE_IMAGE}}
+      PLATFORM: ${{matrix.PLATFORM}}
   
   distribute_matrix:
     permissions: write-all
     name: 'Copy to remote'
-    # needs: [sofia_build_amd64, sofia_build_arm]
-    needs: [sofia_build_amd64]
+    needs: [sofia_build_amd64, sofia_build_arm]
     strategy:
       matrix:
         target_path: 
@@ -68,9 +67,8 @@ jobs:
       TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
   
   sync_changelog:
-    name: 'Copy to remote'
-    # needs: [sofia_build_amd64, sofia_build_arm]
-    needs: [sofia_build_amd64]
+    name: 'Sync changelog'
+    needs: [sofia_build_amd64, sofia_build_arm]
     uses: signalwire/actions-template/.github/workflows/cd-deb-syncchangelog.yml@main
     with:
       AUTHOR_EMAIL: 'no-reply@github.com'
