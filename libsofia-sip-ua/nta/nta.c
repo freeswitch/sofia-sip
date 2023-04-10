@@ -6238,10 +6238,16 @@ static nta_incoming_t *incoming_find(nta_agent_t const *agent,
 
     /* RFC3261 - section 8.2.2.2 Merged Requests */
     if (return_merge) {
-      if (irq->irq_cseq->cs_method == cseq->cs_method &&
-	  strcmp(irq->irq_cseq->cs_method_name,
-		 cseq->cs_method_name) == 0)
-	*return_merge = irq, return_merge = NULL;
+      /* RFC3261 - section 17.2.3 Matching Requests to Server Transactions */
+      if (irq->irq_via->v_branch &&
+	  su_casematch(irq->irq_via->v_branch, v->v_branch) &&
+	  su_casematch(irq->irq_via->v_host, v->v_host) &&
+	  su_strmatch(irq->irq_via->v_port, v->v_port)) {
+        if (irq->irq_cseq->cs_method == cseq->cs_method &&
+	    strcmp(irq->irq_cseq->cs_method_name,
+		   cseq->cs_method_name) == 0)
+	  *return_merge = irq, return_merge = NULL;
+      }
     }
   }
 
