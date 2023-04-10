@@ -5120,7 +5120,7 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
 
     if (leg_url && request_uri && url_cmp(leg_url, request_uri))
       continue;
-    if (leg_method && method_name && !su_casematch(method_name, leg_method))
+    if (leg_method == NULL || method_name && !su_casematch(method_name, leg_method))
       continue;
 
     /* Perfect match if both local and To have tag
