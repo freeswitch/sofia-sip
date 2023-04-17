@@ -78,7 +78,8 @@ jobs:
 
   sync_metadata:
     name: 'Sync Metadata'
-    needs: [sofia_build_amd64, sofia_build_arm]
+    # needs: [sofia_build_amd64, sofia_build_arm] #TODO: revisit
+    needs: [sofia_build_amd64]
     uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@feat/bamboo-metadata
     with:
       ARTIFACT_NAME: deb-artifact
