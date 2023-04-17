@@ -75,3 +75,16 @@ jobs:
       TARGET_BRANCH: 'master'
     secrets: 
       PAT: ${{ secrets.PAT }}
+
+  sync_metadata:
+    name: 'Sync Metadata'
+    needs: [sofia_build_amd64, sofia_build_arm]
+    uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@feat/bamboo-metadata
+    with:
+      ARTIFACT_NAME: deb-artifact
+      FILE_PATH: /var/www/sofia-sip/deb
+      RUNNER: ubuntu-latest
+      LIB_NAME: 'test'
+      TARGET_REPO: signalwire/bamboo_gha_trigger
+    secrets:
+      GH_BOT_DEPLOY_TOKEN: ${{secrets.CI_PAT}}
