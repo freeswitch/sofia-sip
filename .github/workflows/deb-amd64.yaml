@@ -59,7 +59,7 @@ jobs:
 
   sync_metadata:
     name: 'Sync Metadata'
-    needs: [distribute_matrix]
+    needs: [sofia_build_amd64]
     strategy:
       matrix:
         os_version: 
