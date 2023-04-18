@@ -1,4 +1,4 @@
-name: Deb packages for adm64
+name: Deb packages for amd64
 
 on:
   push:
