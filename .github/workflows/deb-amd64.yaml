@@ -74,7 +74,7 @@ jobs:
       ARTIFACT_NAME: deb-artifact
       FILE_PATH: /var/www/sofia-sip/deb
       RUNNER: ubuntu-latest
-      LIB_NAME: 'sofia-sip-deb-amd64'
+      LIB_NAME: sofia-sip
       TARGET_REPO: signalwire/bamboo_gha_trigger
       TARGET_OS: debian
       TARGET_OS_VERSION: ${{ matrix.os_version }}
