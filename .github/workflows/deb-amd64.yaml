@@ -1,4 +1,4 @@
-name: Deb packages
+name: Deb packages for adm64
 
 on:
   push:
@@ -25,29 +25,10 @@ jobs:
       BASE_IMAGE: ${{matrix.BASE_IMAGE}}
       PLATFORM: ${{matrix.PLATFORM}}
   
-  sofia_build_arm:
-    name: 'Build ARM'
-    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
-    strategy:
-      fail-fast: false
-      matrix:
-        BASE_IMAGE:
-          - arm32v7/debian:bullseye-20210927
-          - arm32v7/debian:buster
-          - arm32v7/debian:stretch
-        PLATFORM:
-          - arm
-          
-    with:
-      PROJECT_NAME: sofia-sip
-      RUNNER: ubuntu-latest
-      BASE_IMAGE: ${{matrix.BASE_IMAGE}}
-      PLATFORM: ${{matrix.PLATFORM}}
-  
   distribute_matrix:
     permissions: write-all
     name: 'Copy to remote'
-    needs: [sofia_build_amd64, sofia_build_arm]
+    needs: [sofia_build_amd64]
     strategy:
       matrix:
         target_path: 
@@ -68,7 +49,7 @@ jobs:
   
   sync_changelog:
     name: 'Sync changelog'
-    needs: [sofia_build_amd64, sofia_build_arm]
+    needs: [sofia_build_amd64]
     uses: signalwire/actions-template/.github/workflows/cd-deb-syncchangelog.yml@main
     with:
       AUTHOR_EMAIL: 'no-reply@github.com'
@@ -78,14 +59,25 @@ jobs:
 
   sync_metadata:
     name: 'Sync Metadata'
-    # needs: [sofia_build_amd64, sofia_build_arm] #TODO: revisit
-    needs: [sofia_build_amd64]
+    needs: [distribute_matrix]
+    strategy:
+      matrix:
+        os_version: 
+          - bullseye
+          - buster
+          - stretch
+        os_arch:
+          - amd64
+          - armhf
     uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@feat/bamboo-metadata
     with:
       ARTIFACT_NAME: deb-artifact
       FILE_PATH: /var/www/sofia-sip/deb
       RUNNER: ubuntu-latest
-      LIB_NAME: 'test'
+      LIB_NAME: 'sofia-sip-deb-amd64'
       TARGET_REPO: signalwire/bamboo_gha_trigger
+      TARGET_OS: debian
+      TARGET_OS_VERSION: ${{ matrix.os_version }}
+      TARGET_PLATFORM: ${{ matrix.os_arch }}
     secrets:
       GH_BOT_DEPLOY_TOKEN: ${{secrets.PAT}}
