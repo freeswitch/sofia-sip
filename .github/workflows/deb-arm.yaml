@@ -1,0 +1,84 @@
+name: Deb packages for ARM
+
+on:
+  push:
+    branches: [ master ] 
+  workflow_dispatch:
+    
+jobs:
+
+  sofia_build_arm:
+    name: 'Build ARM'
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
+    strategy:
+      fail-fast: false
+      matrix:
+        BASE_IMAGE:
+          - arm32v7/debian:bullseye-20210927
+          - arm32v7/debian:buster
+          - arm32v7/debian:stretch
+        PLATFORM:
+          - arm
+          
+    with:
+      PROJECT_NAME: sofia-sip
+      RUNNER: ubuntu-latest
+      BASE_IMAGE: ${{matrix.BASE_IMAGE}}
+      PLATFORM: ${{matrix.PLATFORM}}
+  
+  distribute_matrix:
+    permissions: write-all
+    name: 'Copy to remote'
+    needs: [sofia_build_arm]
+    strategy:
+      matrix:
+        target_path: 
+          - /var/www/sofia-sip/deb
+    
+    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
+    with:
+      ARTIFACT_NAME: deb-artifact
+      TARGET_FOLDER: ${{ matrix.target_path }}
+      RUNNER: ubuntu-latest
+      EXEC_COMMANDS: find ${{ matrix.target_path }} -type f -name "*.tar.gz" -exec mv "{}" "{}".unlocked \;
+      FILES: '*.tar.gz *.sha1'
+    secrets: 
+      PROXY_URL: ${{ secrets.PROXY_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      HOSTNAME: ${{ secrets.HOSTNAME }}
+      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+  
+  sync_changelog:
+    name: 'Sync changelog'
+    needs: [sofia_build_arm]
+    uses: signalwire/actions-template/.github/workflows/cd-deb-syncchangelog.yml@main
+    with:
+      AUTHOR_EMAIL: 'no-reply@github.com'
+      TARGET_BRANCH: 'master'
+    secrets: 
+      PAT: ${{ secrets.PAT }}
+
+  sync_metadata:
+    name: 'Sync Metadata'
+    needs: [sofia_build_arm]
+    strategy:
+      max-parallel: 1
+      matrix:
+        os_version: 
+          - bullseye
+          - buster
+          - stretch
+        os_arch:
+          - amd64
+    uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@feat/bamboo-metadata
+    with:
+      ARTIFACT_NAME: deb-artifact
+      FILE_PATH: /var/www/sofia-sip/deb
+      RUNNER: ubuntu-latest
+      LIB_NAME: sofia-sip
+      TARGET_REPO: signalwire/bamboo_gha_trigger
+      TARGET_OS: debian
+      TARGET_OS_VERSION: ${{ matrix.os_version }}
+      TARGET_PLATFORM: ${{ matrix.os_arch }}
+    secrets:
+      GH_BOT_DEPLOY_TOKEN: ${{secrets.PAT}}
