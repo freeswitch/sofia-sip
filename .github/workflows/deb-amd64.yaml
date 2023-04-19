@@ -69,7 +69,6 @@ jobs:
           - stretch
         os_arch:
           - amd64
-          - arm
     uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@feat/bamboo-metadata
     with:
       ARTIFACT_NAME: deb-artifact
