@@ -61,6 +61,7 @@ jobs:
     name: 'Sync Metadata'
     needs: [sofia_build_amd64]
     strategy:
+      max-parallel: 1
       matrix:
         os_version: 
           - bullseye
