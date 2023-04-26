@@ -33,7 +33,7 @@ jobs:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
       BASE_IMAGE: ${{matrix.BASE_IMAGE}}
-      PLATFORM: linux/${{matrix.PLATFORM}}
+      PLATFORM: ${{matrix.PLATFORM}}
 
   distribute_matrix:
     permissions: write-all
