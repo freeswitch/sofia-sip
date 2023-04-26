@@ -23,9 +23,9 @@ jobs:
       fail-fast: false
       matrix:
         BASE_IMAGE:
-          - signalwire/build-deb-action:bullseye
-          - signalwire/build-deb-action:buster
-          - signalwire/build-deb-action:stretch
+          - signalwire/build-deb-action:bullseye-785fedf
+          - signalwire/build-deb-action:buster-785fedf
+          - signalwire/build-deb-action:stretch-785fedf
         PLATFORM:
           - amd64
           - arm
