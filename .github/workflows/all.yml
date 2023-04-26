@@ -1,0 +1,73 @@
+name: Build and Distribute Sofia-Sip
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+    
+jobs:
+
+  sofia_build_rpm:
+    name: 'Build Rpm'
+    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@main
+    with:
+      PROJECT_NAME: sofia-sip
+      RUNNER: ubuntu-latest
+      PACKAGER: 'packager Andrey Volk <andrey@signalwire.com>'
+    secrets: inherit 
+
+  sofia_build_deb:
+    name: 'Build Deb'
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
+    strategy:
+      fail-fast: false
+      matrix:
+        BASE_IMAGE:
+          - signalwire/build-deb-action:bullseye
+          - signalwire/build-deb-action:buster
+          - signalwire/build-deb-action:stretch
+        PLATFORM:
+          - amd64
+          - arm
+    with:
+      PROJECT_NAME: sofia-sip
+      RUNNER: ubuntu-latest
+      BASE_IMAGE: ${{matrix.BASE_IMAGE}}
+      PLATFORM: linux/${{matrix.PLATFORM}}
+
+  distribute_matrix:
+    permissions: write-all
+    name: 'Copy to remote'
+    needs: [sofia_build_rpm, sofia_build_deb]
+    strategy:
+      matrix:
+        platform:
+          - deb-amd64
+          - deb-arm
+          - rpm-amd64
+    
+    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
+    with:
+      ARTIFACT_NAME: ${{ matrix.platform }}-artifact
+      TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{github.run_id}}
+      RUNNER: ubuntu-latest
+      FILES: '*.tar.gz'
+      CREATE_DESTINATION_FOLDERS: true
+    secrets: 
+      # Explicit define secrets for better understanding but it could be just inherit 
+      PROXY_URL: ${{ secrets.PROXY_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      HOSTNAME: ${{ secrets.HOSTNAME }}
+      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+
+  sync_changelog:
+    name: 'Sync changelog'
+    needs: [distribute_matrix]
+    uses: signalwire/actions-template/.github/workflows/cd-deb-syncchangelog.yml@main
+    with:
+      AUTHOR_EMAIL: 'no-reply@github.com'
+      TARGET_BRANCH: 'master'
+    secrets: 
+      PAT: ${{ secrets.PAT }}
+  
+  
