@@ -44,7 +44,7 @@ jobs:
         platform:
           - deb-amd64
           - deb-arm
-          - rpm-amd64
+          - rpm
     
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
