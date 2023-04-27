@@ -45,7 +45,7 @@ jobs:
           - deb-arm
           - rpm
     
-    uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2@feat/meta
+    uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2.yml@feat/meta
     with:
       ARTIFACT_NAME: ${{ matrix.platform }}-artifact
       TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{github.run_id}}-${{github.run_number}}
