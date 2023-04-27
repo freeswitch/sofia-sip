@@ -23,9 +23,9 @@ jobs:
       fail-fast: false
       matrix:
         BASE_IMAGE:
-          - signalwire/build-deb-action:bullseye-785fedf
-          - signalwire/build-deb-action:buster-785fedf
-          - signalwire/build-deb-action:stretch-785fedf
+          - signalwire/build-deb-action:bullseye
+          - signalwire/build-deb-action:buster
+          - signalwire/build-deb-action:stretch
         PLATFORM:
           - amd64
           - arm
@@ -34,6 +34,29 @@ jobs:
       RUNNER: ubuntu-latest
       BASE_IMAGE: ${{matrix.BASE_IMAGE}}
       PLATFORM: ${{matrix.PLATFORM}}
+
+  generate_meta:
+    name: 'Meta'
+    needs: [sofia_build_rpm, sofia_build_deb]
+    strategy:
+      matrix:
+        platform:
+          - deb-amd64
+          - deb-arm
+          - rpm
+    
+    uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2@feat/meta
+    with:
+      ARTIFACT_NAME: ${{ matrix.platform }}-artifact
+      TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{github.run_id}}-${{github.run_number}}
+      RUNNER: ubuntu-latest
+      FILES: '*.tar.gz'
+      CREATE_DESTINATION_FOLDERS: true
+    secrets: 
+      PROXY_URL: ${{ secrets.PROXY_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      HOSTNAME: ${{ secrets.HOSTNAME }}
+      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
 
   distribute_matrix:
     permissions: write-all
@@ -49,9 +72,34 @@ jobs:
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
       ARTIFACT_NAME: ${{ matrix.platform }}-artifact
-      TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{github.run_id}}
+      TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{github.run_id}}-${{github.run_number}}
       RUNNER: ubuntu-latest
       FILES: '*.tar.gz'
+      CREATE_DESTINATION_FOLDERS: true
+    secrets: 
+      # Explicit define secrets for better understanding but it could be just inherit 
+      PROXY_URL: ${{ secrets.PROXY_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      HOSTNAME: ${{ secrets.HOSTNAME }}
+      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+  
+  distribute_meta:
+    permissions: write-all
+    name: 'Copy meta to remote'
+    needs: generate_meta
+    strategy:
+      matrix:
+        os_platform:
+          - deb-amd64
+          - deb-arm
+          - rpm
+    
+    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
+    with:
+      ARTIFACT_NAME: ${{ matrix.os_platform }}-meta
+      TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{needs.generate_meta.outputs.TIME}}
+      RUNNER: ubuntu-latest
+      FILES: '*.txt'
       CREATE_DESTINATION_FOLDERS: true
     secrets: 
       # Explicit define secrets for better understanding but it could be just inherit 
@@ -62,12 +110,10 @@ jobs:
 
   sync_changelog:
     name: 'Sync changelog'
-    needs: [distribute_matrix]
+    needs: [distribute_matrix, distribute_meta]
     uses: signalwire/actions-template/.github/workflows/cd-deb-syncchangelog.yml@main
     with:
       AUTHOR_EMAIL: 'no-reply@github.com'
       TARGET_BRANCH: 'master'
     secrets: 
       PAT: ${{ secrets.PAT }}
-  
-  
