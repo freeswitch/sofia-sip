@@ -61,15 +61,15 @@ jobs:
     needs: [sofia_build_rpm, sofia_build_deb]
     strategy:
       matrix:
-        platform:
+        os_platform:
           - deb-amd64
           - deb-arm
           - rpm
     
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
-      ARTIFACT_NAME: ${{ matrix.platform }}-artifact
-      TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{github.run_id}}-${{github.run_number}}
+      ARTIFACT_NAME: ${{ matrix.os_platform }}-artifact
+      TARGET_FOLDER: /var/www/sofia-${{ matrix.os_platform }}/${{github.run_id}}-${{github.run_number}}
       RUNNER: ubuntu-latest
       FILES: '*.tar.gz'
       CREATE_DESTINATION_FOLDERS: true
@@ -94,12 +94,11 @@ jobs:
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
       ARTIFACT_NAME: ${{ matrix.os_platform }}-meta
-      TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{steps.generate_meta.outputs.TIME}}
+      TARGET_FOLDER: /var/www/sofia-${{ matrix.os_platform }}
       RUNNER: ubuntu-latest
       FILES: '*.txt'
-      CREATE_DESTINATION_FOLDERS: true
+      CREATE_DESTINATION_FOLDERS: false
     secrets: 
-      # Explicit define secrets for better understanding but it could be just inherit 
       PROXY_URL: ${{ secrets.PROXY_URL }}
       USERNAME: ${{ secrets.USERNAME }}
       HOSTNAME: ${{ secrets.HOSTNAME }}
