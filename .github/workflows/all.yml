@@ -17,6 +17,7 @@ jobs:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
       PACKAGER: 'packager Andrey Volk <andrey@signalwire.com>'
+      PLATFORM: amd64
     secrets: inherit 
 
   sofia_build_deb:
@@ -46,7 +47,7 @@ jobs:
         platform:
           - deb-amd64
           # - deb-arm
-          - rpm
+          - rpm-amd64
     
     uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2.yml@feat/meta
     with:
@@ -64,7 +65,7 @@ jobs:
         os_platform:
           - deb-amd64
           # - deb-arm
-          - rpm
+          - rpm-amd64
     
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
@@ -89,7 +90,7 @@ jobs:
         os_platform:
           - deb-amd64
           # - deb-arm
-          - rpm
+          - rpm-amd64
     
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
