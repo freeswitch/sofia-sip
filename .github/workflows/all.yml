@@ -31,7 +31,7 @@ jobs:
           - signalwire/build-deb-action:stretch
         PLATFORM:
           - amd64
-          - arm
+          # - arm
     with:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
       matrix:
         platform:
           - deb-amd64
-          - deb-arm
+          # - deb-arm
           - rpm
     
     uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2.yml@feat/meta
@@ -63,7 +63,7 @@ jobs:
       matrix:
         os_platform:
           - deb-amd64
-          - deb-arm
+          # - deb-arm
           - rpm
     
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
@@ -88,7 +88,7 @@ jobs:
       matrix:
         os_platform:
           - deb-amd64
-          - deb-arm
+          # - deb-arm
           - rpm
     
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
