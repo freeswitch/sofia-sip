@@ -12,7 +12,7 @@ jobs:
 
   sofia_build_rpm:
     name: 'Build Rpm'
-    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@main
+    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@feat/meta
     with:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
