@@ -94,7 +94,7 @@ jobs:
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
       ARTIFACT_NAME: ${{ matrix.os_platform }}-meta
-      TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{needs.generate_meta.outputs.TIME}}
+      TARGET_FOLDER: /var/www/sofia-${{ matrix.platform }}/${{steps.generate_meta.outputs.TIME}}
       RUNNER: ubuntu-latest
       FILES: '*.txt'
       CREATE_DESTINATION_FOLDERS: true
