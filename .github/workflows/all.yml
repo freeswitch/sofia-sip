@@ -3,6 +3,9 @@ name: Build and Distribute Sofia-Sip
 on:
   push:
     branches: [ master ]
+    paths:
+      - "**"
+      - "!debian/changelog"
   workflow_dispatch:
     
 jobs:
