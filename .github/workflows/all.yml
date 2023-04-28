@@ -111,5 +111,6 @@ jobs:
     with:
       AUTHOR_EMAIL: 'no-reply@github.com'
       TARGET_BRANCH: 'master'
+      RUNNER: ubuntu-latest
     secrets: 
       PAT: ${{ secrets.PAT }}
