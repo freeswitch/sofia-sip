@@ -48,6 +48,7 @@ jobs:
     uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2.yml@feat/meta
     with:
       ARTIFACT_NAME: ${{ matrix.platform }}-artifact
+      OS_PLATFORM: ${{ matrix.platform }}
       RUNNER: ubuntu-latest
       FILE_PATH_PREFIX: /var/www/sofia-${{ matrix.platform }}/${{github.run_id}}-${{github.run_number}}
 
