@@ -21,7 +21,7 @@ jobs:
 
   sofia_build_deb:
     name: 'Build Deb'
-    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@feat/meta
     strategy:
       fail-fast: false
       matrix:
