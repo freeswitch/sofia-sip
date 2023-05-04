@@ -81,33 +81,54 @@ jobs:
       HOSTNAME: ${{ secrets.HOSTNAME }}
       TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
   
-  distribute_meta:
+  distribute_meta_deb:
     permissions: write-all
     name: 'Copy meta to remote'
     needs: generate_meta
     strategy:
       matrix:
-        os_platform:
-          - deb-amd64
-          - deb-arm
-          - rpm-amd64
+        os:
+          - deb
+        platform:
+          - amd64
+          - arm
     
-    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
+    uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@main
     with:
-      ARTIFACT_NAME: ${{ matrix.os_platform }}-meta
-      TARGET_FOLDER: /var/www/sofia-${{ matrix.os_platform }}
+      ARTIFACT_NAME: ${{ matrix.os }}-${{matrix.platform}}-meta
+      LIB_NAME: sofia-sip
+      TARGET_OS: ${{ matrix.os }}
+      TARGET_PLATFORM: ${{ matrix.platform }}
       RUNNER: ubuntu-latest
-      FILES: '*.txt'
-      CREATE_DESTINATION_FOLDERS: false
+      TARGET_REPO: signalwire/bamboo_gha_trigger
     secrets: 
-      PROXY_URL: ${{ secrets.PROXY_URL }}
-      USERNAME: ${{ secrets.USERNAME }}
-      HOSTNAME: ${{ secrets.HOSTNAME }}
-      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+      GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
+  
+  distribute_meta_rpm:
+    permissions: write-all
+    name: 'Copy meta to remote'
+    needs: generate_meta
+    strategy:
+      matrix:
+        os:
+          - rpm
+        platform:
+          - amd64
+    
+    uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@main
+    with:
+      ARTIFACT_NAME: ${{ matrix.os }}-${{matrix.platform}}-meta
+      LIB_NAME: sofia-sip
+      TARGET_OS: ${{ matrix.os }}
+      TARGET_PLATFORM: ${{ matrix.platform }}
+      RUNNER: ubuntu-latest
+      TARGET_REPO: signalwire/bamboo_gha_trigger
+    secrets: 
+      GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
 
   sync_changelog:
     name: 'Sync changelog'
-    needs: [distribute_matrix, distribute_meta]
+    needs: [distribute_matrix, distribute_meta_deb, distribute_meta_rpm]
     uses: signalwire/actions-template/.github/workflows/cd-deb-syncchangelog.yml@main
     with:
       AUTHOR_EMAIL: 'no-reply@github.com'
