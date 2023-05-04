@@ -46,7 +46,7 @@ jobs:
       matrix:
         platform:
           - deb-amd64
-          - deb-arm
+          # - deb-arm
           - rpm-amd64
     
     uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2.yml@main
@@ -91,7 +91,7 @@ jobs:
           - deb
         platform:
           - amd64
-          - arm
+          # - arm
     
     uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@main
     with:
