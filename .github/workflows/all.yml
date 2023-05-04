@@ -32,7 +32,7 @@ jobs:
           - signalwire/build-deb-action:stretch
         PLATFORM:
           - amd64
-          - arm
+          # - arm
     with:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
