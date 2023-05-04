@@ -12,7 +12,7 @@ jobs:
 
   sofia_build_rpm:
     name: 'Build Rpm'
-    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@feat/meta
+    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@main
     with:
       PROJECT_NAME: sofia-sip
       RUNNER: ubuntu-latest
@@ -22,7 +22,7 @@ jobs:
 
   sofia_build_deb:
     name: 'Build Deb'
-    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@feat/meta
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
     strategy:
       fail-fast: false
       matrix:
@@ -49,7 +49,7 @@ jobs:
           - deb-arm
           - rpm-amd64
     
-    uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2.yml@feat/meta
+    uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2.yml@main
     with:
       ARTIFACT_NAME: ${{ matrix.platform }}-artifact
       OS_PLATFORM: ${{ matrix.platform }}
