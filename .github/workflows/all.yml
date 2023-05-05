@@ -128,9 +128,15 @@ jobs:
   
   distribute_hash:
     permissions: write-all
-    name: 'Copy meta to remote'
+    name: 'Copy hash to remote'
     needs: [distribute_meta_deb, distribute_meta_rpm]
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
+    strategy:
+      matrix:
+        os_platform:
+          - deb-amd64
+          # - deb-arm
+          - rpm-amd64
     with:
       RUNNER: ubuntu-latest
       CREATE_DESTINATION_FOLDERS: false
