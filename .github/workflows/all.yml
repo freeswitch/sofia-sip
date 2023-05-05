@@ -140,7 +140,7 @@ jobs:
     with:
       RUNNER: ubuntu-latest
       CREATE_DESTINATION_FOLDERS: false
-      EXEC_COMMANDS: 'echo "${{github.sha}}" > /var/www/sofia-${{ matrix.os_platform }}/${{github.run_id}}-${{github.run_number}}/metafile.txt'
+      EXEC_COMMANDS: 'echo "${{github.sha}}" > /var/www/sofia-${{ matrix.os_platform }}/${{github.run_id}}-${{github.run_number}}/hash.txt'
     secrets: 
       PROXY_URL: ${{ secrets.PROXY_URL }}
       USERNAME: ${{ secrets.USERNAME }}
