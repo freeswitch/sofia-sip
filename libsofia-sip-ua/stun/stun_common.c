@@ -250,6 +250,10 @@ int stun_parse_attr_error_code(stun_attr_t *attr, const unsigned char *p, unsign
   uint32_t tmp;
   stun_attr_errorcode_t *error;
 
+  if (len < 4) {
+    return -1;
+  }
+
   memcpy(&tmp, p, sizeof(uint32_t));
   tmp = ntohl(tmp);
   error = (stun_attr_errorcode_t *) malloc(sizeof(*error));
@@ -271,6 +275,11 @@ int stun_parse_attr_uint32(stun_attr_t *attr, const unsigned char *p, unsigned l
 {
   uint32_t tmp;
   stun_attr_changerequest_t *cr;
+
+  if (len < 4) {
+    return -1;
+  }
+
   cr = (stun_attr_changerequest_t *) malloc(sizeof(*cr));
   memcpy(&tmp, p, sizeof(uint32_t));
   cr->value = ntohl(tmp);
