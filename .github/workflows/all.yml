@@ -147,13 +147,3 @@ jobs:
       HOSTNAME: ${{ secrets.HOSTNAME }}
       TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
   
-  sync_changelog:
-    name: 'Sync changelog'
-    needs: [distribute_matrix, distribute_meta_deb, distribute_meta_rpm]
-    uses: signalwire/actions-template/.github/workflows/cd-deb-syncchangelog.yml@main
-    with:
-      AUTHOR_EMAIL: 'no-reply@github.com'
-      TARGET_BRANCH: 'master'
-      RUNNER: ubuntu-latest
-    secrets: 
-      PAT: ${{ secrets.PAT }}
