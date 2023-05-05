@@ -125,7 +125,23 @@ jobs:
       TARGET_REPO: signalwire/bamboo_gha_trigger
     secrets: 
       GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
-
+  
+  distribute_hash:
+    permissions: write-all
+    name: 'Copy meta to remote'
+    # needs: generate_meta
+    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
+    with:
+      RUNNER: ubuntu-latest
+      CREATE_DESTINATION_FOLDERS: false
+      EXEC_COMMANDS: 'echo "${{github.sha}}" > /var/www/sofia-${{ matrix.os_platform }}/${{github.run_id}}-${{github.run_number}}/metafile.txt'
+    secrets: 
+      # Explicit define secrets for better understanding but it could be just inherit 
+      PROXY_URL: ${{ secrets.PROXY_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      HOSTNAME: ${{ secrets.HOSTNAME }}
+      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+  
   sync_changelog:
     name: 'Sync changelog'
     needs: [distribute_matrix, distribute_meta_deb, distribute_meta_rpm]
