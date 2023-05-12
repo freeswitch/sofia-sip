@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 concurrency: 
-  group: {{ github.head_ref ||  github.ref }}
+  group: ${{ github.head_ref ||  github.ref }}
 
 jobs:
 
