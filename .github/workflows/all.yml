@@ -8,7 +8,8 @@ on:
       - "!debian/changelog"
   workflow_dispatch:
 
-concurrency: {{ github.head_ref ||  github.ref }}
+concurrency: 
+  group: {{ github.head_ref ||  github.ref }}
 
 jobs:
 
