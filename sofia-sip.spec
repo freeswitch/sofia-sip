@@ -1,5 +1,5 @@
 Name:           sofia-sip
-Version:        1.13.14
+Version:        1.13.15
 Release:        1%{?dist}
 Summary:        Sofia SIP User-Agent library
 
