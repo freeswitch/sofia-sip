@@ -71,6 +71,11 @@ typedef struct tport_nat_s tport_nat_t;
 #include <sofia-sip/rbtree.h>
 
 #include "tport_internal.h"
+#include <ifaddrs.h>
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+#include <sys/ioctl.h>
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -797,6 +802,51 @@ int tport_bind_socket(int socket,
   }
 #endif
 
+  if (tport_bind_socket_iface(socket, su, ai) < 0) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int tport_bind_socket_iface(int s,
+        su_sockaddr_t *su,
+		    su_addrinfo_t *ai)
+{
+  struct ifaddrs *addrs, *iap;
+  struct sockaddr_in *sa;
+  struct ifreq ifr;
+  char ipaddr[SU_ADDRSIZE + 2];
+
+  getifaddrs(&addrs);
+  for (iap = addrs; iap != NULL; iap = iap->ifa_next) {
+    if (iap->ifa_addr && (iap->ifa_flags & IFF_UP) && iap->ifa_addr->sa_family == su->su_family) {
+      sa = (struct sockaddr_in *)(iap->ifa_addr);
+      if(sa->sin_addr.s_addr == su->su_sin.sin_addr.s_addr) {
+        memset(&ifr, 0, sizeof(struct ifreq));
+        strncpy(ifr.ifr_name, (char const *) iap->ifa_name, IFNAMSIZ);
+
+        /* Assign socket to an already active access point (interface) */
+        ioctl(s, SIOCSIFNAME, &ifr);
+        if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0) {
+            SU_DEBUG_3(("socket: %d setsockopt(SO_BINDTODEVICE) error binding to ifc %s: %s\n",
+                 s, ifr.ifr_name, su_strerror(su_errno())));
+            freeifaddrs(addrs);
+            return -1;
+        }
+        SU_DEBUG_9(("socket: %d, bound %s to ifc: %s\n", s,
+            su_inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr)),
+            ifr.ifr_name));
+        freeifaddrs(addrs);
+        return 0;
+      }
+    }
+  }
+  freeifaddrs(addrs);
+
+  SU_DEBUG_3(("socket: %d: did not find ifc to bind %s\n",
+	    s, su_inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr))));
+  /* Technically it's not a "failure" */
   return 0;
 }
 
