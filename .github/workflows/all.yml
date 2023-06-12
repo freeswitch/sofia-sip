@@ -1,0 +1,152 @@
+name: Build and Distribute Sofia-Sip
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - "**"
+      - "!debian/changelog"
+  workflow_dispatch:
+
+concurrency: 
+  group: ${{ github.head_ref ||  github.ref }}
+
+jobs:
+
+  sofia_build_rpm:
+    name: 'Build Rpm'
+    uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@main
+    with:
+      PROJECT_NAME: sofia-sip
+      RUNNER: ubuntu-latest
+      PACKAGER: 'packager Andrey Volk <andrey@signalwire.com>'
+      PLATFORM: amd64
+    secrets: inherit 
+
+  sofia_build_deb:
+    name: 'Build Deb'
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
+    strategy:
+      fail-fast: false
+      matrix:
+        BASE_IMAGE:
+          - signalwire/build-deb-action:bullseye
+          - signalwire/build-deb-action:buster
+          - signalwire/build-deb-action:stretch
+        PLATFORM:
+          - amd64
+          - arm
+    with:
+      PROJECT_NAME: sofia-sip
+      RUNNER: ubuntu-latest
+      BASE_IMAGE: ${{matrix.BASE_IMAGE}}
+      PLATFORM: ${{matrix.PLATFORM}}
+
+  generate_meta:
+    name: 'Meta'
+    needs: [sofia_build_rpm, sofia_build_deb]
+    strategy:
+      matrix:
+        platform:
+          - deb-amd64
+          - deb-arm
+          - rpm-amd64
+    
+    uses: signalwire/actions-template/.github/workflows/ci-libs-metadata-v2.yml@main
+    with:
+      ARTIFACT_NAME: ${{ matrix.platform }}-artifact
+      OS_PLATFORM: ${{ matrix.platform }}
+      RUNNER: ubuntu-latest
+      FILE_PATH_PREFIX: /var/www/sofia-${{ matrix.platform }}/${{github.run_id}}-${{github.run_number}}
+
+  distribute_matrix:
+    permissions: write-all
+    name: 'Copy to remote'
+    needs: [sofia_build_rpm, sofia_build_deb]
+    strategy:
+      matrix:
+        os_platform:
+          - deb-amd64
+          - deb-arm
+          - rpm-amd64
+    
+    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
+    with:
+      ARTIFACT_NAME: ${{ matrix.os_platform }}-artifact
+      TARGET_FOLDER: /var/www/sofia-${{ matrix.os_platform }}/${{github.run_id}}-${{github.run_number}}
+      RUNNER: ubuntu-latest
+      FILES: '*.tar.gz'
+      CREATE_DESTINATION_FOLDERS: true
+    secrets: 
+      # Explicit define secrets for better understanding but it could be just inherit 
+      PROXY_URL: ${{ secrets.PROXY_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      HOSTNAME: ${{ secrets.HOSTNAME }}
+      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+  
+  distribute_meta_deb:
+    permissions: write-all
+    name: 'Copy meta to remote'
+    needs: generate_meta
+    strategy:
+      matrix:
+        os:
+          - deb
+        platform:
+          - amd64
+          - arm
+    
+    uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@main
+    with:
+      ARTIFACT_NAME: ${{ matrix.os }}-${{matrix.platform}}-meta
+      LIB_NAME: sofia-sip
+      TARGET_OS: ${{ matrix.os }}
+      TARGET_PLATFORM: ${{ matrix.platform }}
+      RUNNER: ubuntu-latest
+      TARGET_REPO: signalwire/bamboo_gha_trigger
+    secrets: 
+      GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
+  
+  distribute_meta_rpm:
+    permissions: write-all
+    name: 'Copy meta to remote'
+    needs: generate_meta
+    strategy:
+      matrix:
+        os:
+          - rpm
+        platform:
+          - amd64
+    
+    uses: signalwire/actions-template/.github/workflows/cd-libs-metadata.yml@main
+    with:
+      ARTIFACT_NAME: ${{ matrix.os }}-${{matrix.platform}}-meta
+      LIB_NAME: sofia-sip
+      TARGET_OS: ${{ matrix.os }}
+      TARGET_PLATFORM: ${{ matrix.platform }}
+      RUNNER: ubuntu-latest
+      TARGET_REPO: signalwire/bamboo_gha_trigger
+    secrets: 
+      GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
+  
+  distribute_hash:
+    permissions: write-all
+    name: 'Copy hash to remote'
+    needs: [distribute_meta_deb, distribute_meta_rpm]
+    uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
+    strategy:
+      matrix:
+        os_platform:
+          - deb-amd64
+          - deb-arm
+          - rpm-amd64
+    with:
+      RUNNER: ubuntu-latest
+      CREATE_DESTINATION_FOLDERS: false
+      EXEC_COMMANDS: 'echo "${{github.sha}}" > /var/www/sofia-${{ matrix.os_platform }}/${{github.run_id}}-${{github.run_number}}/hash.txt'
+    secrets: 
+      PROXY_URL: ${{ secrets.PROXY_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      HOSTNAME: ${{ secrets.HOSTNAME }}
+      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+  
