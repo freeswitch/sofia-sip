@@ -71,11 +71,13 @@ typedef struct tport_nat_s tport_nat_t;
 #include <sofia-sip/rbtree.h>
 
 #include "tport_internal.h"
+#if defined (__linux__)
 #include <ifaddrs.h>
 #if HAVE_NET_IF_H
 #include <net/if.h>
 #endif
 #include <sys/ioctl.h>
+#endif
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -801,14 +803,15 @@ int tport_bind_socket(int socket,
     }
   }
 #endif
-
+#if defined(__linux__)
   if (tport_bind_socket_iface(socket, su, ai) < 0) {
     return -1;
   }
-
+#endif
   return 0;
 }
 
+#if defined(__linux__)
 int tport_bind_socket_iface(int s,
         su_sockaddr_t *su,
 		    su_addrinfo_t *ai)
@@ -849,7 +852,7 @@ int tport_bind_socket_iface(int s,
   /* Technically it's not a "failure" */
   return 0;
 }
-
+#endif
 
 /** Indicate stack that a transport has been updated */
 void tport_has_been_updated(tport_t *self)

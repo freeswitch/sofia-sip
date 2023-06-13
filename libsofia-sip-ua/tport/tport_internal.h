@@ -440,9 +440,11 @@ void tport_base_timer(tport_t *self, su_time_t now);
 int tport_bind_socket(int socket,
 		      su_addrinfo_t *ai,
 		      char const **return_culprit);
+#if defined(__linux__)
 int tport_bind_socket_iface(int s,
 		      su_sockaddr_t *su,
 		      su_addrinfo_t *ai);
+#endif
 void tport_close(tport_t *self);
 int tport_shutdown0(tport_t *self, int how);
 
