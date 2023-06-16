@@ -82,9 +82,6 @@
  * <dt>-6</dt>
  * <dd>Query IP6 addresses (AAAA records).
  * </dd>
- * <dt>-v</dt>
- * <dd>Be verbatim.
- * </dd>
  * <dt></dt>
  * <dd>
  * </dd>
@@ -204,7 +201,7 @@ void usage(int exitcode)
 int main(int argc, char *argv[])
 {
   int exitcode = 0;
-  int o_sctp = 1, o_tls_sctp = 1, o_verbatim = 1;
+  int o_sctp = 1, o_tls_sctp = 1;
   int family = 0, multiple = 0;
   /*
   char const *dnsserver = NULL;
@@ -222,9 +219,7 @@ int main(int argc, char *argv[])
     return -1;
 
   while (argv[1] && argv[1][0] == '-') {
-    if (strcmp(argv[1], "-v") == 0)
-      o_verbatim++;
-    else if (strcmp(argv[1], "-6") == 0)
+    if (strcmp(argv[1], "-6") == 0)
       dig->ip6 = ++family;
     else if (strcmp(argv[1], "-4") == 0)
       dig->ip4 = ++family;

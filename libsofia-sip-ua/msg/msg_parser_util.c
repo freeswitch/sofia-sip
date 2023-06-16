@@ -1462,7 +1462,7 @@ issize_t msg_params_join(su_home_t *home,
 			 unsigned prune,
 			 int dup)
 {
-  size_t n, m, n_before, n_after, pruned, total = 0;
+  size_t n, m, n_before, n_after, pruned;
   msg_param_t *d = *dst;
 
   if (prune > 3)
@@ -1483,8 +1483,6 @@ issize_t msg_params_join(su_home_t *home,
       if (prune > 1)
 	continue;
     }
-    if (dup)
-      total += strlen(src[m]) + 1;
   }
 
   n_after = MSG_PARAMS_NUM(n + m - pruned + 1);

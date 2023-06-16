@@ -92,7 +92,7 @@ static void priv_sres_cb(stun_dns_lookup_t *self,
 
   for (i = 0; answer && answer[i] != NULL; i++) {
     sres_srv_record_t *rr = (sres_srv_record_t *) answer[i]->sr_srv;
-    if (rr && rr->srv_record && rr->srv_record->r_type == sres_type_srv) {
+    if (rr && rr->srv_record->r_type == sres_type_srv) {
       const char *tcp_name = STUN_SRV_SERVICE_TCP;
       const char *udp_name = STUN_SRV_SERVICE_UDP;
       if ((self->stun_state & stun_dns_tls) == 0 &&

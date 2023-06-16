@@ -67,7 +67,7 @@ SOFIAPUBFUN void sip_cloned_parser_destroy(void);
 SOFIAPUBFUN void sip_destroy_mclass(msg_mclass_t *mclass);
 
 /** Restore default SIP parser to non-extended */
-SOFIAPUBFUN void sip_default_mclass_restore();
+SOFIAPUBFUN void sip_default_mclass_restore(void);
 
 SOFIAPUBFUN int sip_update_default_mclass(msg_mclass_t const *mclass);
 SOFIAPUBFUN msg_mclass_t *sip_extend_mclass(msg_mclass_t *input);

@@ -135,7 +135,7 @@ int prefix##_resize(su_home_t *home, \
   size_t old_size; \
   size_t i, j, i0; \
   unsigned again = 0; \
-  size_t used = 0, collisions = 0; \
+  size_t used = 0; \
 \
   if (new_size == 0) \
     new_size = 2 * pr->pr##_size + 1; \
@@ -160,8 +160,7 @@ int prefix##_resize(su_home_t *home, \
 \
     i0 = hfun(old_hash[j]) % new_size; \
 \
-    for (i = i0; new_hash[i]; i = (i + 1) % new_size, assert(i != i0)) \
-      collisions++; \
+    for (i = i0; new_hash[i]; i = (i + 1) % new_size, assert(i != i0)); \
 \
     new_hash[i] = old_hash[j], old_hash[j] = NULL; \
     used++; \
