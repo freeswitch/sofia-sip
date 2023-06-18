@@ -73,7 +73,7 @@ msg_mclass_t const *sip_default_mclass(void)
 }
 
 /** Restore default SIP parser to non-extended */
-void sip_default_mclass_restore() {
+void sip_default_mclass_restore(void) {
 	_default = sip_mclass;
 }
 

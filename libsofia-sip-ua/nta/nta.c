@@ -2472,7 +2472,7 @@ int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
 
   /* Set via field magic for the tports */
   for (tp = primaries; tp; tp = tport_next(tp)) {
-    assert(via->v_common && via->v_common->h_data == tp);
+    assert(via && via->v_common[0].h_data == tp);
     v = tport_magic(tp);
     tport_set_magic(tp, new_via);
     msg_header_free(self->sa_home, (void *)v);
