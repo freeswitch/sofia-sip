@@ -814,7 +814,6 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 		ws_raw_write(wsh, fr, 4);
 	}
 
-	restore_socket(wsh->sock);
 
 	if (wsh->ssl) {
 		int code = 0;
@@ -829,21 +828,22 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 			goto ssl_finish_it;
 		}
 
-		code = SSL_shutdown(wsh->ssl);
-		if (code == 0) {
-			/* need to make sure there is no more data to read */
-			ws_raw_read(wsh, wsh->buffer, 9, WS_BLOCK);
-		}
+		SSL_shutdown(wsh->ssl);
+
 
 ssl_finish_it:
 		SSL_free(wsh->ssl);
 		wsh->ssl = NULL;
 	}
 
+	restore_socket(wsh->sock);
+
 	if (wsh->close_sock && wsh->sock != ws_sock_invalid) {
 #ifndef WIN32
+		shutdown(wsh->sock, SHUT_RDWR);
 		close(wsh->sock);
 #else
+		shutdown(wsh->sock, SD_BOTH);
 		closesocket(wsh->sock);
 #endif
 	}
