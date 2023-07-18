@@ -123,6 +123,9 @@ typedef struct {
   unsigned tpp_sdwn_error:1;	/**< If true, shutdown is error. */
   unsigned tpp_stun_server:1;	/**< If true, use stun server */
   unsigned tpp_pong2ping:1;	/**< If true, respond with pong to ping */
+  #if defined (__linux__)
+  unsigned tpp_socket_bind_ifc:1; /**< If true, force socket bind to the interface */
+  #endif
 
   unsigned :0;
 
@@ -440,10 +443,10 @@ void tport_base_timer(tport_t *self, su_time_t now);
 int tport_bind_socket(int socket,
 		      su_addrinfo_t *ai,
 		      char const **return_culprit);
-#if defined(__linux__)
-int tport_bind_socket_iface(int s,
-		      su_sockaddr_t *su,
-		      su_addrinfo_t *ai);
+#if HAVE_GETIFADDRS && defined (__linux__)
+int tport_bind_socket_iface(int socket,
+		      su_addrinfo_t *ai,
+		      char const **return_culprit);
 #endif
 void tport_close(tport_t *self);
 int tport_shutdown0(tport_t *self, int how);

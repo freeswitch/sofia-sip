@@ -71,7 +71,7 @@ typedef struct tport_nat_s tport_nat_t;
 #include <sofia-sip/rbtree.h>
 
 #include "tport_internal.h"
-#if defined (__linux__)
+#if HAVE_GETIFADDRS && defined (__linux__)
 #include <ifaddrs.h>
 #if HAVE_NET_IF_H
 #include <net/if.h>
@@ -520,6 +520,9 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   tpp->tpp_timeout = UINT_MAX;
   tpp->tpp_sigcomp_lifetime = UINT_MAX;
   tpp->tpp_socket_keepalive = 30;
+  #if defined (__linux__)
+  tpp->tpp_socket_bind_ifc = 0;
+  #endif
   tpp->tpp_keepalive = 0;
   tpp->tpp_pingpong = 0;
   tpp->tpp_pong2ping = 0;
@@ -803,53 +806,51 @@ int tport_bind_socket(int socket,
     }
   }
 #endif
-#if defined(__linux__)
-  if (tport_bind_socket_iface(socket, su, ai) < 0) {
-    return -1;
-  }
-#endif
+
   return 0;
 }
 
-#if defined(__linux__)
+#if HAVE_GETIFADDRS && defined (__linux__)
 int tport_bind_socket_iface(int s,
-        su_sockaddr_t *su,
-		    su_addrinfo_t *ai)
+		    su_addrinfo_t *ai,
+		    char const **return_culprit)
 {
+  su_sockaddr_t *su = (su_sockaddr_t *)ai->ai_addr;
   struct ifaddrs *addrs, *iap;
   struct sockaddr_in *sa;
   struct ifreq ifr;
   char ipaddr[SU_ADDRSIZE + 2];
 
-  getifaddrs(&addrs);
-  for (iap = addrs; iap != NULL; iap = iap->ifa_next) {
-    if (iap->ifa_addr && (iap->ifa_flags & IFF_UP) && iap->ifa_addr->sa_family == su->su_family) {
-      sa = (struct sockaddr_in *)(iap->ifa_addr);
-      if(sa->sin_addr.s_addr == su->su_sin.sin_addr.s_addr) {
-        memset(&ifr, 0, sizeof(struct ifreq));
-        strncpy(ifr.ifr_name, (char const *) iap->ifa_name, IFNAMSIZ);
+  if (getifaddrs(&addrs) == 0) {
+    for (iap = addrs; iap != NULL; iap = iap->ifa_next) {
+      if (iap->ifa_addr && (iap->ifa_flags & IFF_UP) && iap->ifa_addr->sa_family == su->su_family) {
+        sa = (struct sockaddr_in *)(iap->ifa_addr);
+        if(sa->sin_addr.s_addr == su->su_sin.sin_addr.s_addr) {
+          memset(&ifr, 0, sizeof(struct ifreq));
+          strncpy(ifr.ifr_name, (char const *) iap->ifa_name, IFNAMSIZ);
 
-        /* Assign socket to an already active access point (interface) */
-        ioctl(s, SIOCSIFNAME, &ifr);
-        if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0) {
-            SU_DEBUG_3(("socket: %d setsockopt(SO_BINDTODEVICE) error binding to ifc %s: %s\n",
-                 s, ifr.ifr_name, su_strerror(su_errno())));
-            freeifaddrs(addrs);
-            return -1;
+          /* Assign socket to an already active access point (interface) */
+          ioctl(s, SIOCSIFNAME, &ifr);
+          if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0) {
+              SU_DEBUG_3(("socket: %d setsockopt(SO_BINDTODEVICE) error binding to ifc %s: %s\n",
+                  s, ifr.ifr_name, su_strerror(su_errno())));
+              freeifaddrs(addrs);
+              return *return_culprit = "setsockopt", -1;
+          }
+          SU_DEBUG_9(("socket: %d, bound %s to ifc: %s\n", s,
+              su_inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr)),
+              ifr.ifr_name));
+          freeifaddrs(addrs);
+          return 0;
         }
-        SU_DEBUG_9(("socket: %d, bound %s to ifc: %s\n", s,
-            su_inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr)),
-            ifr.ifr_name));
-        freeifaddrs(addrs);
-        return 0;
       }
     }
-  }
-  freeifaddrs(addrs);
+    freeifaddrs(addrs);
 
-  SU_DEBUG_3(("socket: %d: did not find ifc to bind %s\n",
-	    s, su_inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr))));
-  /* Technically it's not a "failure" */
+    SU_DEBUG_3(("socket: %d: did not find ifc to bind %s\n",
+        s, su_inet_ntop(su->su_family, SU_ADDR(su), ipaddr, sizeof(ipaddr))));
+    /* Technically it's not a "failure" */
+  }
   return 0;
 }
 #endif
@@ -1276,6 +1277,9 @@ int tport_get_params(tport_t const *self,
 	       TPTAG_IDLE(tpp->tpp_idle),
 	       TPTAG_TIMEOUT(tpp->tpp_timeout),
 	       TPTAG_SOCKET_KEEPALIVE(tpp->tpp_socket_keepalive),
+#if defined (__linux__)
+         TPTAG_SOCKET_BIND_IFC(tpp->tpp_socket_bind_ifc),
+#endif
 	       TPTAG_KEEPALIVE(tpp->tpp_keepalive),
 	       TPTAG_PINGPONG(tpp->tpp_pingpong),
 	       TPTAG_PONG2PING(tpp->tpp_pong2ping),
@@ -1321,6 +1325,9 @@ int tport_set_params(tport_t *self,
 
   usize_t mtu;
   int connect, sdwn_error, reusable, stun_server, pong2ping;
+  #if defined (__linux__)
+  int socket_ifc;
+  #endif
 
   if (self == NULL)
     return su_seterrno(EINVAL);
@@ -1333,6 +1340,7 @@ int tport_set_params(tport_t *self,
   reusable = self->tp_reusable;
   stun_server = tpp->tpp_stun_server;
   pong2ping = tpp->tpp_pong2ping;
+  socket_ifc = tpp->tpp_socket_bind_ifc;
 
   ta_start(ta, tag, value);
 
@@ -1342,6 +1350,9 @@ int tport_set_params(tport_t *self,
 	      TPTAG_IDLE_REF(tpp->tpp_idle),
 	      TPTAG_TIMEOUT_REF(tpp->tpp_timeout),
 	      TPTAG_SOCKET_KEEPALIVE_REF(tpp->tpp_socket_keepalive),
+#if defined (__linux__)
+        TPTAG_SOCKET_BIND_IFC_REF(socket_ifc),
+#endif
 	      TPTAG_KEEPALIVE_REF(tpp->tpp_keepalive),
 	      TPTAG_PINGPONG_REF(tpp->tpp_pingpong),
 	      TPTAG_PONG2PING_REF(pong2ping),
