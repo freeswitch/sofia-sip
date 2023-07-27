@@ -2848,7 +2848,7 @@ static msg_dup_f sip_identity_dup_one;
 static msg_update_f sip_identity_update;
 
 msg_hclass_t sip_identity_class[] =
-SIP_HEADER_CLASS(identity, "Identity", "", id_common, non_compact_append, identity);
+SIP_HEADER_CLASS(identity, "Identity", "", id_common, single, identity);
 
 issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
