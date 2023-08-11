@@ -1084,6 +1084,7 @@ nua_handle_t *nua_stack_incoming_handle(nua_t *nua,
 				 SIPTAG_CALL_ID(sip->sip_call_id),
 				 SIPTAG_FROM(sip->sip_to),
 				 SIPTAG_TO(sip->sip_from),
+				 SIPTAG_VIA(sip->sip_via),
 				 NTATAG_REMOTE_CSEQ(sip->sip_cseq->cs_seq),
 				 TAG_END());
 
