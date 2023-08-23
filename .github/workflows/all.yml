@@ -30,6 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         BASE_IMAGE:
+          - signalwire/build-deb-action:bookworm
           - signalwire/build-deb-action:bullseye
           - signalwire/build-deb-action:buster
           - signalwire/build-deb-action:stretch
