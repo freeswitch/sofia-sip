@@ -2,7 +2,7 @@ name: Build and Distribute Sofia-Sip
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, test ]
     paths:
       - "**"
       - "!debian/changelog"
@@ -25,7 +25,7 @@ jobs:
 
   sofia_build_deb:
     name: 'Build Deb'
-    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
+    uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@fix/run-script-escapes
     strategy:
       fail-fast: false
       matrix:
