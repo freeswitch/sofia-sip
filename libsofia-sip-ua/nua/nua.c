@@ -925,6 +925,36 @@ void nua_handle_destroy(nua_handle_t *nh)
   }
 }
 
+/** Attempt to destroy a handle indirectly.
+ *
+ * Does not destroy the handle directly but forwards the nua_r_destroy_user event
+ * to the application so it could call nua_handle_destroy() from there.
+ *
+ * @param nh              Pointer to operation handle
+ *
+ * @return
+ *    nothing
+ *
+ * @par Related Tags:
+ *    none
+ *
+ * @par Events:
+ *    none
+ *
+ * * @since New in @VERSION_1_13_17.
+ *
+ * @sa nua_handle_destroy(), nua_handle(), nua_handle_bind(), nua_handle_ref(), nua_handle_unref(),
+ * nua_unregister(), nua_unpublish(), nua_unsubscribe(), nua_bye().
+ */
+void nua_handle_destroy_user(nua_handle_t *nh)
+{
+    enter;
+
+    if (NH_IS_VALID(nh)) {
+        nua_signal(nh->nh_nua, nh, NULL, nua_r_destroy_user, 0, NULL, TAG_END());
+    }
+}
+
 /* ---------------------------------------------------------------------- */
 
 struct nua_stack_handle_make_replaces_args {

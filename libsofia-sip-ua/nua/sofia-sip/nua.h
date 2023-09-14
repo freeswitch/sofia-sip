@@ -161,7 +161,8 @@ typedef enum nua_event_e {
   nua_i_register,		/**< Incoming REGISTER. @NEW_1_12_4. */
   nua_r_unref,			/** Calls nua_unref() from dispatcher @NEW_1_13_3 */
   nua_r_handle_unref,	/** Calls nua_handle_unref() from dispatcher @NEW_1_13_3 */
-  nua_r_nta_agent_resolver_clean_dns_cache /** Calls nua_resolver_clean_dns_cache() from dispatcher @NEW_1_13_12 */
+  nua_r_nta_agent_resolver_clean_dns_cache, /** Calls nua_resolver_clean_dns_cache() from dispatcher @NEW_1_13_12 */
+  nua_r_destroy_user    /** Requests dispatcher to forward the event to the app's callback @NEW_1_13_17 */
 } nua_event_t;
 
 typedef struct event_s {
@@ -218,6 +219,9 @@ SOFIAPUBFUN nua_handle_t *nua_handle(nua_t *nua, nua_hmagic_t *hmagic,
 
 /** Destroy a handle */
 SOFIAPUBFUN void nua_handle_destroy(nua_handle_t *h);
+
+/** Does not destroy the handle directly but forwards the nua_r_destroy_user event to the application so it could call nua_handle_destroy() from there. */
+SOFIAPUBFUN void nua_handle_destroy_user(nua_handle_t *h);
 
 /** Make a new reference to handle */
 SOFIAPUBFUN nua_handle_t *nua_handle_ref(nua_handle_t *);
