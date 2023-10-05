@@ -805,7 +805,7 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 		wsh->uri = NULL;
 	}
 
-	if (reason && wsh->sock != ws_sock_invalid) {
+	if (wsh->logical_established && reason && wsh->sock != ws_sock_invalid) {
 		uint16_t *u16;
 		uint8_t fr[4] = {WSOC_CLOSE | 0x80, 2, 0};
 
@@ -816,20 +816,21 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 
 
 	if (wsh->ssl) {
-		int code = 0;
-		int ssl_error = 0;
-		const char* buf = "0";
+		if(wsh->secure_established){
+			int code = 0;
+			int ssl_error = 0;
+			const char* buf = "0";
 
-		/* check if no fatal error occurs on connection */
-		code = SSL_write(wsh->ssl, buf, 1);
-		ssl_error = SSL_get_error(wsh->ssl, code);
+			/* check if no fatal error occurs on connection */
+			code = SSL_write(wsh->ssl, buf, 1);
+			ssl_error = SSL_get_error(wsh->ssl, code);
 
-		if (ssl_error == SSL_ERROR_SYSCALL || ssl_error == SSL_ERROR_SSL) {
-			goto ssl_finish_it;
+			if (ssl_error == SSL_ERROR_SYSCALL || ssl_error == SSL_ERROR_SSL) {
+				goto ssl_finish_it;
+			}
+
+			SSL_shutdown(wsh->ssl);
 		}
-
-		SSL_shutdown(wsh->ssl);
-
 
 ssl_finish_it:
 		SSL_free(wsh->ssl);
