@@ -78,7 +78,8 @@ typedef enum {
 	WS_NONE = 0,
 	WS_NORMAL = 1000,
 	WS_PROTO_ERR = 1002,
-	WS_DATA_TOO_BIG = 1009
+	WS_DATA_TOO_BIG = 1009,
+	WS_SSLERR = 1010
 } ws_cause_t;
 
 typedef enum {

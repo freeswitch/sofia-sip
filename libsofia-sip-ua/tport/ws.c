@@ -344,7 +344,9 @@ int ws_handshake(wsh_t *wsh)
 			ws_raw_write(wsh, respond, strlen(respond));
 		}
 
-		ws_close(wsh, WS_NONE);
+		if (wsh->sock != ws_sock_invalid) {
+			ws_close(wsh, WS_NONE);
+		}
 	}
 
 	return -1;
@@ -365,6 +367,10 @@ ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 	if (wsh->ssl) {
 		do {
 			//ERR_clear_error();
+			if ((!SSL_has_pending(wsh->ssl)) && wsh->down) {
+				r = -1;
+				goto end;
+			}
 			r = SSL_read(wsh->ssl, data, bytes);
 
 			if (r < 0) {
@@ -386,6 +392,11 @@ ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 
 		} while (r < 0 && SSL_WANT_READ_WRITE(ssl_err) && wsh->x < 1000);
 
+		if (!SSL_WANT_READ_WRITE(ssl_err) && r < 0) {
+			wss_error(wsh, ssl_err, "ws_raw_read: SSL_WRW");
+			return -1;
+			}
+			
 		goto end;
 	}
 
@@ -456,12 +467,12 @@ int wss_error(wsh_t *wsh, int ssl_err, char const *who)
 	case SSL_ERROR_ZERO_RETURN:
 		return 0;
 
+	case SSL_ERROR_SSL:
 	case SSL_ERROR_SYSCALL:
 		ERR_clear_error();
 		if (SSL_get_shutdown(wsh->ssl) & SSL_RECEIVED_SHUTDOWN)
 			return 0;			/* EOS */
-		if (errno == 0)
-			return 0;			/* EOS */
+		ws_close(wsh, WS_SSLERR);
 
 		errno = EIO;
 		return -1;
@@ -479,6 +490,11 @@ int wss_error(wsh_t *wsh, int ssl_err, char const *who)
 static ssize_t ws_raw_read_blocking(wsh_t *wsh, char *data, size_t max_bytes, int max_retries)
 {
 	ssize_t total_bytes_read = 0;
+
+	if (wsh->sock == ws_sock_invalid) {
+		return -3;
+	}
+
 	while (total_bytes_read < max_bytes && max_retries-- > 0) {
 		ssize_t bytes_read = ws_raw_read(wsh, data + total_bytes_read, max_bytes - total_bytes_read, WS_BLOCK);
 		if (bytes_read < 0) {
@@ -545,7 +561,7 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 
 		if (!sanity) ssl_err = -56;
 		
-		if (ssl_err) {
+		if (ssl_err <= 0) {
 			r = ssl_err;
 		}
 
@@ -669,6 +685,7 @@ int establish_logical_layer(wsh_t *wsh)
 			if (code < 0) {
 				int ssl_err = SSL_get_error(wsh->ssl, code);
 				if (!SSL_WANT_READ_WRITE(ssl_err)) {
+					printf("WS unexpected SSL error ssl_err %d errno %s fd %d\n",ssl_err, ssl_err == SSL_ERROR_SYSCALL ? strerror(errno):"no syscall error", wsh->sock);
 					wss_error(wsh, ssl_err, "establish_logical_layer: SSL_accept");
 					return -1;
 				}
@@ -694,11 +711,11 @@ int establish_logical_layer(wsh_t *wsh)
 
 	}
 
-	while (!wsh->down && !wsh->handshake) {
+	while (!wsh->down && !wsh->handshake && wsh->sock != ws_sock_invalid) {
 		int r = ws_handshake(wsh);
 
 		if (r < 0) {
-			wsh->down = 1;
+			//wsh->down = 1;
 			return -1;
 		}
 
@@ -768,8 +785,17 @@ void ws_destroy(wsh_t *wsh)
 		return;
 	}
 
-	if (!wsh->down) {
-		ws_close(wsh, WS_NONE);
+	if ((wsh->sock == ws_sock_invalid) && (!wsh->down)){
+		return;
+	}
+
+	if (!wsh->down && wsh->ssl) {
+		if (SSL_get_shutdown(wsh->ssl)) {
+			ws_close(wsh, WS_SSLERR);
+			}
+		else {
+			ws_close(wsh, WS_NONE);
+			}
 	}
 
 	if (wsh->down > 1) {
@@ -805,7 +831,7 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 		wsh->uri = NULL;
 	}
 
-	if (reason && wsh->sock != ws_sock_invalid) {
+	if (reason && reason != WS_SSLERR && wsh->sock != ws_sock_invalid) {
 		uint16_t *u16;
 		uint8_t fr[4] = {WSOC_CLOSE | 0x80, 2, 0};
 
@@ -816,12 +842,32 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 
 	restore_socket(wsh->sock);
 
+	if (reason == WS_SSLERR) {
+		SSL_free(wsh->ssl);
+		wsh->ssl = NULL;
+		}
+
 	if (wsh->ssl) {
 		int code = 0;
 		int ssl_error = 0;
 		const char* buf = "0";
 
 		/* check if no fatal error occurs on connection */
+		if (SSL_get_shutdown(wsh->ssl))	{
+			goto ssl_finish_it;
+			}
+
+		if (SSL_get_wfd(wsh->ssl) <= 0 || SSL_get_fd(wsh->ssl) <= 0) {
+			goto ssl_finish_it;
+			}
+
+		struct timeval tout = {5,0};
+		if (setsockopt(SSL_get_wfd(wsh->ssl), SOL_SOCKET, SO_SNDTIMEO, &tout, sizeof(tout)) < 0) {
+			goto ssl_finish_it;
+			}
+		else if (setsockopt(SSL_get_wfd(wsh->ssl), SOL_SOCKET, SO_RCVTIMEO, &tout, sizeof(tout)) < 0) {
+			goto ssl_finish_it;
+			}
 		code = SSL_write(wsh->ssl, buf, 1);
 		ssl_error = SSL_get_error(wsh->ssl, code);
 
@@ -840,7 +886,7 @@ ssl_finish_it:
 		wsh->ssl = NULL;
 	}
 
-	if (wsh->close_sock && wsh->sock != ws_sock_invalid) {
+	if (wsh->close_sock && wsh->sock != ws_sock_invalid && reason != WS_SSLERR) {
 #ifndef WIN32
 		close(wsh->sock);
 #else
@@ -887,6 +933,10 @@ ssize_t ws_read_frame(wsh_t *wsh, ws_opcode_t *oc, uint8_t **data)
 
 	ll = establish_logical_layer(wsh);
 
+	if ((ll == -1) && (!wsh->down)) {
+		ws_close(wsh, WS_SSLERR);
+		}
+
 	if (ll < 0) {
 		return ll;
 	}
@@ -922,7 +972,7 @@ ssize_t ws_read_frame(wsh_t *wsh, ws_opcode_t *oc, uint8_t **data)
 		{
 			wsh->plen = wsh->buffer[1] & 0x7f;
 			*data = (uint8_t *) &wsh->buffer[2];
-			return ws_close(wsh, 1000);
+			return ws_close(wsh, WS_NORMAL);
 		}
 		break;
 	case WSOC_CONTINUATION:
