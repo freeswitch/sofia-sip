@@ -115,6 +115,7 @@ typedef struct wsh_s {
 	int logical_established;
 	int stay_open;
 	int x;
+	int ssl_io_error;
 	void *write_buffer;
 	size_t write_buffer_len;
 

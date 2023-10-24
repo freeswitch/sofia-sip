@@ -634,6 +634,7 @@ int tport_ws_next_timer(tport_t *self,
 	}
 
 	if (punt) {
+		ws_destroy(&wstp->ws);
 		tport_close(self);
 
 		SU_DEBUG_7(("%s(%p): %s to " TPN_FORMAT "%s\n",
@@ -655,6 +656,7 @@ void tport_ws_timer(tport_t *self, su_time_t now)
   tport_ws_t *wstp = (tport_ws_t *)self;
 
   if (!strcmp("wss", self->tp_protoname) && !wstp->ws.secure_established) {
+    ws_destroy(&wstp->ws);
     tport_close(self);
   } else {
     tport_recv_timeout_timer(self, now);
