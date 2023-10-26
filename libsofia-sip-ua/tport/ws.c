@@ -392,11 +392,6 @@ ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 
 		} while (r < 0 && SSL_WANT_READ_WRITE(ssl_err) && wsh->x < 1000);
 
-		if (!SSL_WANT_READ_WRITE(ssl_err) && r < 0) {
-			wss_error(wsh, ssl_err, "ws_raw_read: SSL_WRW");
-			return -1;
-			}
-			
 		goto end;
 	}
 
@@ -469,6 +464,7 @@ int wss_error(wsh_t *wsh, int ssl_err, char const *who)
 
 	case SSL_ERROR_SSL:
 	case SSL_ERROR_SYSCALL:
+		wss_log_errors(1, who, ssl_err);
 		ERR_clear_error();
 		if (SSL_get_shutdown(wsh->ssl) & SSL_RECEIVED_SHUTDOWN)
 			return 0;			/* EOS */
@@ -685,7 +681,6 @@ int establish_logical_layer(wsh_t *wsh)
 			if (code < 0) {
 				int ssl_err = SSL_get_error(wsh->ssl, code);
 				if (!SSL_WANT_READ_WRITE(ssl_err)) {
-					printf("WS unexpected SSL error ssl_err %d errno %s fd %d\n",ssl_err, ssl_err == SSL_ERROR_SYSCALL ? strerror(errno):"no syscall error", wsh->sock);
 					wss_error(wsh, ssl_err, "establish_logical_layer: SSL_accept");
 					return -1;
 				}
@@ -715,7 +710,6 @@ int establish_logical_layer(wsh_t *wsh)
 		int r = ws_handshake(wsh);
 
 		if (r < 0) {
-			//wsh->down = 1;
 			return -1;
 		}
 
@@ -790,12 +784,7 @@ void ws_destroy(wsh_t *wsh)
 	}
 
 	if (!wsh->down && wsh->ssl) {
-		if (SSL_get_shutdown(wsh->ssl)) {
-			ws_close(wsh, WS_SSLERR);
-			}
-		else {
-			ws_close(wsh, WS_NONE);
-			}
+		ws_close(wsh, WS_NONE);
 	}
 
 	if (wsh->down > 1) {
@@ -851,17 +840,14 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 		int code = 0;
 		int ssl_error = 0;
 		const char* buf = "0";
+		struct timeval tout = {5,0};
 
 		/* check if no fatal error occurs on connection */
 		if (SSL_get_shutdown(wsh->ssl))	{
 			goto ssl_finish_it;
 			}
 
-		if (SSL_get_wfd(wsh->ssl) <= 0 || SSL_get_fd(wsh->ssl) <= 0) {
-			goto ssl_finish_it;
-			}
-
-		struct timeval tout = {5,0};
+		// we're closing down, do not wait > 5 seoncds
 		if (setsockopt(SSL_get_wfd(wsh->ssl), SOL_SOCKET, SO_SNDTIMEO, &tout, sizeof(tout)) < 0) {
 			goto ssl_finish_it;
 			}
@@ -933,7 +919,7 @@ ssize_t ws_read_frame(wsh_t *wsh, ws_opcode_t *oc, uint8_t **data)
 
 	ll = establish_logical_layer(wsh);
 
-	if ((ll == -1) && (!wsh->down)) {
+	if (ll == -1) {
 		ws_close(wsh, WS_SSLERR);
 		}
 
