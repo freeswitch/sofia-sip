@@ -740,8 +740,8 @@ int ws_init(wsh_t *wsh, ws_socket_t sock, SSL_CTX *ssl_ctx, int close_sock, int 
 	wsh->buflen = 1024 * 64;
 	wsh->bbuflen = wsh->buflen;
 
-	wsh->buffer = malloc(wsh->buflen);
-	wsh->bbuffer = malloc(wsh->bbuflen);
+	wsh->buffer = malloc(wsh->buflen + 1);
+	wsh->bbuffer = malloc(wsh->bbuflen + 1);
 	//printf("init %p %ld\n", (void *) wsh->bbuffer, wsh->bbuflen);
 	//memset(wsh->buffer, 0, wsh->buflen);
 	//memset(wsh->bbuffer, 0, wsh->bbuflen);
@@ -1020,7 +1020,7 @@ ssize_t ws_read_frame(wsh_t *wsh, ws_opcode_t *oc, uint8_t **data)
 					return ws_close(wsh, WS_NONE);
 				}
 
-				if ((tmp = realloc(wsh->bbuffer, wsh->bbuflen))) {
+				if ((tmp = realloc(wsh->bbuffer, wsh->bbuflen + 1))) {
 					wsh->bbuffer = tmp;
 				} else {
 					abort();
