@@ -268,7 +268,7 @@ int ws_handshake(wsh_t *wsh)
 		return -3;
 	}
 
-	while((bytes = ws_raw_read(wsh, wsh->buffer + wsh->datalen, wsh->buflen - wsh->datalen, WS_SOFT_BLOCK)) > 0) {
+	while((bytes = ws_raw_read(wsh, wsh->buffer + wsh->datalen, wsh->buflen - wsh->datalen, WS_NOBLOCK)) > 0) {
 		wsh->datalen += bytes;
 		if (strstr(wsh->buffer, "\r\n\r\n") || strstr(wsh->buffer, "\n\n")) {
 			break;
@@ -343,6 +343,10 @@ int ws_handshake(wsh_t *wsh)
 			respond[511] = 0;
 
 			ws_raw_write(wsh, respond, strlen(respond));
+		}
+
+		if (bytes == -2) {
+			return 0;
 		}
 
 		ws_close(wsh, WS_NONE);
@@ -515,9 +519,9 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 
 			//ERR_clear_error();
 			r = SSL_write(wsh->ssl, buf, size);
-			ssl_err = SSL_get_error(wsh->ssl, r);
 
 			if (r == 0) {
+				ssl_err = SSL_get_error(wsh->ssl, r);
 				if (SSL_IO_ERROR(ssl_err)) {
 					wsh->ssl_io_error = 1;
 				}
@@ -540,20 +544,22 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 						ms = 50;
 					}
 				}
+
 				ms_sleep(ms);
 			}
 
 			if (r < 0) {
 				ssl_err = SSL_get_error(wsh->ssl, r);
 
-				if (SSL_IO_ERROR(ssl_err)) {
-					wsh->ssl_io_error = 1;
-				}
-
 				if (!SSL_WANT_READ_WRITE(ssl_err)) {
+					if (SSL_IO_ERROR(ssl_err)) {
+						wsh->ssl_io_error = 1;
+					}
+
 					ssl_err = wss_error(wsh, ssl_err, "ws_raw_write: SSL_write");
 					break;
 				}
+
 				ssl_err = 0;
 			}
 
@@ -859,7 +865,7 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 				}
 
 				ms_sleep(10);
-			} else if (code != 0) {
+			} else { /* code != 0 */
 				goto ssl_finish_it;
 			}
 		}

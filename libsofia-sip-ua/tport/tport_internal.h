@@ -178,6 +178,7 @@ struct tport_s {
 
   su_time_t           tp_ktime;	        /**< Keepalive timer updated */
   su_time_t           tp_ptime;	        /**< Ping sent */
+  su_time_t           tp_ltime;	        /**< Logical Layer timer updated */
 
   tp_name_t           tp_name[1];	/**< Transport name.
 					 *
