@@ -613,11 +613,30 @@ int tport_ws_pong(tport_t *self)
   return send(self->tp_socket, "\r\n", 2, 0);
 }
 
+/** Calculate next timeout for logical layer */
+int tport_next_logical_layer_establish(tport_t *self,
+			 su_time_t *return_target,
+			 char const **return_why, unsigned timeout)
+{
+  if (timeout != 0 && timeout != UINT_MAX) {
+    if (!tport_has_queued(self)) {
+      su_time_t ntime = su_time_add(self->tp_ltime, timeout);
+      if (su_time_cmp(ntime, *return_target) < 0)
+	*return_target = ntime, *return_why = "logicallayer";
+    }
+  }
+
+  return 0;
+}
+
+
 /** Calculate next timer for WS. */
 int tport_ws_next_timer(tport_t *self,
 			 su_time_t *return_target,
 			 char const **return_why)
 {
+	unsigned timeout = self->tp_params->tpp_keepalive;
+
 	tport_ws_t *wstp = (tport_ws_t *)self;
 	int ll = establish_logical_layer(&wstp->ws);
 	int punt = 0;
@@ -626,14 +645,18 @@ int tport_ws_next_timer(tport_t *self,
 		punt = 1;
 	} else if (ll < 0) {
 		time_t now = time(NULL);
+		su_time_t sunow = su_now();
 		if (now - wstp->connected > 5) {
 			punt = 2;
 		}
+
+		self->tp_ltime = sunow;
 	} else {
-		self->tp_params->tpp_keepalive = 0;
+		timeout = 0;
 	}
 
 	if (punt) {
+		ws_destroy(&wstp->ws);
 		tport_close(self);
 
 		SU_DEBUG_7(("%s(%p): %s to " TPN_FORMAT "%s\n",
@@ -646,7 +669,7 @@ int tport_ws_next_timer(tport_t *self,
 
   return
     tport_next_recv_timeout(self, return_target, return_why) |
-    tport_next_keepalive(self, return_target, return_why);
+    tport_next_logical_layer_establish(self, return_target, return_why, timeout);
 }
 
 /** WS timer. */
@@ -655,10 +678,10 @@ void tport_ws_timer(tport_t *self, su_time_t now)
   tport_ws_t *wstp = (tport_ws_t *)self;
 
   if (!strcmp("wss", self->tp_protoname) && !wstp->ws.secure_established) {
+    ws_destroy(&wstp->ws);
     tport_close(self);
   } else {
     tport_recv_timeout_timer(self, now);
-    tport_keepalive_timer(self, now);
   }
   tport_base_timer(self, now);
 }

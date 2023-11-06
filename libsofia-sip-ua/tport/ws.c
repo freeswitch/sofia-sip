@@ -21,7 +21,8 @@
 #pragma warning(disable: 4706)
 #endif
 
-#define WS_BLOCK 1
+#define WS_BLOCK 10000	/* ms, blocks read operation for 10 seconds */
+#define WS_SOFT_BLOCK 1000 /* ms, blocks read operation for 1 second */
 #define WS_NOBLOCK 0
 
 #define WS_INIT_SANITY 5000
@@ -267,7 +268,7 @@ int ws_handshake(wsh_t *wsh)
 		return -3;
 	}
 
-	while((bytes = ws_raw_read(wsh, wsh->buffer + wsh->datalen, wsh->buflen - wsh->datalen, WS_BLOCK)) > 0) {
+	while((bytes = ws_raw_read(wsh, wsh->buffer + wsh->datalen, wsh->buflen - wsh->datalen, WS_NOBLOCK)) > 0) {
 		wsh->datalen += bytes;
 		if (strstr(wsh->buffer, "\r\n\r\n") || strstr(wsh->buffer, "\n\n")) {
 			break;
@@ -344,6 +345,10 @@ int ws_handshake(wsh_t *wsh)
 			ws_raw_write(wsh, respond, strlen(respond));
 		}
 
+		if (bytes == -2) {
+			return 0;
+		}
+
 		ws_close(wsh, WS_NONE);
 	}
 
@@ -351,6 +356,7 @@ int ws_handshake(wsh_t *wsh)
 
 }
 
+#define SSL_IO_ERROR(err) (err == SSL_ERROR_SYSCALL || err == SSL_ERROR_SSL)
 #define SSL_WANT_READ_WRITE(err) (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
 int wss_error(wsh_t *wsh, int ssl_err, char const *who);
 
@@ -358,6 +364,7 @@ ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 {
 	ssize_t r;
 	int ssl_err = 0;
+	int block_n = block / 10;
 
 	wsh->x++;
 	if (wsh->x > 250) ms_sleep(1);
@@ -367,7 +374,7 @@ ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 			//ERR_clear_error();
 			r = SSL_read(wsh->ssl, data, bytes);
 
-			if (r < 0) {
+			if (r <= 0) {
 				ssl_err = SSL_get_error(wsh->ssl, r);
 
 				if (SSL_WANT_READ_WRITE(ssl_err)) {
@@ -379,12 +386,16 @@ ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 					ms_sleep(10);
 				} else {
 					wss_error(wsh, ssl_err, "ws_raw_read: SSL_read");
+					if (SSL_IO_ERROR(ssl_err)) {
+						wsh->ssl_io_error = 1;
+					}
+
 					r = -1;
 					goto end;
 				}
 			}
 
-		} while (r < 0 && SSL_WANT_READ_WRITE(ssl_err) && wsh->x < 1000);
+		} while (r < 0 && SSL_WANT_READ_WRITE(ssl_err) && wsh->x < block_n);
 
 		goto end;
 	}
@@ -404,11 +415,11 @@ ssize_t ws_raw_read(wsh_t *wsh, void *data, size_t bytes, int block)
 				ms_sleep(10);
 			}
 		}
-	} while (r == -1 && xp_is_blocking(xp_errno()) && wsh->x < 1000);
+	} while (r == -1 && xp_is_blocking(xp_errno()) && wsh->x < block_n);
 
  end:
 
-	if (wsh->x >= 10000 || (block && wsh->x >= 1000)) {
+	if (wsh->x >= 10000 || (block && wsh->x >= block_n)) {
 		r = -1;
 	}
 
@@ -510,6 +521,11 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 			r = SSL_write(wsh->ssl, buf, size);
 
 			if (r == 0) {
+				ssl_err = SSL_get_error(wsh->ssl, r);
+				if (SSL_IO_ERROR(ssl_err)) {
+					wsh->ssl_io_error = 1;
+				}
+
 				ssl_err = -42;
 				break;
 			}
@@ -528,6 +544,7 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 						ms = 50;
 					}
 				}
+
 				ms_sleep(ms);
 			}
 
@@ -535,9 +552,14 @@ ssize_t ws_raw_write(wsh_t *wsh, void *data, size_t bytes)
 				ssl_err = SSL_get_error(wsh->ssl, r);
 
 				if (!SSL_WANT_READ_WRITE(ssl_err)) {
+					if (SSL_IO_ERROR(ssl_err)) {
+						wsh->ssl_io_error = 1;
+					}
+
 					ssl_err = wss_error(wsh, ssl_err, "ws_raw_write: SSL_write");
 					break;
 				}
+
 				ssl_err = 0;
 			}
 
@@ -600,34 +622,12 @@ static int setup_socket(ws_socket_t sock)
 
 }
 
-static int restore_socket(ws_socket_t sock)
-{
-	unsigned long v = 0;
-
-	if (ioctlsocket(sock, FIONBIO, &v) == SOCKET_ERROR) {
-		return -1;
-	}
-
-	return 0;
-
-}
-
 #else
 
 static int setup_socket(ws_socket_t sock)
 {
 	int flags = fcntl(sock, F_GETFL, 0);
 	return fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-}
-
-static int restore_socket(ws_socket_t sock)
-{
-	int flags = fcntl(sock, F_GETFL, 0);
-
-	flags &= ~O_NONBLOCK;
-
-	return fcntl(sock, F_SETFL, flags);
-
 }
 
 #endif
@@ -814,25 +814,60 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 		ws_raw_write(wsh, fr, 4);
 	}
 
-	restore_socket(wsh->sock);
-
 	if (wsh->ssl) {
-		int code = 0;
+		int code = 0, rcode = 0;
 		int ssl_error = 0;
-		const char* buf = "0";
+		int n = 0, block_n = WS_SOFT_BLOCK / 10;
 
-		/* check if no fatal error occurs on connection */
-		code = SSL_write(wsh->ssl, buf, 1);
-		ssl_error = SSL_get_error(wsh->ssl, code);
-
-		if (ssl_error == SSL_ERROR_SYSCALL || ssl_error == SSL_ERROR_SSL) {
+		/* SSL layer was never established or underlying IO error occured */
+		if (!wsh->secure_established || wsh->ssl_io_error) {
 			goto ssl_finish_it;
 		}
 
-		code = SSL_shutdown(wsh->ssl);
-		if (code == 0) {
-			/* need to make sure there is no more data to read */
-			ws_raw_read(wsh, wsh->buffer, 9, WS_BLOCK);
+		/* connection has been already closed */
+		if (SSL_get_shutdown(wsh->ssl) & SSL_SENT_SHUTDOWN) {
+				goto ssl_finish_it;
+		}
+
+		/* peer closes the connection */
+		if (SSL_get_shutdown(wsh->ssl) & SSL_RECEIVED_SHUTDOWN) {
+			SSL_shutdown(wsh->ssl);
+			goto ssl_finish_it;
+		}
+
+		/* us closes the connection. We do bidirection shutdown handshake */
+		for(;;) {
+			code = SSL_shutdown(wsh->ssl);
+			ssl_error = SSL_get_error(wsh->ssl, code);
+			if (code <= 0 && ssl_error == SSL_ERROR_WANT_READ) {
+				/* need to make sure there are no more data to read */
+				for(;;) {
+					if ((rcode = SSL_read(wsh->ssl, wsh->buffer, 9)) <= 0) {
+						ssl_error = SSL_get_error(wsh->ssl, rcode);
+						if (ssl_error == SSL_ERROR_ZERO_RETURN) {
+							break;
+						} else if (SSL_IO_ERROR(ssl_error)) {
+							goto ssl_finish_it;
+						} else if (ssl_error == SSL_ERROR_WANT_READ) {
+							if (++n == block_n) {
+								goto ssl_finish_it;
+							}
+
+							ms_sleep(10);
+						} else {
+							goto ssl_finish_it;
+						}
+					}
+				}
+			} else if (code == 0 || (code < 0 && ssl_error == SSL_ERROR_WANT_WRITE)) {
+				if (++n == block_n) {
+					goto ssl_finish_it;
+				}
+
+				ms_sleep(10);
+			} else { /* code != 0 */
+				goto ssl_finish_it;
+			}
 		}
 
 ssl_finish_it:
