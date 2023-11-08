@@ -3379,6 +3379,11 @@ tport_t *tport_tsend(tport_t *self,
     }
     resolved = 1;
 
+    if (!tport_is_recoverable(self)) {
+      SU_DEBUG_9(("tport_tsend(%p) transport is not recoverable!\n", (void *)self));
+      return self;
+    }
+
     self = tport_by_addrinfo(primary, msg_addrinfo(msg), tpn);
 
     if (!self)
@@ -3388,11 +3393,6 @@ tport_t *tport_tsend(tport_t *self,
   if (tport_is_primary(self)) {
     /* If primary, resolve the destination address, store it in the msg */
     if (!resolved && tport_resolve(self, msg, tpn) < 0) {
-      return NULL;
-    }
-
-    if (!tport_is_recoverable(self)) {
-      SU_DEBUG_9(("tport_tsend(%p) transport is not recoverable!\n", (void *)self));
       return NULL;
     }
 
