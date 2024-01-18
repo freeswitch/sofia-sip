@@ -4,7 +4,7 @@ This package was debianized by FreeSWITCH Solutions
 It was cloned from:
     git://github.com/freeswitch/sofia-sip
 
-Copyright (C) 2020 FreeSWITCH Solutions and others (see the
+Copyright (C) 2020-2024 FreeSWITCH Solutions and others (see the
 in individual files for a detailed list of copyright holders).
 
 This library is free software; you can redistribute it and/or
