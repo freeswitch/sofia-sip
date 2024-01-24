@@ -1,4 +1,4 @@
-name: Build and Distribute Sofia-Sip
+name: Build and Distribute
 
 on:
   push:
@@ -8,11 +8,11 @@ on:
       - "!debian/changelog"
   workflow_dispatch:
 
-concurrency: 
+concurrency:
   group: ${{ github.head_ref || github.ref }}
 
 jobs:
-  sofia_build_rpm:
+  build_rpm:
     name: 'Build RPM'
     uses: signalwire/actions-template/.github/workflows/ci-rpm-packages.yml@main
     with:
@@ -20,9 +20,9 @@ jobs:
       RUNNER: ubuntu-latest
       PACKAGER: 'packager Andrey Volk <andrey@signalwire.com>'
       PLATFORM: amd64
-    secrets: inherit 
+    secrets: inherit
 
-  sofia_build_deb:
+  build_deb:
     name: 'Build DEB'
     uses: signalwire/actions-template/.github/workflows/ci-deb-packages-v2.yml@main
     strategy:
@@ -45,7 +45,7 @@ jobs:
 
   generate_meta_rpm:
     name: 'Meta RPM'
-    needs: [ sofia_build_rpm ]
+    needs: [ build_rpm ]
     strategy:
       matrix:
         os:
@@ -61,7 +61,7 @@ jobs:
 
   generate_meta_deb:
     name: 'Meta DEB'
-    needs: [ sofia_build_deb ]
+    needs: [ build_deb ]
     strategy:
       matrix:
         os:
@@ -84,7 +84,7 @@ jobs:
   distribute_matrix_rpm:
     permissions: write-all
     name: 'Copy to remote RPM'
-    needs: [ sofia_build_rpm ]
+    needs: [ build_rpm ]
     strategy:
       matrix:
         os:
@@ -108,7 +108,7 @@ jobs:
   distribute_matrix_deb:
     permissions: write-all
     name: 'Copy to remote DEB'
-    needs: [ sofia_build_deb ]
+    needs: [ build_deb ]
     strategy:
       matrix:
         os:
@@ -185,7 +185,7 @@ jobs:
       TARGET_PLATFORM: ${{ matrix.platform }}
       RUNNER: ubuntu-latest
       TARGET_REPO: signalwire/bamboo_gha_trigger
-    secrets: 
+    secrets:
       GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
     concurrency:
       group: sofia-sip-${{ matrix.os }}-${{ matrix.platform }}
