@@ -1,6 +1,7 @@
 name: Build and Distribute
 
 on:
+  pull_request:
   push:
     branches: [ master ]
     paths:
@@ -44,6 +45,7 @@ jobs:
       PLATFORM: ${{ matrix.platform }}
 
   generate_meta_rpm:
+    if: (github.ref_type == 'branch' && github.base_ref == '')
     name: 'Meta RPM'
     needs: [ build_rpm ]
     strategy:
@@ -57,9 +59,10 @@ jobs:
       ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.platform }}-artifact
       OS_PLATFORM: ${{ matrix.os }}-${{ matrix.platform }}
       RUNNER: ubuntu-latest
-      FILE_PATH_PREFIX: /var/www/sofia-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}
+      FILE_PATH_PREFIX: /var/www/sofia-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}
 
   generate_meta_deb:
+    if: (github.ref_type == 'branch' && github.base_ref == '')
     name: 'Meta DEB'
     needs: [ build_deb ]
     strategy:
@@ -79,9 +82,10 @@ jobs:
       ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.codename }}-${{ matrix.platform }}-artifact
       OS_PLATFORM: ${{ matrix.os }}-${{ matrix.codename }}-${{ matrix.platform }}
       RUNNER: ubuntu-latest
-      FILE_PATH_PREFIX: /var/www/sofia-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}
+      FILE_PATH_PREFIX: /var/www/sofia-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}
 
   distribute_matrix_rpm:
+    if: (github.ref_type == 'branch' && github.base_ref == '')
     permissions: write-all
     name: 'Copy to remote RPM'
     needs: [ build_rpm ]
@@ -94,7 +98,7 @@ jobs:
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
       ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.platform }}-artifact
-      TARGET_FOLDER: /var/www/sofia-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}
+      TARGET_FOLDER: /var/www/sofia-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}
       RUNNER: ubuntu-latest
       FILES: '*.tar.gz'
       CREATE_DESTINATION_FOLDERS: true
@@ -106,6 +110,7 @@ jobs:
       TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
 
   distribute_matrix_deb:
+    if: (github.ref_type == 'branch' && github.base_ref == '')
     permissions: write-all
     name: 'Copy to remote DEB'
     needs: [ build_deb ]
@@ -124,7 +129,7 @@ jobs:
     uses: signalwire/actions-template/.github/workflows/cd-scp.yml@main
     with:
       ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.codename }}-${{ matrix.platform }}-artifact
-      TARGET_FOLDER: /var/www/sofia-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}
+      TARGET_FOLDER: /var/www/sofia-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}
       RUNNER: ubuntu-latest
       FILES: '*.tar.gz'
       CREATE_DESTINATION_FOLDERS: true
@@ -136,6 +141,7 @@ jobs:
       TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
 
   distribute_meta_rpm:
+    if: (github.ref_type == 'branch' && github.base_ref == '')
     permissions: write-all
     name: 'Copy meta to remote RPM'
     needs: [ generate_meta_rpm ]
@@ -150,6 +156,7 @@ jobs:
     with:
       ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.platform }}-meta
       LIB_NAME: sofia-sip
+      SOURCE_BRANCH: ${{ github.ref_name }}
       TARGET_OS: ${{ matrix.os }}
       TARGET_PLATFORM: ${{ matrix.platform }}
       RUNNER: ubuntu-latest
@@ -161,6 +168,7 @@ jobs:
       cancel-in-progress: false
 
   distribute_meta_deb:
+    if: (github.ref_type == 'branch' && github.base_ref == '')
     permissions: write-all
     name: 'Copy meta to remote DEB'
     needs: [ generate_meta_deb ]
@@ -181,6 +189,7 @@ jobs:
     with:
       ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.codename }}-${{ matrix.platform }}-meta
       LIB_NAME: sofia-sip
+      SOURCE_BRANCH: ${{ github.ref_name }}
       TARGET_OS: ${{ matrix.os }}
       TARGET_PLATFORM: ${{ matrix.platform }}
       RUNNER: ubuntu-latest
@@ -192,6 +201,7 @@ jobs:
       cancel-in-progress: true
 
   distribute_hash_rpm:
+    if: (github.ref_type == 'branch' && github.base_ref == '')
     permissions: write-all
     name: 'Copy hash to remote RPM'
     needs: [ distribute_meta_rpm ]
@@ -205,7 +215,7 @@ jobs:
     with:
       RUNNER: ubuntu-latest
       CREATE_DESTINATION_FOLDERS: false
-      EXEC_COMMANDS: 'echo "${{ github.sha }}" > /var/www/sofia-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}/hash.txt'
+      EXEC_COMMANDS: 'echo "${{ github.sha }}" > /var/www/sofia-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}/hash.txt'
     secrets:
       PROXY_URL: ${{ secrets.PROXY_URL }}
       USERNAME: ${{ secrets.USERNAME }}
@@ -213,6 +223,7 @@ jobs:
       TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
 
   distribute_hash_deb:
+    if: (github.ref_type == 'branch' && github.base_ref == '')
     permissions: write-all
     name: 'Copy hash to remote DEB'
     needs: [ distribute_meta_deb ]
@@ -227,7 +238,7 @@ jobs:
     with:
       RUNNER: ubuntu-latest
       CREATE_DESTINATION_FOLDERS: false
-      EXEC_COMMANDS: 'echo "${{ github.sha }}" > /var/www/sofia-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}/hash.txt'
+      EXEC_COMMANDS: 'echo "${{ github.sha }}" > /var/www/sofia-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.platform }}/${{ github.run_id }}-${{ github.run_number }}/hash.txt'
     secrets:
       PROXY_URL: ${{ secrets.PROXY_URL }}
       USERNAME: ${{ secrets.USERNAME }}
