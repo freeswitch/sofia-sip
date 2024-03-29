@@ -3525,7 +3525,6 @@ int nua_update_server_init(nua_server_request_t *sr)
   if (sr->sr_sdp) {		/* Check for overlap */
     nua_client_request_t *cr;
     nua_server_request_t *sr0;
-    int overlap = 0;
 
     /*
       A UAS that receives an UPDATE before it has generated a final
@@ -3542,18 +3541,29 @@ int nua_update_server_init(nua_server_request_t *sr)
       reject the UPDATE with a 500 response, and MUST include a Retry-After
       header field with a randomly chosen value between 0 and 10 seconds.
     */
-    for (cr = nh->nh_ds->ds_cr; cr; cr = cr->cr_next)
-      if ((overlap = cr->cr_offer_sent && !cr->cr_answer_recv))
+    for (sr0 = nh->nh_ds->ds_sr; sr0; sr0 = sr0->sr_next) {
+      /* Previous INVITE has not been ACKed */
+      if (sr0->sr_method == sip_method_invite)
 	break;
+      /* Or we have sent offer but have not received an answer */
+      if (sr->sr_sdp && sr0->sr_offer_sent && !sr0->sr_answer_recv)
+	break;
+      /* Or we have received request with offer but not sent an answer */
+      if (sr->sr_sdp && sr0->sr_offer_recv && !sr0->sr_answer_sent)
+	break;
+    }
 
-    if (!overlap)
-      for (sr0 = nh->nh_ds->ds_sr; sr0; sr0 = sr0->sr_next)
-	if ((overlap = sr0->sr_offer_recv && !sr0->sr_answer_sent))
-	  break;
+    if (sr0) {
+      /* Overlapping invites - RFC 3261 14.2 */
+      return nua_server_retry_after(sr, 500, "Overlapping Requests", 0, 10);
+    }
 
-    if (nh->nh_soa && overlap) {
-		return nua_server_retry_after(sr, 500, "Overlapping Offer/Answer", 1, 9);
-	}
+    for (cr = nh->nh_ds->ds_cr; cr; cr = cr->cr_next) {
+      if (cr->cr_usage == sr->sr_usage && cr->cr_orq && cr->cr_offer_sent)
+	/* Glare - RFC 3261 14.2 and RFC 3311 section 5.2 */
+	return SR_STATUS1(sr, SIP_491_REQUEST_PENDING);
+    }
+
 
     if (nh->nh_soa &&
 	soa_set_remote_sdp(nh->nh_soa, NULL, sr->sr_sdp, sr->sr_sdp_len) < 0) {
