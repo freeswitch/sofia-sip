@@ -35,6 +35,8 @@ jobs:
             runner: ubuntu-latest
           - name: arm32v7
             runner: ubuntu-latest
+          - name: arm64v8
+            runner: ubuntu-latest
         # exclude:
         #   - version: bookworm
         #     platform:
