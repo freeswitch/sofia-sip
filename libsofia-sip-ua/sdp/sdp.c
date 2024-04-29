@@ -1845,6 +1845,20 @@ unsigned sdp_media_count_with(sdp_session_t const *sdp,
   return count;
 }
 
+/** Find matching media line in SDP. */
+sdp_media_t** sdp_media_exists(sdp_session_t *sdp,
+                              sdp_media_t const *m0)
+{
+    sdp_media_t **m;
+
+    if (sdp != NULL)
+        for (m = &sdp->sdp_media; *m; m = &(*m)->m_next)
+            if (sdp_media_match_with(*m, m0))
+                return m;
+
+    return NULL;
+}
+
 /** Return true if media uses RTP */
 int sdp_media_uses_rtp(sdp_media_t const *m)
 {
