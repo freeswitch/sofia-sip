@@ -62,7 +62,7 @@ int save_until_final_response(CONDITION_PARAMS)
 
 /** Save events.
  *
- * Terminate when a event is saved.
+ * Terminate when an event is saved.
  */
 int save_until_received(CONDITION_PARAMS)
 {
