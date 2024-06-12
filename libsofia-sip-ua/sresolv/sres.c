@@ -3355,10 +3355,9 @@ int sres_resolver_error(sres_resolver_t *res, int socket)
 	break;
 
       {
-	int error;
-	socklen_t errorlen = sizeof error;
+	socklen_t errorlen = sizeof(errcode);
 	/* Get error, if any */
-	getsockopt(socket, SOL_SOCKET, SO_ERROR, (void *)&error, &errorlen);
+	getsockopt(socket, SOL_SOCKET, SO_ERROR, (void *)&errcode, &errorlen);
       }
 
       if (sres_resolver_report_error(res, socket, errcode,

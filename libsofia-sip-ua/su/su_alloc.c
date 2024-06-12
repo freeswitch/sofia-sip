@@ -526,11 +526,11 @@ void *sub_alloc(su_home_t *home,
     }
 
     /* OK, add the block to the hash table. */
-
-    sua = su_block_add(sub, data); assert(sua);
-    sua->sua_size = (unsigned)size;
-    sua->sua_home = zero > 1;
-
+	if (sub->sub_n) {
+		sua = su_block_add(sub, data); assert(sua);
+		sua->sua_size = (unsigned)size;
+		sua->sua_home = zero > 1;
+	}
     if (sub->sub_stats)
       su_home_stats_alloc(sub, preload, size, zero);
   }
