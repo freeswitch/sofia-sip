@@ -60,48 +60,11 @@ jobs:
       # REPO_USERNAME: 'signalwire'
       # REPO_PASSWORD: ${{ secrets.REPOTOKEN }}
 
-  rpm:
-    name: 'RPM'
-    permissions:
-      id-token: write
-      contents: read
-    uses: signalwire/actions-template/.github/workflows/cicd-docker-build-and-distribute.yml@main
-    strategy:
-      # max-parallel: 1
-      fail-fast: false
-      matrix:
-        os:
-          - centos
-        version:
-          - 7
-        platform:
-          - name: amd64
-            runner: ubuntu-latest
-    with:
-      RUNNER: ${{ matrix.platform.runner }}
-      ARTIFACTS_PATTERN: '.*\.(rpm)$'
-      DOCKERFILE: .github/docker/${{ matrix.os }}/${{ matrix.version }}/${{ matrix.platform.name }}/Dockerfile
-      MAINTAINER: 'Andrey Volk <andrey@signalwire.com>'
-      META_FILE_PATH_PREFIX: /var/www/sofia/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}
-      PLATFORM: ${{ matrix.platform.name }}
-      # REPO_DOMAIN: freeswitch.signalwire.com
-      TARGET_ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.version }}-${{ matrix.platform.name }}-artifact
-      UPLOAD_BUILD_ARTIFACTS: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.title, ':upload-artifacts') }}
-    secrets:
-      GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
-      HOSTNAME: ${{ secrets.HOSTNAME }}
-      PROXY_URL: ${{ secrets.PROXY_URL }}
-      USERNAME: ${{ secrets.USERNAME }}
-      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
-      # REPO_USERNAME: ${{ secrets.FSAUSER }}
-      # REPO_PASSWORD: ${{ secrets.FSAPASS }}
-
   meta:
     name: 'Publish build data to meta-repo'
     if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.title, ':upload-artifacts') }}
     needs:
       - deb
-      - rpm
     permissions:
       id-token: write
       contents: read
