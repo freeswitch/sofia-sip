@@ -10085,16 +10085,10 @@ static int outgoing_query_a(nta_outgoing_t *orq, struct sipdns_query *);
 static void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
 			      sres_record_t *answers[]);
 
-#ifdef __clang_analyzer__
-#define FUNC_ATTR_NONNULL(...) __attribute__((nonnull(__VA_ARGS__)))
-#else
-#define FUNC_ATTR_NONNULL(...)
-#endif
-
 static void outgoing_query_results(nta_outgoing_t *orq,
 				   struct sipdns_query *sq,
 				   char *results[],
-				   size_t rlen) FUNC_ATTR_NONNULL(3);
+				   size_t rlen);
 
 
 #define SIPDNS_503_ERROR 503, "DNS Error"
@@ -10901,7 +10895,7 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
   else if (found)
     results = &result;
 
-  for (i = j = 0; results && answers && answers[i]; i++) {
+  for (i = j = 0; (found > 0) && answers && answers[i]; i++) {
     char addr[SU_ADDRSIZE];
     sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
 
@@ -10923,10 +10917,7 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
 
   sres_free_answers(orq->orq_agent->sa_resolver, answers);
 
-  if (results)
-    outgoing_query_results(orq, sq, results, found);
-  else if (!q)
-    outgoing_resolving_error(orq, SIPDNS_503_ERROR);
+  outgoing_query_results(orq, sq, results, found);
 }
 #endif /* SU_HAVE_IN6 */
 
@@ -10987,7 +10978,7 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
   else if (found)
     results = &result;
 
-  for (i = j = 0; answers && answers[i]; i++) {
+  for (i = j = 0; (found > 0) && answers && answers[i]; i++) {
     char addr[SU_ADDRSIZE];
     sres_a_record_t const *a = answers[i]->sr_a;
 
@@ -11008,10 +10999,7 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
 
   sres_free_answers(orq->orq_agent->sa_resolver, answers);
 
-  if (results)
-    outgoing_query_results(orq, sq, results, found);
-  else if (!q)
-    outgoing_resolving_error(orq, SIPDNS_503_ERROR);
+  outgoing_query_results(orq, sq, results, found);
 }
 
 /** Store A/AAAA query results */
