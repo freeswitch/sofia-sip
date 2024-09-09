@@ -10883,44 +10883,44 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
 
   sr->sr_query = NULL;
 
-  if (answers) {
-    for (i = 0; answers[i]; i++) {
-      sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
-      if (aaaa->aaaa_record->r_status == 0 &&
-          aaaa->aaaa_record->r_type == sres_type_aaaa)
-        found++;
-    }
+  if (!answers) goto done;
+
+  for (i = 0; answers[i]; i++) {
+    sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
+    if (aaaa->aaaa_record->r_status == 0 &&
+        aaaa->aaaa_record->r_type == sres_type_aaaa)
+      found++;
   }
 
   if (found > 1)
     results = su_zalloc(home, (found + 1) * (sizeof *results));
   else if (found)
     results = &result;
+  else
+    goto done;
 
-  if (found) {
-    for (i = j = 0; answers[i]; i++) {
-      char addr[SU_ADDRSIZE];
-      sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
+  for (i = j = 0; answers[i]; i++) {
+    char addr[SU_ADDRSIZE];
+    sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
 
-      if (aaaa->aaaa_record->r_status ||
-          aaaa->aaaa_record->r_type != sres_type_aaaa)
-        continue;			      /* There was an error */
+    if (aaaa->aaaa_record->r_status ||
+        aaaa->aaaa_record->r_type != sres_type_aaaa)
+      continue;			      /* There was an error */
 
-      su_inet_ntop(AF_INET6, &aaaa->aaaa_addr, addr, sizeof(addr));
+    su_inet_ntop(AF_INET6, &aaaa->aaaa_addr, addr, sizeof(addr));
 
-      if (j == 0)
-        SU_DEBUG_5(("nta(%p): %s IN AAAA %s\n", (void *)orq,
-      	  aaaa->aaaa_record->r_name, addr));
-      else
-        SU_DEBUG_5(("nta(%p):  AAAA %s\n", (void *)orq, addr));
+    if (j == 0)
+      SU_DEBUG_5(("nta(%p): %s IN AAAA %s\n", (void *)orq,
+		  aaaa->aaaa_record->r_name, addr));
+    else
+      SU_DEBUG_5(("nta(%p):  AAAA %s\n", (void *)orq, addr));
 
-      assert(j < found);
-      results[j++] = su_strdup(home, addr);
-    }
+    assert(j < found);
+    results[j++] = su_strdup(home, addr);
   }
 
+done:
   sres_free_answers(orq->orq_agent->sa_resolver, answers);
-
   outgoing_query_results(orq, sq, results, found);
 }
 #endif /* SU_HAVE_IN6 */
@@ -10970,43 +10970,43 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
 
   sr->sr_query = NULL;
 
-  if (answers) {
-    for (i = 0; answers[i]; i++) {
-      sres_a_record_t const *a = answers[i]->sr_a;
-      if (a->a_record->r_status == 0 &&
-          a->a_record->r_type == sres_type_a)
-        found++;
-    }
+  if (!answers) goto done;
+
+  for (i = 0; answers[i]; i++) {
+    sres_a_record_t const *a = answers[i]->sr_a;
+    if (a->a_record->r_status == 0 &&
+        a->a_record->r_type == sres_type_a)
+      found++;
   }
 
   if (found > 1)
     results = su_zalloc(home, (found + 1) * (sizeof *results));
   else if (found)
     results = &result;
+  else 
+    goto done;
 
-  if (found) {
-    for (i = j = 0; answers[i]; i++) {
-      char addr[SU_ADDRSIZE];
-      sres_a_record_t const *a = answers[i]->sr_a;
+  for (i = j = 0; answers[i]; i++) {
+    char addr[SU_ADDRSIZE];
+    sres_a_record_t const *a = answers[i]->sr_a;
 
-      if (a->a_record->r_status ||
-      a->a_record->r_type != sres_type_a)
-        continue;			      /* There was an error */
+    if (a->a_record->r_status ||
+	a->a_record->r_type != sres_type_a)
+      continue;			      /* There was an error */
 
-      su_inet_ntop(AF_INET, &a->a_addr, addr, sizeof(addr));
+    su_inet_ntop(AF_INET, &a->a_addr, addr, sizeof(addr));
 
-      if (j == 0)
-        SU_DEBUG_5(("nta: %s IN A %s\n", a->a_record->r_name, addr));
-      else
-        SU_DEBUG_5(("nta(%p):  A %s\n", (void *)orq, addr));
+    if (j == 0)
+      SU_DEBUG_5(("nta: %s IN A %s\n", a->a_record->r_name, addr));
+    else
+      SU_DEBUG_5(("nta(%p):  A %s\n", (void *)orq, addr));
 
-      assert(j < found);
-      results[j++] = su_strdup(home, addr);
-    }
+    assert(j < found);
+    results[j++] = su_strdup(home, addr);
   }
 
+done:
   sres_free_answers(orq->orq_agent->sa_resolver, answers);
-
   outgoing_query_results(orq, sq, results, found);
 }
 
