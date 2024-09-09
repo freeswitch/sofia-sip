@@ -10876,18 +10876,20 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
   su_home_t *home = msg_home(orq->orq_request);
   struct sipdns_query *sq = sr->sr_current;
 
-  size_t i, j, found;
+  size_t i, j, found = 0;
   char *result, **results = NULL;
 
   assert(sq); assert(sq->sq_type == sres_type_aaaa);
 
   sr->sr_query = NULL;
 
-  for (i = 0, found = 0; answers && answers[i]; i++) {
-    sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
-    if (aaaa->aaaa_record->r_status == 0 &&
-        aaaa->aaaa_record->r_type == sres_type_aaaa)
-      found++;
+  if (answers) {
+    for (i = 0; answers[i]; i++) {
+      sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
+      if (aaaa->aaaa_record->r_status == 0 &&
+          aaaa->aaaa_record->r_type == sres_type_aaaa)
+        found++;
+    }
   }
 
   if (found > 1)
@@ -10895,24 +10897,26 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
   else if (found)
     results = &result;
 
-  for (i = j = 0; (found > 0) && answers && answers[i]; i++) {
-    char addr[SU_ADDRSIZE];
-    sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
+  if (found) {
+    for (i = j = 0; answers[i]; i++) {
+      char addr[SU_ADDRSIZE];
+      sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
 
-    if (aaaa->aaaa_record->r_status ||
-        aaaa->aaaa_record->r_type != sres_type_aaaa)
-      continue;			      /* There was an error */
+      if (aaaa->aaaa_record->r_status ||
+          aaaa->aaaa_record->r_type != sres_type_aaaa)
+        continue;			      /* There was an error */
 
-    su_inet_ntop(AF_INET6, &aaaa->aaaa_addr, addr, sizeof(addr));
+      su_inet_ntop(AF_INET6, &aaaa->aaaa_addr, addr, sizeof(addr));
 
-    if (j == 0)
-      SU_DEBUG_5(("nta(%p): %s IN AAAA %s\n", (void *)orq,
-		  aaaa->aaaa_record->r_name, addr));
-    else
-      SU_DEBUG_5(("nta(%p):  AAAA %s\n", (void *)orq, addr));
+      if (j == 0)
+        SU_DEBUG_5(("nta(%p): %s IN AAAA %s\n", (void *)orq,
+      	  aaaa->aaaa_record->r_name, addr));
+      else
+        SU_DEBUG_5(("nta(%p):  AAAA %s\n", (void *)orq, addr));
 
-    assert(j < found);
-    results[j++] = su_strdup(home, addr);
+      assert(j < found);
+      results[j++] = su_strdup(home, addr);
+    }
   }
 
   sres_free_answers(orq->orq_agent->sa_resolver, answers);
@@ -10959,18 +10963,20 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
   su_home_t *home = msg_home(orq->orq_request);
   struct sipdns_query *sq = sr->sr_current;
 
-  int i, j, found;
+  int i, j, found = 0;
   char *result, **results = NULL;
 
   assert(sq); assert(sq->sq_type == sres_type_a);
 
   sr->sr_query = NULL;
 
-  for (i = 0, found = 0; answers && answers[i]; i++) {
-    sres_a_record_t const *a = answers[i]->sr_a;
-    if (a->a_record->r_status == 0 &&
-        a->a_record->r_type == sres_type_a)
-      found++;
+  if (answers) {
+    for (i = 0; answers[i]; i++) {
+      sres_a_record_t const *a = answers[i]->sr_a;
+      if (a->a_record->r_status == 0 &&
+          a->a_record->r_type == sres_type_a)
+        found++;
+    }
   }
 
   if (found > 1)
@@ -10978,23 +10984,25 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
   else if (found)
     results = &result;
 
-  for (i = j = 0; (found > 0) && answers && answers[i]; i++) {
-    char addr[SU_ADDRSIZE];
-    sres_a_record_t const *a = answers[i]->sr_a;
+  if (found) {
+    for (i = j = 0; answers[i]; i++) {
+      char addr[SU_ADDRSIZE];
+      sres_a_record_t const *a = answers[i]->sr_a;
 
-    if (a->a_record->r_status ||
-	a->a_record->r_type != sres_type_a)
-      continue;			      /* There was an error */
+      if (a->a_record->r_status ||
+      a->a_record->r_type != sres_type_a)
+        continue;			      /* There was an error */
 
-    su_inet_ntop(AF_INET, &a->a_addr, addr, sizeof(addr));
+      su_inet_ntop(AF_INET, &a->a_addr, addr, sizeof(addr));
 
-    if (j == 0)
-      SU_DEBUG_5(("nta: %s IN A %s\n", a->a_record->r_name, addr));
-    else
-      SU_DEBUG_5(("nta(%p):  A %s\n", (void *)orq, addr));
+      if (j == 0)
+        SU_DEBUG_5(("nta: %s IN A %s\n", a->a_record->r_name, addr));
+      else
+        SU_DEBUG_5(("nta(%p):  A %s\n", (void *)orq, addr));
 
-    assert(j < found);
-    results[j++] = su_strdup(home, addr);
+      assert(j < found);
+      results[j++] = su_strdup(home, addr);
+    }
   }
 
   sres_free_answers(orq->orq_agent->sa_resolver, answers);
