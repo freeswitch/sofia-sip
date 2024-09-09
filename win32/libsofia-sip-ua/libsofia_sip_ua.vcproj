@@ -4302,7 +4302,6 @@
 					RelativePath="..\..\libsofia-sip-ua\sresolv\sofia-sip\sresolv.h"
 					>
 				</File>
-				</File>
 				<File
 					RelativePath="..\..\libsofia-sip-ua\sresolv\sofia-sip\sres_sip.h"
 					>
