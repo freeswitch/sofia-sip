@@ -13,8 +13,8 @@ concurrency:
   group: ${{ github.head_ref || github.ref }}
 
 jobs:
-  deb-fse:
-    name: 'DEB-FSE'
+  deb-fsa:
+    name: 'DEB-FSA'
     permissions:
       id-token: write
       contents: read
@@ -41,11 +41,11 @@ jobs:
     with:
       RUNNER: ${{ matrix.platform.runner }}
       ARTIFACTS_PATTERN: '.*\.(deb)$'
-      DOCKERFILE: .github/docker/${{ matrix.os }}/${{ matrix.version }}/${{ matrix.platform.name }}/fse.${{ matrix.release }}.Dockerfile
+      DOCKERFILE: .github/docker/${{ matrix.os }}/${{ matrix.version }}/${{ matrix.platform.name }}/fsa.${{ matrix.release }}.Dockerfile
       MAINTAINER: 'Andrey Volk <andrey@signalwire.com>'
-      META_FILE_PATH_PREFIX: /var/www/sofia-sip/fse/${{ matrix.release }}/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}
+      META_FILE_PATH_PREFIX: /var/www/sofia-sip/fsa/${{ matrix.release }}/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}
       PLATFORM: ${{ matrix.platform.name }}
-      TARGET_ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.version }}-${{ matrix.platform.name }}-fse-${{ matrix.release }}-artifact
+      TARGET_ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.version }}-${{ matrix.platform.name }}-fsa-${{ matrix.release }}-artifact
       UPLOAD_BUILD_ARTIFACTS: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.title, ':upload-artifacts') }}
     secrets:
       GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
@@ -99,14 +99,14 @@ jobs:
     name: 'Publish build data to meta-repo'
     if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.title, ':upload-artifacts') }}
     needs:
-      - deb-fse
+      - deb-fsa
       - deb-public
     permissions:
       id-token: write
       contents: read
     uses: signalwire/actions-template/.github/workflows/meta-repo-content.yml@main
     with:
-      META_CONTENT: '/var/www/sofia-sip/{fse,public}/{release,unstable}/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}'
+      META_CONTENT: '/var/www/sofia-sip/{fsa,public}/{release,unstable}/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}'
       META_REPO: signalwire/bamboo_gha_trigger
       META_REPO_BRANCH: trigger/sofia-sip/${{ github.ref_name }}
     secrets:
