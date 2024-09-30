@@ -5120,7 +5120,7 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
 
     if (leg_url && request_uri && url_cmp(leg_url, request_uri))
       continue;
-    if (leg_method && method_name && !su_casematch(method_name, leg_method))
+    if (leg_method == NULL || method_name && !su_casematch(method_name, leg_method))
       continue;
 
     /* Perfect match if both local and To have tag
@@ -6238,10 +6238,16 @@ static nta_incoming_t *incoming_find(nta_agent_t const *agent,
 
     /* RFC3261 - section 8.2.2.2 Merged Requests */
     if (return_merge) {
-      if (irq->irq_cseq->cs_method == cseq->cs_method &&
-	  strcmp(irq->irq_cseq->cs_method_name,
-		 cseq->cs_method_name) == 0)
-	*return_merge = irq, return_merge = NULL;
+      /* RFC3261 - section 17.2.3 Matching Requests to Server Transactions */
+      if (irq->irq_via->v_branch &&
+	  su_casematch(irq->irq_via->v_branch, v->v_branch) &&
+	  su_casematch(irq->irq_via->v_host, v->v_host) &&
+	  su_strmatch(irq->irq_via->v_port, v->v_port)) {
+        if (irq->irq_cseq->cs_method == cseq->cs_method &&
+	    strcmp(irq->irq_cseq->cs_method_name,
+		   cseq->cs_method_name) == 0)
+	  *return_merge = irq, return_merge = NULL;
+      }
     }
   }
 
