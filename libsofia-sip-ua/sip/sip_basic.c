@@ -2901,7 +2901,7 @@ issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
       ext = strchr(ppt, ';');
 
       if (ext) {
-          msg_param_t *params = su_alloc(home, sizeof(msg_param_t));
+          msg_param_t const *params = su_alloc(home, sizeof(msg_param_t));
           if (msg_params_d(home, &ext, &params) >= 0) {
               id->id_info_params = params;
           }
