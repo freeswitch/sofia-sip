@@ -259,6 +259,8 @@ struct nta_agent_s
   unsigned sa_in_timer:1;	/**< Set when executing timers */
   unsigned sa_use_timer_c:1;	/**< Application has set value for timer C */
 
+  unsigned sa_always_update_route_set:1;	/**< Always update route set */
+
   unsigned :0;
 
 #if HAVE_SMIME
@@ -1502,6 +1504,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   int use_naptr       = agent->sa_use_naptr;
   int use_srv         = agent->sa_use_srv;
   int srv_503         = agent->sa_srv_503;
+  int always_update_route_set = agent->sa_always_update_route_set;
   void *smime         = agent->sa_smime;
   uint32_t flags      = agent->sa_flags;
   int rport           = agent->sa_rport;
@@ -1569,6 +1572,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	      TPTAG_THRPSIZE_REF(threadpool),
 #endif
               NTATAG_SRV_503_REF(srv_503),
+	      NTATAG_ALWAYS_UPDATE_ROUTE_SET_REF(always_update_route_set),
 	      TAG_END());
   nC = tl_gets(tags,
 	       NTATAG_TIMER_C_REF(timer_c),
@@ -1733,6 +1737,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   agent->sa_use_naptr = use_naptr != 0;
   agent->sa_use_srv = use_srv != 0;
   agent->sa_srv_503 = srv_503 != 0;
+  agent->sa_always_update_route_set = always_update_route_set != 0;
   agent->sa_smime = smime;
   agent->sa_flags = flags & MSG_FLG_USERMASK;
   agent->sa_rport = rport != 0;
@@ -4761,7 +4766,8 @@ int nta_leg_server_route(nta_leg_t *leg,
 			 sip_record_route_t const *route,
 			 sip_contact_t const *contact)
 {
-  return leg_route(leg, route, NULL, contact, 1);
+  int always_update_route_set = leg->leg_agent->sa_always_update_route_set;
+  return leg_route(leg, route, NULL, contact, always_update_route_set ? 2 : 1);
 }
 
 /** Return route components. */
