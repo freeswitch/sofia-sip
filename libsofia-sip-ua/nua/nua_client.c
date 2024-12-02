@@ -1053,7 +1053,17 @@ int nua_client_response(nua_client_request_t *cr,
   cr->cr_status = status;
   cr->cr_phrase = phrase;
 
-  if (status < 200) {
+  if (status == 183) {
+    /**
+     * Save the new remote tag on To header during Session Progress
+     * to allow sending INFO messages to remote peer before 200 OK
+     */
+    if (sip) {
+      if (cr->cr_contactize)
+        nua_dialog_uac_route(nh, nh->nh_ds, sip, 1, cr->cr_initial);
+    }
+  }
+  else if (status < 200) {
     /* Xyzzy */
   }
   else if (sip && nua_client_check_restart(cr, status, phrase, sip)) {
@@ -1523,6 +1533,17 @@ int nua_base_client_response(nua_client_request_t *cr,
     nua_client_request_remove(cr);
 
   nua_client_report(cr, status, phrase, sip, cr->cr_orq, tags);
+
+  /**
+   * In Session Progress we need to update our sip_to tag to allow correct
+   * INFO messages to be sent before a 200 OK is received
+   */
+  if (status == 183 && method == sip_method_invite && !cr->cr_acked) {
+    nua_dialog_state_t *ds = nh->nh_ds;
+    if (ds && ds->ds_remote_tag && ds->ds_remote_tag[0] &&
+      sip_to_tag(nh->nh_home, sip->sip_to, ds->ds_remote_tag) < 0)
+      SU_DEBUG_3(("%s Cannot store remote tag in sip_to header\n", __func__));
+  }
 
   if (status < 200 ||
       /* Un-ACKed 2XX response to INVITE */
