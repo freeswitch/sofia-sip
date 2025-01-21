@@ -460,7 +460,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   return 0;
 }
 
-void tls_free(tls_t *tls)
+void tport_tls_free(tls_t *tls)
 {
   int ret;
   if (!tls)
@@ -473,7 +473,7 @@ void tls_free(tls_t *tls)
         /* The return value -1 means that the connection wasn't actually established */
         /* so it should be safe to not call shutdown again. We need to clear the eror */
         /* queue for other connections though. */
-        tls_log_errors(3, "tls_free", 0);
+        tls_log_errors(3, "tport_tls_free", 0);
         ret = 1;
       }
     } while (ret != 1);
@@ -514,7 +514,7 @@ tls_t *tls_init_master(tls_issues_t *ti)
 
   if (tls_init_context(tls, ti) < 0) {
     int err = errno;
-    tls_free(tls);
+    tport_tls_free(tls);
     errno = err;
     return NULL;
   }
@@ -544,7 +544,7 @@ tls_t *tls_init_master(tls_issues_t *ti)
 
     if (tls->bio_con == NULL) {
       tls_log_errors(1, "tls_init_master", 0);
-      tls_free(tls);
+      tport_tls_free(tls);
       errno = EIO;
       return NULL;
     }
@@ -581,7 +581,7 @@ tls_t *tls_init_secondary(tls_t *master, int sock, int accept)
 
   if (tls->con == NULL) {
     tls_log_errors(1, "tls_init_secondary", 0);
-    tls_free(tls);
+    tport_tls_free(tls);
     errno = EIO;
     return NULL;
   }
