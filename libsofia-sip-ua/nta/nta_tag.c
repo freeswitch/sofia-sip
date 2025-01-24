@@ -1547,6 +1547,20 @@ tag_typedef_t ntatag_srv_503 = BOOLTAG_TYPEDEF(srv_503);
 */
 tag_typedef_t ntatag_rseq = UINTTAG_TYPEDEF(rseq);
 
+/**@def NTATAG_ALWAYS_UPDATE_ROUTE_SET(x)
+ *
+ * If true, always update route set.
+ *
+ * @par Parameter type
+ *    boolean: true (non-zero or non-NULL pointer)
+ *          or false (zero or NULL pointer)
+ *
+ * @par Values
+ *    - true - enable always update route set
+ *    - false - disable always update route set
+ */
+tag_typedef_t ntatag_always_update_route_set = BOOLTAG_TYPEDEF(always_update_route_set);
+
 /* Status */
 
 /**@def NTATAG_S_IRQ_HASH_REF(x)
