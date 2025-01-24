@@ -32,9 +32,9 @@ jobs:
           - name: amd64
             runner: ubuntu-latest
           - name: arm32v7
-            runner: ubuntu-latest
+            runner: ubuntu-24.04-arm
           - name: arm64v8
-            runner: ubuntu-latest
+            runner: ubuntu-24.04-arm
     with:
       RUNNER: ${{ matrix.platform.runner }}
       ARTIFACTS_PATTERN: '.*\.(deb)$'
@@ -73,9 +73,9 @@ jobs:
           - name: amd64
             runner: ubuntu-latest
           - name: arm32v7
-            runner: ubuntu-latest
+            runner: ubuntu-24.04-arm
           - name: arm64v8
-            runner: ubuntu-latest
+            runner: ubuntu-24.04-arm
         release:
           - release
           - unstable
