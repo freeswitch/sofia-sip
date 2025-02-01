@@ -3258,6 +3258,15 @@ int tport_recv_error_report(tport_t *self)
   return -1;
 }
 
+/** Return true if transport is recoverable. */
+int tport_is_recoverable(tport_t const *self)
+{
+  return
+    self &&
+    strcmp("ws", self->tp_protoname) &&
+    strcmp("wss", self->tp_protoname);
+}
+
 /** Send a message.
  *
  * The function tport_tsend() sends a message using the transport @a self.
@@ -3369,6 +3378,11 @@ tport_t *tport_tsend(tport_t *self,
       return NULL;
     }
     resolved = 1;
+
+    if (!tport_is_recoverable(self)) {
+      SU_DEBUG_9(("tport_tsend(%p) transport is not recoverable!\n", (void *)self));
+      return self;
+    }
 
     self = tport_by_addrinfo(primary, msg_addrinfo(msg), tpn);
 
