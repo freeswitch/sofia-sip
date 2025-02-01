@@ -89,7 +89,7 @@ Certain static methods from tport.c were exposed to make this possible.
 
 2) Certificate subjects are copied out of the peer certificate before
 the first message is sent.  The next patch will include code that allows
-the stack to reject messages sent to a untrusted peer.
+the stack to reject messages sent to an untrusted peer.
 
 3) The tport module can now report whether a secondary has a verified
 certificate chain and the subjects of the peer certificate.
