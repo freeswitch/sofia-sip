@@ -224,7 +224,7 @@ SOFIAPUBFUN issize_t msg_parse_next_field(su_home_t *home, msg_header_t *prev,
 
 /** Encode a string. @HI */
 #define MSG_STRING_E(p, e, s) do { \
-  size_t _n = strlen(s); if (p + _n+1 < e) memcpy(p, s, _n+1); p+= _n; } while(0)
+  size_t _n = strlen(s); if (p + _n+1 <= e) memcpy(p, s, _n+1); p+= _n; } while(0)
 
 /** Duplicate string. @HI */
 #define MSG_STRING_DUP(p, d, s) \
