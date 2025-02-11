@@ -417,6 +417,12 @@ NTA_DLL extern tag_typedef_t ntatag_rseq;
 NTA_DLL extern tag_typedef_t ntatag_rseq_ref;
 #define NTATAG_RSEQ_REF(x) ntatag_rseq_ref, tag_uint_vr(&(x))
 
+NTA_DLL extern tag_typedef_t ntatag_always_update_route_set;
+#define NTATAG_ALWAYS_UPDATE_ROUTE_SET(x) ntatag_always_update_route_set, tag_bool_v((x))
+
+NTA_DLL extern tag_typedef_t ntatag_always_update_route_set_ref;
+#define NTATAG_ALWAYS_UPDATE_ROUTE_SET_REF(x) ntatag_always_update_route_set_ref, tag_bool_vr(&(x))
+
 /* ====================================================================== */
 /* Tags for statistics. */
 
