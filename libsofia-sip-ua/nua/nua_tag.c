@@ -673,6 +673,41 @@ tag_typedef_t nutag_call_tls_orq_connect_timeout = UINTTAG_TYPEDEF(call_tls_orq_
  * Reference tag for NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT().
  */
 
+/**@def NUTAG_INTERCEPT_QUERY_RESULTS(x)
+ *
+ * Controls the content of DNS results.
+ *
+ * Overrides NTATAG_INTERCEPT_QUERY_RESULTS()
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params(), nua_handle(), nua_set_hparams(),
+ *    nua_get_params(), nua_get_hparams(),
+ *    nua_register(), nua_unregister(),
+ *    nua_options(), nua_invite(), nua_ack(), nua_cancel(), nua_bye(),
+ *    nua_prack(), nua_update(), nua_info(),
+ *    nua_message(), nua_publish(), nua_unpublish(), nua_notifier(),
+ *    nua_subscribe(), nua_unsubscribe(), nua_notify(), nua_refer(),
+ *    nua_method(), nua_respond()
+ *    nua_authenticate().
+ *
+ * @par Parameter type
+ *    unsigned
+ *
+ * @par Values
+ * - 0 - Disabled
+ * - 1 - Enabled
+ *
+ * @NEW_1_13_18.
+ *
+ * Corresponding tag taking reference parameter is NUTAG_INTERCEPT_QUERY_RESULTS_REF().
+ */
+tag_typedef_t nutag_intercept_query_results = BOOLTAG_TYPEDEF(intercept_query_results);
+
+/**@def NUTAG_INTERCEPT_QUERY_RESULTS_REF(x)
+ *
+ * Reference tag for NUTAG_INTERCEPT_QUERY_RESULTS().
+ */
+
 /**@def NUTAG_MAX_SUBSCRIPTIONS(x)
  *
  * Set maximum number of simultaneous subscribers per single event server.

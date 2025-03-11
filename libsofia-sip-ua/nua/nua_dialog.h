@@ -81,6 +81,7 @@ struct nua_dialog_state
 					 * Should be non-NULL
 					 * if dialog is established.
 					 */
+  char const     *ds_intercepted_ip;
 
   struct nua_dialog_peer_info {
     sip_via_t        *nr_via;

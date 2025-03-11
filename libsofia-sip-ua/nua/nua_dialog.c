@@ -215,6 +215,8 @@ int nua_dialog_zap(nua_owner_t *own,
   nta_leg_destroy(ds->ds_leg), ds->ds_leg = NULL;
   /* Remote tag */
   su_free(own, (void *)ds->ds_remote_tag), ds->ds_remote_tag = NULL;
+  /* Intercepted IP */
+  su_free(own, (void *)ds->ds_intercepted_ip), ds->ds_intercepted_ip = NULL;
   /* Ready to set route/remote target */
   ds->ds_route = 0;
 
