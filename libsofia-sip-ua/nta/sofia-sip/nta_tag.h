@@ -417,6 +417,12 @@ NTA_DLL extern tag_typedef_t ntatag_rseq;
 NTA_DLL extern tag_typedef_t ntatag_rseq_ref;
 #define NTATAG_RSEQ_REF(x) ntatag_rseq_ref, tag_uint_vr(&(x))
 
+NTA_DLL extern tag_typedef_t ntatag_intercept_query_results;
+#define NTATAG_INTERCEPT_QUERY_RESULTS(x) ntatag_intercept_query_results, tag_ptr_v((x))
+
+NTA_DLL extern tag_typedef_t ntatag_intercept_results_ref;
+#define NTATAG_INTERCEPT_QUERY_RESULTS_REF(x) ntatag_intercept_query_results_ref, tag_ptr_vr(&(x))
+
 /* ====================================================================== */
 /* Tags for statistics. */
 

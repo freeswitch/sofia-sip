@@ -946,6 +946,7 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
   url_string_t * proxy = NH_PGET(nh, proxy);
   int call_tls_orq_connect_timeout_is_set = NH_PISSET(nh, call_tls_orq_connect_timeout);
   uint32_t call_tls_orq_connect_timeout = NH_PGET(nh, call_tls_orq_connect_timeout);
+  int intercept_query_results_is_set = NUA_PISSET(nh->nh_nua, nh, intercept_query_results);
 
   if (nh->nh_auth) {
     if (cr->cr_challenged ||
@@ -964,6 +965,8 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
 				    nua_client_request_ref(cr),
 				    NULL,
 				    msg,
+				    TAG_IF(intercept_query_results_is_set,
+					   NTATAG_INTERCEPT_QUERY_RESULTS(nh)),
 				    TAG_IF(proxy_is_set,
 					   NTATAG_DEFAULT_PROXY(proxy)),
 				    TAG_IF(call_tls_orq_connect_timeout_is_set,
@@ -978,6 +981,81 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
   return 0;
 }
 
+static inline void nua_client_intercept_response(nua_client_request_t *cr,
+                                                 int status,
+                                                 char const *phrase,
+                                                 sip_t const *sip)
+{
+  nua_handle_t *nh = cr->cr_owner;
+  nua_t *nua = nh ? nh->nh_nua : NULL;
+  nua_dialog_usage_t *du = cr->cr_usage;
+  unsigned intercept_query_results = nh ? NUA_PISSET(nh->nh_nua, nh, intercept_query_results) : 0;
+
+  if (intercept_query_results && sip && status != 408 && nua) {
+    /* At this point we have a successful response */
+    nua_dialog_state_t *ds = du ? du->du_dialog : NULL;
+
+    SU_DEBUG_0(("Normal response detected. Remembering IP...\n" VA_NONE));
+
+    if (!ds) {
+      ds = nh->nh_ds;
+    }
+
+    /* Let's remember the IP */
+    if (ds && ds->ds_intercepted_ip == NULL) {
+      const char *host = nta_outgoing_host(cr->cr_orq);
+
+      if (host) {
+        SU_DEBUG_0(("host remembered: [%s]\n", host));
+        ds->ds_intercepted_ip = su_strdup(ds->ds_owner->nh_home, host);
+      }
+    }
+  }
+}
+
+int nua_client_intercept_query_results(const void *nua_handle, void *_cr,
+                                        nta_outgoing_t *orq,
+                                        sip_t const *sip)
+{
+  nua_client_request_t *cr = (nua_client_request_t *)_cr;
+  char **results = NULL;
+  size_t found = 0;
+
+  if (nta_outgoing_query_results(orq, &results, &found) != NULL) {
+    /* See NTATAG_INTERCEPT_QUERY_RESULTS and NUTAG_INTERCEPT_QUERY_RESULTS */
+    nua_handle_t *nh = nua_handle ? (nua_handle_t *)nua_handle : cr->cr_owner;
+    nua_dialog_usage_t *du = cr ? cr->cr_usage : NULL;
+    nua_dialog_state_t *ds = du ? du->du_dialog : NULL;
+
+    SU_DEBUG_0(("Query results have been intercepted. Trying to override...\n" VA_NONE));
+
+    if (!ds && nh) {
+      ds = nh->nh_ds;
+    }
+
+    if (ds && ds->ds_intercepted_ip) {
+      if (found) {
+        msg_t *response = nta_outgoing_getresponse(orq);
+        su_home_t *home = response ? msg_home(response) : msg_home(nh);
+
+        SU_DEBUG_0(("Intercepted IP address: [%s]->[%s]\n", results[0], ds->ds_intercepted_ip));
+        results[0] = su_strdup(home, ds->ds_intercepted_ip);
+        msg_destroy(response);
+
+        if (found > 1) {
+          results[1] = NULL;
+        }
+      }
+    }
+
+    /* Function caller must return */
+    return 1;
+  }
+
+  /* No-op */
+  return 0;
+}
+
 /** Callback for nta client transaction */
 int
 nua_client_orq_response(nua_client_request_t *cr,
@@ -986,6 +1064,11 @@ nua_client_orq_response(nua_client_request_t *cr,
 {
   int status;
   char const *phrase;
+
+  /* See NTATAG_INTERCEPT_QUERY_RESULTS and NUTAG_INTERCEPT_QUERY_RESULTS */
+  if (nua_client_intercept_query_results(NULL, cr, orq, sip)) {
+    return 0;
+  }
 
   if (sip && sip->sip_status) {
     status = sip->sip_status->st_status;
@@ -1040,6 +1123,8 @@ int nua_client_response(nua_client_request_t *cr,
   nua_handle_t *nh = cr->cr_owner;
   nua_dialog_usage_t *du = cr->cr_usage;
   int retval = 0;
+
+  nua_client_intercept_response(cr, status,phrase, sip);
 
   if (cr->cr_restarting)
     return 0;
