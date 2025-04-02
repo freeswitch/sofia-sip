@@ -10,6 +10,10 @@
 
 AM_CPPFLAGS = 		-I$(srcdir)/../ipt -I../ipt \
 			-I$(srcdir)/../msg -I../msg \
+			-I$(srcdir)/../nua -I../nua \
+			-I$(srcdir)/../sdp -I../sdp \
+			-I$(srcdir)/../nea -I../nea \
+			-I$(srcdir)/../soa -I../soa \
 			-I$(srcdir)/../sip -I../sip \
 			-I$(srcdir)/../bnf -I../bnf \
 			-I$(srcdir)/../sresolv -I../sresolv \
@@ -51,6 +55,10 @@ COVERAGE_INPUT = 	$(libnta_la_SOURCES) $(include_sofia_HEADERS)
 
 LDADD = 		libnta.la \
 			../ipt/libipt.la \
+			../nua/libnua.la \
+			../sdp/libsdp.la \
+			../nea/libnea.la \
+			../soa/libsoa.la \
 			../sip/libsip.la \
 			../features/libfeatures.la \
 			../sresolv/libsresolv.la \
