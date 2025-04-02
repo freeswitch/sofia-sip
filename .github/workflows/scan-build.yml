@@ -1,0 +1,113 @@
+name: Scan build (Static Analysis)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - synchronize
+  workflow_dispatch:
+
+jobs:
+  scan-build:
+    runs-on: ubuntu-latest
+    container:
+      image: signalwire/freeswitch-public-ci-base:bookworm-amd64
+      options: --privileged
+    env:
+      DEBIAN_FRONTEND: noninteractive
+
+    steps:
+      - name: Checkout Sofia-SIP
+        uses: actions/checkout@v4
+        with:
+          repository: freeswitch/sofia-sip
+          path: sofia-sip
+
+      - name: Bootstrap
+        shell: bash
+        working-directory: sofia-sip
+        run: |
+          ./autogen.sh
+
+      - name: Configure
+        shell: bash
+        working-directory: sofia-sip
+        run: |
+          ./configure --with-pic --without-doxygen --disable-stun
+
+      - name: Run and Check scan-build analysis
+        shell: bash
+        working-directory: sofia-sip
+        run: |
+          if ! command -v scan-build-14 > /dev/null 2>&1; then
+            echo "Error: scan-build-14 command not found. Please ensure clang static analyzer is installed." >&2
+            exit 1
+          fi
+
+          mkdir -p scan-build
+
+          scan-build-14 \
+            --force-analyze-debug-code \
+            --status-bugs \
+            -o ./scan-build/ \
+            make --no-keep-going -j$(nproc --all) |& tee ./scan-build-result.txt
+          build_status=${PIPESTATUS[0]}
+
+          if ! grep -siq "scan-build: No bugs found" ./scan-build-result.txt; then
+            echo "scan-build: bugs found!"
+            exit 1
+          fi
+
+          if [[ $build_status != "0" ]]; then
+            echo "scan-build: compilation failed!"
+            exit $build_status
+          fi
+
+      - name: Upload Scan-Build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-build-logs
+          path: sofia-sip/scan-build
+          if-no-files-found: ignore
+          compression-level: 9
+
+      - name: Comment PR with Scan-Build logs
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+
+            const scanBuildArtifact = artifacts.data.artifacts.find(
+              artifact => artifact.name === "scan-build-logs"
+            );
+
+            if (scanBuildArtifact) {
+              const artifactUrl = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/artifacts/${scanBuildArtifact.id}`;
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `⚠️ Scan-Build has detected potential issues.\n\nView the scan-build logs here: ${artifactUrl}`
+              });
+            }
+
+      - name: Notify run tests result to slack
+        if: |
+          failure() &&
+          github.event_name == 'push' &&
+          (github.ref == 'refs/heads/master')
+        uses: signalwire/actions-template/.github/actions/slack@main
+        with:
+          CHANNEL: ${{ secrets.SLACK_DEVOPS_CI_CHANNEL }}
+          MESSAGE: Scan-Build ${{ github.repository }} > <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.run_id }}>. Static analysis failed.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
