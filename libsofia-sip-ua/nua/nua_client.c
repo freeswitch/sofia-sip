@@ -947,7 +947,7 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
   url_string_t * proxy = NH_PGET(nh, proxy);
   int call_tls_orq_connect_timeout_is_set = NH_PISSET(nh, call_tls_orq_connect_timeout);
   uint32_t call_tls_orq_connect_timeout = NH_PGET(nh, call_tls_orq_connect_timeout);
-  int intercept_query_results_is_set = NUA_PISSET(nh->nh_nua, nh, intercept_query_results);
+  int intercept_query_results_is_set = NH_PGET(nh, intercept_query_results);
 
   if (nh->nh_auth) {
     if (cr->cr_challenged ||
@@ -997,7 +997,7 @@ static inline void nua_client_intercept_response(nua_client_request_t *cr,
   nua_handle_t *nh = cr->cr_owner;
   nua_t *nua = nh ? nh->nh_nua : NULL;
   nua_dialog_usage_t *du = cr->cr_usage;
-  unsigned intercept_query_results = nh ? NUA_PISSET(nh->nh_nua, nh, intercept_query_results) : 0;
+  unsigned intercept_query_results = nh ? NH_PGET(nh, intercept_query_results) : 0;
 
   if (intercept_query_results && sip && status != 408 && nua) {
     /* At this point we have a successful response */

@@ -1361,7 +1361,7 @@ int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags)
 
     proxy_is_set = NH_PISSET(nh, proxy);
     proxy = NH_PGET(nh, proxy);
-    intercept_query_results_is_set = NUA_PISSET(nh->nh_nua, nh, intercept_query_results);
+    intercept_query_results_is_set = NH_PGET(nh, intercept_query_results);
     if (intercept_query_results_is_set) {
         intercept_nh = nua_handle_ref(nh);
     }
