@@ -264,7 +264,7 @@ int nua_stack_process_request(nua_handle_t *nh,
   if (sr->sr_status <= 100) {
 	  	  SR_STATUS1(sr, SIP_100_TRYING);
     if ((method == sip_method_invite && nh->nh_prefs->nhp_auto_invite_100) ||
-        sip->sip_timestamp) {
+        (sip->sip_timestamp && method != sip_method_invite)) {
 		nta_incoming_treply(irq, SIP_100_TRYING,
 							SIPTAG_USER_AGENT_STR(user_agent),
 							TAG_END());
