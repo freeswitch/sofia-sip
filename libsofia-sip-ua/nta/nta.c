@@ -8196,6 +8196,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
     SU_DEBUG_3(("nta outgoing create: %s\n",
 		invalid < 0 ? "invalid URI" :
 		!orq->orq_branch ? "no branch" : "invalid message"));
+    orq->orq_intercept_query_results = 0; /* Let the caller do nua_handle_unref for it */
     outgoing_free(orq);
     return NULL;
   }
@@ -8221,8 +8222,10 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
 
     if (orq->orq_status < 300)
       retval = (void *)-1;	/* NONE */
-    else
-      retval = NULL, orq->orq_request = NULL;
+    else {
+        retval = NULL, orq->orq_request = NULL;
+        orq->orq_intercept_query_results = 0; /* Let the caller do nua_handle_unref (su_home_unref) for it */
+    }
 
     outgoing_free(orq);
 
@@ -8920,6 +8923,11 @@ void outgoing_reclaim(nta_outgoing_t *orq)
   if (orq->orq_resolver)
     outgoing_destroy_resolver(orq);
 #endif
+  if (orq->orq_intercept_query_results) {
+      su_home_unref((su_home_t *)orq->orq_intercept_query_results);
+      orq->orq_intercept_query_results = 0;
+  }
+
   su_free(orq->orq_agent->sa_home, orq);
 }
 
@@ -11048,7 +11056,7 @@ done:
   outgoing_query_results(orq, sq, results, found);
 }
 
-int nua_client_intercept_query_results(const void *nua_handle, void *cr, nta_outgoing_t *orq, sip_t const *sip);
+int nua_client_intercept_query_results(const void *handle, void *cr, nta_outgoing_t *orq, sip_t const *sip);
 
 /** Store A/AAAA query results */
 static void
