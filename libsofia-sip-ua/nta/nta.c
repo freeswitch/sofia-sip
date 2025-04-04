@@ -77,7 +77,6 @@
 #include <sofia-sip/msg_addr.h>
 #include <sofia-sip/msg_parser.h>
 #include <sofia-sip/htable.h>
-#include <sofia-sip/nua.h>
 
 /* Resolver context type */
 #define SRES_CONTEXT_T    nta_outgoing_t
@@ -8225,7 +8224,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
       retval = (void *)-1;	/* NONE */
     else {
         retval = NULL, orq->orq_request = NULL;
-        orq->orq_intercept_query_results = 0; /* Let the caller do nua_handle_unref for it */
+        orq->orq_intercept_query_results = 0; /* Let the caller do nua_handle_unref (su_home_unref) for it */
     }
 
     outgoing_free(orq);
@@ -8925,7 +8924,7 @@ void outgoing_reclaim(nta_outgoing_t *orq)
     outgoing_destroy_resolver(orq);
 #endif
   if (orq->orq_intercept_query_results) {
-      nua_handle_unref(orq->orq_intercept_query_results);
+      su_home_unref((su_home_t *)orq->orq_intercept_query_results);
       orq->orq_intercept_query_results = 0;
   }
 
