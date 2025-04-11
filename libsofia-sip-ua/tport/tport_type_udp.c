@@ -132,6 +132,9 @@ int tport_udp_init_primary(tport_primary_t *pri,
   su_sockaddr_t *su = (su_sockaddr_t *)ai->ai_addr;
 #endif
   int const one = 1; (void)one;
+#if defined (__linux__)
+  int socket_bind_ifc = 0;
+#endif
 
   s = su_socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
   if (s == INVALID_SOCKET)
@@ -141,6 +144,19 @@ int tport_udp_init_primary(tport_primary_t *pri,
 
   if (tport_bind_socket(s, ai, return_culprit) < 0)
     return -1;
+
+  #if HAVE_GETIFADDRS && defined (__linux__)
+  tl_gets(tags,
+	  TPTAG_SOCKET_BIND_IFC_REF(socket_bind_ifc),
+	  TAG_END());
+  /* Force socket binding
+   *
+   * On Linux 5.x kernel for multi-homed environment
+   */
+  if (socket_bind_ifc == 1 && tport_bind_socket_iface(s, ai, return_culprit) == -1) {
+    return -1;
+  }
+#endif
 
   tport_set_tos(s, ai, pri->pri_params->tpp_tos);
 
