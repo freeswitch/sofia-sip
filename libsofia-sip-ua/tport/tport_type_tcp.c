@@ -138,6 +138,9 @@ int tport_stream_init_primary(tport_primary_t *pri,
 			      tagi_t const *tags,
 			      char const **return_culprit)
 {
+#if defined (__linux__)
+  int socket_bind_ifc = 0;
+#endif
   pri->pri_primary->tp_socket = socket;
 
   /* Set IP TOS if set */
@@ -151,6 +154,19 @@ int tport_stream_init_primary(tport_primary_t *pri,
 
   if (tport_bind_socket(socket, ai, return_culprit) == -1)
     return -1;
+
+#if HAVE_GETIFADDRS && defined (__linux__)
+  tl_gets(tags,
+	  TPTAG_SOCKET_BIND_IFC_REF(socket_bind_ifc),
+	  TAG_END());
+  /* Force socket binding
+   *
+   * On Linux 5.x kernel for multi-homed environment
+   */
+  if (socket_bind_ifc == 1 && tport_bind_socket_iface(socket, ai, return_culprit) == -1) {
+    return -1;
+  }
+#endif
 
   if (listen(socket, pri->pri_params->tpp_qsize) == SOCKET_ERROR)
     return *return_culprit = "listen", -1;
