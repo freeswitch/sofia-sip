@@ -496,6 +496,9 @@ SOFIAPUBFUN unsigned sdp_media_count(sdp_session_t const *sdp,
 SOFIAPUBFUN unsigned sdp_media_count_with(sdp_session_t const *sdp,
 					  sdp_media_t const *m0);
 
+SOFIAPUBFUN sdp_media_t** sdp_media_exists(sdp_session_t *sdp,
+						   sdp_media_t const *m0);
+
 /** Return true if media uses RTP */
 SOFIAPUBFUN int sdp_media_uses_rtp(sdp_media_t const *m);
 
