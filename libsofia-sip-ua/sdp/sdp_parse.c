@@ -1416,11 +1416,11 @@ void sdp_media_transport(sdp_media_t *m, char const *s)
   else if (su_casematch(s, "RTP/SAVP"))
     m->m_proto = sdp_proto_srtp, m->m_proto_name = "RTP/SAVP";
   else if (su_casematch(s, "UDP/TLS/RTP/SAVP"))
-    m->m_proto = sdp_proto_srtp, m->m_proto_name = "RTP/SAVP";
+    m->m_proto = sdp_proto_srtp_dtls, m->m_proto_name = "UDP/TLS/RTP/SAVP";
   else if (su_casematch(s, "RTP/SAVPF"))
 	  m->m_proto = sdp_proto_extended_srtp, m->m_proto_name = "RTP/SAVPF";
   else if (su_casematch(s, "UDP/TLS/RTP/SAVPF"))
-    m->m_proto = sdp_proto_extended_srtp, m->m_proto_name = "UDP/TLS/RTP/SAVPF";
+    m->m_proto = sdp_proto_extended_srtp_dtls, m->m_proto_name = "UDP/TLS/RTP/SAVPF";
   else if (su_casematch(s, "RTP/AVPF"))
 	  m->m_proto = sdp_proto_extended_rtp, m->m_proto_name = "RTP/AVPF";
   else if (su_casematch(s, "UDP/RTP/AVPF"))
@@ -1445,7 +1445,7 @@ void sdp_media_transport(sdp_media_t *m, char const *s)
 /** Check if media uses RTP as its transport protocol.  */
 int sdp_media_has_rtp(sdp_media_t const *m)
 {
-	return m && (m->m_proto == sdp_proto_rtp || m->m_proto == sdp_proto_srtp || m->m_proto == sdp_proto_extended_srtp || m->m_proto == sdp_proto_extended_rtp);
+	return m && (m->m_proto == sdp_proto_rtp || m->m_proto == sdp_proto_srtp || m->m_proto == sdp_proto_extended_srtp || m->m_proto == sdp_proto_extended_rtp || m->m_proto == sdp_proto_srtp_dtls || m->m_proto == sdp_proto_extended_srtp_dtls);
 }
 
 #define RTPMAP(pt, encoding, rate, params) \
