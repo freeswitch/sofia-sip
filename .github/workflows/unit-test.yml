@@ -1,0 +1,82 @@
+name: Unit tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    paths:
+      - "**"
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    container:
+      image: signalwire/freeswitch-public-ci-base:bookworm-amd64
+      options: --privileged
+    env:
+      DEBIAN_FRONTEND: noninteractive
+
+    steps:
+      - name: Checkout Sofia-Sip
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          rm -vf /etc/apt/sources.list.d/freeswitch.list
+          apt-get update && apt-get -y install check
+
+      - name: Configure, Build and Install Sofia-Sip
+        shell: bash
+        run: |
+          ./autogen.sh || exit 1
+          ./configure --with-pic --without-doxygen --disable-stun || exit 1
+          make -j$(nproc --all) install || exit 1
+
+      - name: Run Unit-Test
+        shell: bash
+        run: |
+          make check
+
+          if find ./ -name "*.trs" | xargs grep FAIL -l | grep -q .; then
+            exit 1
+          fi
+
+      - name: Collect Unit-Test logs
+        if: failure()
+        shell: bash
+        run: |
+          find ./ -name "*.trs" | xargs grep FAIL -l | while read test; do
+            dir=$(dirname "$test")
+            file=$(basename "$test")
+            cat "$dir/test-suite.log" | ansi2html > "tests/unit/log_run-tests_${dir//\//!}!$file.html"
+          done
+
+          cd tests/unit && mkdir -p logs
+
+          mv -v log_run-tests_*.html logs || true
+          mv -v backtrace_*.txt logs || true
+
+          ./collect-test-logs.sh || echo 'Some tests failed'
+
+      - name: Upload Unit-Test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-logs
+          path: tests/unit/logs
+          if-no-files-found: ignore
+          compression-level: 9
+
+      - name: Notify run tests result to slack
+        if: |
+          failure() &&
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/master'
+        uses: signalwire/actions-template/.github/actions/slack@main
+        with:
+          CHANNEL: ${{ secrets.SLACK_DEVOPS_CI_CHANNEL }}
+          MESSAGE: Unit-Tests ${{ github.repository }} > <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.run_id }}>. Some tests are failing.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
