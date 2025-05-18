@@ -128,6 +128,11 @@ SOFIAPUBVAR tag_typedef_t nutag_call_tls_orq_connect_timeout;
 #define NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT_REF(x)  nutag_call_tls_orq_connect_timeout_ref, tag_uint_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_call_tls_orq_connect_timeout_ref;
 
+#define NUTAG_INTERCEPT_QUERY_RESULTS(x)      nutag_intercept_query_results, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_intercept_query_results;
+#define NUTAG_INTERCEPT_QUERY_RESULTS_REF(x)  nutag_intercept_query_results_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_intercept_query_results_ref;
+
 #define NUTAG_SOA_NAME(x)  nutag_soa_name, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_soa_name;
 #define NUTAG_SOA_NAME_REF(x) \

@@ -498,6 +498,7 @@ struct nta_outgoing_s
   nta_agent_t          *orq_agent;
   nta_response_f       *orq_callback;
   nta_outgoing_magic_t *orq_magic;
+  nta_outgoing_query_results_data_t *orq_query_results;
 
   /* Timeout/state queue */
   nta_outgoing_t      **orq_prev;
@@ -532,6 +533,8 @@ struct nta_outgoing_s
 
   unsigned short      	orq_status;
   unsigned char         orq_retries;    /**< Number of tries this far */
+
+  const void *orq_intercept_query_results; /** May become nua_handle_t */
 
   unsigned orq_default:1;	        /**< This is default transaction */
   unsigned orq_inserted:1;
@@ -599,6 +602,14 @@ ntatag_delay_sending_ref, tag_bool_vr(&(x))
 
 extern tag_typedef_t ntatag_delay_sending;
 extern tag_typedef_t ntatag_delay_sending_ref;
+
+/* Intercept query results */
+#define NTATAG_INTERCEPT_QUERY_RESULTS(x) ntatag_intercept_query_results, tag_ptr_v((x))
+#define NTATAG_INTERCEPT_QUERY_RESULTS_REF(x) \
+ntatag_intercept_query_results_ref, tag_ptr_vr(&(x))
+
+extern tag_typedef_t ntatag_intercept_query_results;
+extern tag_typedef_t ntatag_intercept_query_results_ref;
 
 /* Allow sending incomplete responses */
 #define NTATAG_INCOMPLETE(x) ntatag_incomplete, tag_bool_v((x))
@@ -7817,6 +7828,29 @@ unsigned nta_outgoing_delay(nta_outgoing_t const *orq)
   return orq != NULL && orq != NONE ? orq->orq_delay : UINT_MAX;
 }
 
+/** Get the nta_outgoing_query_results_t */
+nta_outgoing_query_results_data_t *nta_outgoing_query_results(nta_outgoing_t const *orq, char ***results, size_t *found)
+{
+  if (orq != NULL && orq != NONE) {
+    if (orq->orq_query_results && results && found) {
+      *results = orq->orq_query_results->results;
+      *found = orq->orq_query_results->found;
+    }
+
+    return orq->orq_query_results;
+  } else return NULL;
+}
+
+char const *nta_outgoing_cannon(nta_outgoing_t const *orq)
+{
+  return orq != NULL && orq != NONE ? orq->orq_tpn[0].tpn_canon : NULL;
+}
+
+char const *nta_outgoing_host(nta_outgoing_t const *orq)
+{
+  return orq != NULL && orq != NONE ? orq->orq_tpn[0].tpn_host : NULL;
+}
+
 /** Get the branch parameter. @NEW_1_12_7. */
 char const *nta_outgoing_branch(nta_outgoing_t const *orq)
 {
@@ -7923,6 +7957,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   int explicit_transport = 1;
   int call_tls_orq_connect_timeout_is_set = 0;
   int call_tls_orq_connect_timeout = 0;
+  void *intercept_query_results = 0;
 
   tagi_t const *t;
   tport_t *override_tport = NULL;
@@ -7969,6 +8004,8 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
       stateless = t->t_value != 0;
     else if (ntatag_delay_sending == tt)
       delay_sending = t->t_value != 0;
+    else if (ntatag_intercept_query_results == tt)
+      intercept_query_results = (void *)t->t_value;
     else if (ntatag_branch_key == tt)
       branch = (void *)t->t_value;
     else if (ntatag_pass_100 == tt)
@@ -8013,6 +8050,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   orq->orq_call_id  = sip->sip_call_id;
   orq->orq_tags     = tl_afilter(home, tport_tags, ta_args(ta));
   orq->orq_delayed  = delay_sending != 0;
+  orq->orq_intercept_query_results = intercept_query_results;
   orq->orq_pass_100 = pass_100 != 0;
   orq->orq_sigcomp_zap = sigcomp_zap;
   orq->orq_sigcomp_new = comp != NONE && comp != NULL;
@@ -8158,6 +8196,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
     SU_DEBUG_3(("nta outgoing create: %s\n",
 		invalid < 0 ? "invalid URI" :
 		!orq->orq_branch ? "no branch" : "invalid message"));
+    orq->orq_intercept_query_results = 0; /* Let the caller do nua_handle_unref for it */
     outgoing_free(orq);
     return NULL;
   }
@@ -8183,8 +8222,10 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
 
     if (orq->orq_status < 300)
       retval = (void *)-1;	/* NONE */
-    else
-      retval = NULL, orq->orq_request = NULL;
+    else {
+        retval = NULL, orq->orq_request = NULL;
+        orq->orq_intercept_query_results = 0; /* Let the caller do nua_handle_unref (su_home_unref) for it */
+    }
 
     outgoing_free(orq);
 
@@ -8882,6 +8923,11 @@ void outgoing_reclaim(nta_outgoing_t *orq)
   if (orq->orq_resolver)
     outgoing_destroy_resolver(orq);
 #endif
+  if (orq->orq_intercept_query_results) {
+      su_home_unref((su_home_t *)orq->orq_intercept_query_results);
+      orq->orq_intercept_query_results = 0;
+  }
+
   su_free(orq->orq_agent->sa_home, orq);
 }
 
@@ -10085,16 +10131,10 @@ static int outgoing_query_a(nta_outgoing_t *orq, struct sipdns_query *);
 static void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
 			      sres_record_t *answers[]);
 
-#ifdef __clang_analyzer__
-#define FUNC_ATTR_NONNULL(...) __attribute__((nonnull(__VA_ARGS__)))
-#else
-#define FUNC_ATTR_NONNULL(...)
-#endif
-
 static void outgoing_query_results(nta_outgoing_t *orq,
 				   struct sipdns_query *sq,
 				   char *results[],
-				   size_t rlen) FUNC_ATTR_NONNULL(3);
+				   size_t rlen);
 
 
 #define SIPDNS_503_ERROR 503, "DNS Error"
@@ -10882,14 +10922,16 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
   su_home_t *home = msg_home(orq->orq_request);
   struct sipdns_query *sq = sr->sr_current;
 
-  size_t i, j, found;
+  size_t i, j, found = 0;
   char *result, **results = NULL;
 
   assert(sq); assert(sq->sq_type == sres_type_aaaa);
 
   sr->sr_query = NULL;
 
-  for (i = 0, found = 0; answers && answers[i]; i++) {
+  if (!answers) goto done;
+
+  for (i = 0; answers[i]; i++) {
     sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
     if (aaaa->aaaa_record->r_status == 0 &&
         aaaa->aaaa_record->r_type == sres_type_aaaa)
@@ -10900,8 +10942,10 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
     results = su_zalloc(home, (found + 1) * (sizeof *results));
   else if (found)
     results = &result;
+  else
+    goto done;
 
-  for (i = j = 0; results && answers && answers[i]; i++) {
+  for (i = j = 0; answers[i]; i++) {
     char addr[SU_ADDRSIZE];
     sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
 
@@ -10921,12 +10965,9 @@ void outgoing_answer_aaaa(sres_context_t *orq, sres_query_t *q,
     results[j++] = su_strdup(home, addr);
   }
 
+done:
   sres_free_answers(orq->orq_agent->sa_resolver, answers);
-
-  if (results)
-    outgoing_query_results(orq, sq, results, found);
-  else if (!q)
-    outgoing_resolving_error(orq, SIPDNS_503_ERROR);
+  outgoing_query_results(orq, sq, results, found);
 }
 #endif /* SU_HAVE_IN6 */
 
@@ -10968,14 +11009,16 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
   su_home_t *home = msg_home(orq->orq_request);
   struct sipdns_query *sq = sr->sr_current;
 
-  int i, j, found;
+  int i, j, found = 0;
   char *result, **results = NULL;
 
   assert(sq); assert(sq->sq_type == sres_type_a);
 
   sr->sr_query = NULL;
 
-  for (i = 0, found = 0; answers && answers[i]; i++) {
+  if (!answers) goto done;
+
+  for (i = 0; answers[i]; i++) {
     sres_a_record_t const *a = answers[i]->sr_a;
     if (a->a_record->r_status == 0 &&
         a->a_record->r_type == sres_type_a)
@@ -10986,8 +11029,10 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
     results = su_zalloc(home, (found + 1) * (sizeof *results));
   else if (found)
     results = &result;
+  else 
+    goto done;
 
-  for (i = j = 0; answers && answers[i]; i++) {
+  for (i = j = 0; answers[i]; i++) {
     char addr[SU_ADDRSIZE];
     sres_a_record_t const *a = answers[i]->sr_a;
 
@@ -11006,13 +11051,12 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
     results[j++] = su_strdup(home, addr);
   }
 
+done:
   sres_free_answers(orq->orq_agent->sa_resolver, answers);
-
-  if (results)
-    outgoing_query_results(orq, sq, results, found);
-  else if (!q)
-    outgoing_resolving_error(orq, SIPDNS_503_ERROR);
+  outgoing_query_results(orq, sq, results, found);
 }
+
+int nua_client_intercept_query_results(const void *handle, void *cr, nta_outgoing_t *orq, sip_t const *sip);
 
 /** Store A/AAAA query results */
 static void
@@ -11057,6 +11101,29 @@ outgoing_query_results(nta_outgoing_t *orq,
 
   if (rlen > 0) {
     orq->orq_resolved = 1;
+    if (orq->orq_intercept_query_results && orq->orq_callback) {
+      nta_outgoing_query_results_data_t orq_query_results = { 0 };
+
+      SU_DEBUG_0(("intercepted query results\n" VA_NONE));
+
+      orq_query_results.results = results;
+      orq_query_results.found = rlen;
+
+      /* orq->orq_query_results field works as an argument to the orq_callback function */
+      orq->orq_query_results = &orq_query_results;
+
+      if (orq->orq_callback == outgoing_default_cb) {
+        int res = nua_client_intercept_query_results(orq->orq_intercept_query_results, NULL, orq, NULL);
+        /* No need to return here if res is 1 */
+        (void)res;
+      } else {
+        orq->orq_callback(orq->orq_magic, orq, NULL);
+      }
+
+      /* orq->orq_query_results field argument must be NULLed after the function call */
+      orq->orq_query_results = NULL;
+    }
+
     orq->orq_tpn->tpn_host = results[0];
     if (sq->sq_proto) orq->orq_tpn->tpn_proto = sq->sq_proto;
     if (sq->sq_port[0]) orq->orq_tpn->tpn_port = sq->sq_port;

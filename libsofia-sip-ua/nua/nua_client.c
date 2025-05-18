@@ -942,10 +942,12 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
 			    tagi_t const *tags)
 {
   nua_handle_t *nh = cr->cr_owner;
+  nua_handle_t *intercept_nh = NULL;
   int proxy_is_set = NH_PISSET(nh, proxy);
   url_string_t * proxy = NH_PGET(nh, proxy);
   int call_tls_orq_connect_timeout_is_set = NH_PISSET(nh, call_tls_orq_connect_timeout);
   uint32_t call_tls_orq_connect_timeout = NH_PGET(nh, call_tls_orq_connect_timeout);
+  int intercept_query_results_is_set = NH_PGET(nh, intercept_query_results);
 
   if (nh->nh_auth) {
     if (cr->cr_challenged ||
@@ -959,11 +961,17 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
 
   assert(cr->cr_orq == NULL);
 
+  if (intercept_query_results_is_set) {
+      intercept_nh = nua_handle_ref(nh);
+  }
+
   cr->cr_orq = nta_outgoing_mcreate(nh->nh_nua->nua_nta,
 				    nua_client_orq_response,
 				    nua_client_request_ref(cr),
 				    NULL,
 				    msg,
+				    TAG_IF(intercept_query_results_is_set,
+					   NTATAG_INTERCEPT_QUERY_RESULTS(intercept_nh)),
 				    TAG_IF(proxy_is_set,
 					   NTATAG_DEFAULT_PROXY(proxy)),
 				    TAG_IF(call_tls_orq_connect_timeout_is_set,
@@ -972,9 +980,102 @@ int nua_base_client_request(nua_client_request_t *cr, msg_t *msg, sip_t *sip,
 
   if (cr->cr_orq == NULL) {
     nua_client_request_unref(cr);
+    if (intercept_nh) {
+        nua_handle_unref(intercept_nh);
+    }
     return -1;
   }
 
+  return 0;
+}
+
+static inline void nua_client_intercept_response(nua_client_request_t *cr,
+                                                 int status,
+                                                 char const *phrase,
+                                                 sip_t const *sip)
+{
+  nua_handle_t *nh = cr->cr_owner;
+  nua_t *nua = nh ? nh->nh_nua : NULL;
+  nua_dialog_usage_t *du = cr->cr_usage;
+  unsigned intercept_query_results = nh ? NH_PGET(nh, intercept_query_results) : 0;
+
+  if (intercept_query_results && sip && status != 408 && nua) {
+    /* At this point we have a successful response */
+    nua_dialog_state_t *ds = du ? du->du_dialog : NULL;
+
+    SU_DEBUG_0(("Normal response detected. Remembering IP...\n" VA_NONE));
+
+    if (!ds) {
+      ds = nh->nh_ds;
+    }
+
+    /* Let's remember the IP */
+    if (ds && ds->ds_intercepted_ip == NULL) {
+      const char *host = nta_outgoing_host(cr->cr_orq);
+
+      if (host) {
+        SU_DEBUG_0(("host remembered: [%s]\n", host));
+        ds->ds_intercepted_ip = su_strdup(ds->ds_owner->nh_home, host);
+      }
+    }
+  }
+}
+
+int nua_client_intercept_query_results(const void *handle, void *_cr,
+                                        nta_outgoing_t *orq,
+                                        sip_t const *sip)
+{
+  nua_client_request_t *cr = (nua_client_request_t *)_cr;
+  char **results = NULL;
+  size_t found = 0;
+
+  if (nta_outgoing_query_results(orq, &results, &found) != NULL) {
+    /* See NTATAG_INTERCEPT_QUERY_RESULTS and NUTAG_INTERCEPT_QUERY_RESULTS */
+    nua_handle_t *nh = handle ? (nua_handle_t *)handle : (cr ? cr->cr_owner : NULL);
+    nua_dialog_usage_t *du = cr ? cr->cr_usage : NULL;
+    nua_dialog_state_t *ds = du ? du->du_dialog : NULL;
+
+    SU_DEBUG_0(("Query results have been intercepted. Trying to override...\n" VA_NONE));
+
+    if (!ds && nh) {
+        if (NH_IS_VALID(nh)) {
+            ds = nh->nh_ds;
+        } else {
+            SU_DEBUG_0(("Warning! nh is not valid! Can not intercept! No ds!\n" VA_NONE));
+        }
+    }
+
+    if (ds && ds->ds_intercepted_ip) {
+      if (found) {
+        msg_t *request = nta_outgoing_getrequest(orq);
+        su_home_t *home = request ? msg_home(request) : NULL;
+
+        if (!home) {
+            if (NH_IS_VALID(nh)) {
+                home = msg_home(nh);
+            } else {
+                SU_DEBUG_0(("Warning! nh is not valid! Can not intercept! No home!\n" VA_NONE));
+            }
+        }
+
+        if (home) {
+            SU_DEBUG_0(("Intercepted IP address: [%s]->[%s]\n", results[0], ds->ds_intercepted_ip));
+            results[0] = su_strdup(home, ds->ds_intercepted_ip);
+
+            if (found > 1) {
+                results[1] = NULL;
+            }
+        }
+
+        msg_destroy(request);
+      }
+    }
+
+    /* Function caller must return */
+    return 1;
+  }
+
+  /* No-op */
   return 0;
 }
 
@@ -986,6 +1087,11 @@ nua_client_orq_response(nua_client_request_t *cr,
 {
   int status;
   char const *phrase;
+
+  /* See NTATAG_INTERCEPT_QUERY_RESULTS and NUTAG_INTERCEPT_QUERY_RESULTS */
+  if (nua_client_intercept_query_results(NULL, cr, orq, sip)) {
+    return 0;
+  }
 
   if (sip && sip->sip_status) {
     status = sip->sip_status->st_status;
@@ -1040,6 +1146,8 @@ int nua_client_response(nua_client_request_t *cr,
   nua_handle_t *nh = cr->cr_owner;
   nua_dialog_usage_t *du = cr->cr_usage;
   int retval = 0;
+
+  nua_client_intercept_response(cr, status,phrase, sip);
 
   if (cr->cr_restarting)
     return 0;

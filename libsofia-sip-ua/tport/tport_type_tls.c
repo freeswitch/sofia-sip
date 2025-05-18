@@ -276,7 +276,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
 static void tport_tls_deinit_primary(tport_primary_t *pri)
 {
   tport_tls_primary_t *tlspri = (tport_tls_primary_t *)pri;
-  tls_free(tlspri->tlspri_master), tlspri->tlspri_master = NULL;
+  tport_tls_free(tlspri->tlspri_master), tlspri->tlspri_master = NULL;
 }
 
 static int tport_tls_init_secondary(tport_t *self, int socket, int accepted,
@@ -303,7 +303,7 @@ static void tport_tls_deinit_secondary(tport_t *self)
 
   /* XXX - PPe: does the tls_shutdown zap everything but socket? */
   if (tlstp->tlstp_context != NULL)
-    tls_free(tlstp->tlstp_context);
+    tport_tls_free(tlstp->tlstp_context);
   tlstp->tlstp_context = NULL;
 
   su_free(self->tp_home, tlstp->tlstp_buffer);

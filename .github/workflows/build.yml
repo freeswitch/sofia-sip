@@ -1,0 +1,149 @@
+name: Build and Distribute
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    paths:
+      - "**"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish build data'
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.head_ref || github.ref }}
+
+jobs:
+  deb:
+    name: 'DEB'
+    permissions:
+      id-token: write
+      contents: read
+    uses: signalwire/actions-template/.github/workflows/cicd-docker-build-and-distribute.yml@main
+    strategy:
+      # max-parallel: 1
+      fail-fast: false
+      matrix:
+        os:
+          - debian
+        version:
+          - bookworm
+          - bullseye
+        platform:
+          - name: amd64
+            runner: ubuntu-latest
+          - name: arm32v7
+            runner: ubuntu-24.04-arm
+          - name: arm64v8
+            runner: ubuntu-24.04-arm
+    with:
+      RUNNER: ${{ matrix.platform.runner }}
+      ARTIFACTS_PATTERN: '.*\.(deb)$'
+      DOCKERFILE: .github/docker/${{ matrix.os }}/${{ matrix.version }}/${{ matrix.platform.name }}/Dockerfile
+      MAINTAINER: 'Andrey Volk <andrey@signalwire.com>'
+      META_FILE_PATH_PREFIX: /var/www/sofia-sip/public/unstable/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}
+      PLATFORM: ${{ matrix.platform.name }}
+      TARGET_ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.version }}-${{ matrix.platform.name }}-public-unstable-artifact
+      UPLOAD_BUILD_ARTIFACTS: >-
+        ${{
+          (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) &&
+          (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
+        }}
+    secrets:
+      GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
+      HOSTNAME: ${{ secrets.HOSTNAME }}
+      PROXY_URL: ${{ secrets.PROXY_URL }}
+      USERNAME: ${{ secrets.USERNAME }}
+      TELEPORT_TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+
+  deb-mirror:
+    name: 'DEB-MIRROR'
+    if: >-
+      ${{
+        (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) &&
+        (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
+      }}
+    needs:
+      - deb
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      # max-parallel: 1
+      fail-fast: false
+      matrix:
+        os:
+          - debian
+        version:
+          - bookworm
+          - bullseye
+        platform:
+          - name: amd64
+            runner: ubuntu-latest
+          - name: arm32v7
+            runner: ubuntu-24.04-arm
+          - name: arm64v8
+            runner: ubuntu-24.04-arm
+        release:
+          - release
+          - unstable
+    steps:
+      - name: Checkout reusable actions
+        uses: actions/checkout@v4
+        with:
+          repository: signalwire/actions-template
+          ref: main
+          fetch-depth: 1
+          path: actions
+          sparse-checkout: |
+            .github/actions/teleport-local-copy/action.yml
+          sparse-checkout-cone-mode: false
+
+      - name: Mirror artifacts on remote server behind Teleport (public)
+        uses: ./actions/.github/actions/teleport-local-copy
+        with:
+          SRC: '/var/www/sofia-sip/public/unstable/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}/${{ matrix.os }}-${{ matrix.version }}-${{ matrix.platform.name }}-public-unstable-artifact.tar.gz'
+          DST: '/var/www/sofia-sip/public/${{ matrix.release }}/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}/${{ matrix.os }}-${{ matrix.version }}-${{ matrix.platform.name }}-public-${{ matrix.release }}-artifact.tar.gz'
+        env:
+          HOSTNAME: ${{ secrets.HOSTNAME }}
+          PROXY_URL: ${{ secrets.PROXY_URL }}
+          TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+          USERNAME: ${{ secrets.USERNAME }}
+
+      - name: Mirror artifacts on remote server behind Teleport (fsa)
+        uses: ./actions/.github/actions/teleport-local-copy
+        with:
+          SRC: '/var/www/sofia-sip/public/unstable/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}/${{ matrix.os }}-${{ matrix.version }}-${{ matrix.platform.name }}-public-unstable-artifact.tar.gz'
+          DST: '/var/www/sofia-sip/fsa/${{ matrix.release }}/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}/${{ matrix.os }}-${{ matrix.version }}-${{ matrix.platform.name }}-fsa-${{ matrix.release }}-artifact.tar.gz'
+        env:
+          HOSTNAME: ${{ secrets.HOSTNAME }}
+          PROXY_URL: ${{ secrets.PROXY_URL }}
+          TOKEN: ${{ secrets.TELEPORT_TOKEN }}
+          USERNAME: ${{ secrets.USERNAME }}
+
+  meta:
+    name: 'Publish build data to meta-repo'
+    if: >-
+      ${{
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish)
+      }}
+    needs:
+      - deb
+      - deb-mirror
+    permissions:
+      id-token: write
+      contents: read
+    uses: signalwire/actions-template/.github/workflows/meta-repo-content.yml@main
+    with:
+      META_CONTENT: '/var/www/sofia-sip/{fsa,public}/{release,unstable}/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}'
+      META_REPO: signalwire/bamboo_gha_trigger
+      META_REPO_BRANCH: trigger/sofia-sip/${{ github.ref_name }}
+    secrets:
+      GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}

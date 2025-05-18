@@ -71,19 +71,19 @@
 /** Define this as 1 if we can use tags directly from stack. */
 #define SU_HAVE_TAGSTACK (1)
 
-#define SU_S64_T __int64
+#define SU_S64_T signed __int64
 #define SU_U64_T unsigned __int64
-#define SU_S32_T __int32
+#define SU_S32_T signed __int32
 #define SU_U32_T unsigned __int32
-#define SU_S16_T __int16
+#define SU_S16_T signed __int16
 #define SU_U16_T unsigned __int16
-#define SU_S8_T  __int8
+#define SU_S8_T  signed __int8
 #define SU_U8_T  unsigned __int8
 
-#define SU_LEAST64_T __int64
-#define SU_LEAST32_T __int32
-#define SU_LEAST16_T __int16
-#define SU_LEAST8_T  __int8
+#define SU_LEAST64_T signed __int64
+#define SU_LEAST32_T signed __int32
+#define SU_LEAST16_T signed __int16
+#define SU_LEAST8_T  signed __int8
 
 #define SU_S64_C(i) (SU_S64_T)(i ## L)
 #define SU_U64_C(i) (SU_U64_T)(i ## UL)

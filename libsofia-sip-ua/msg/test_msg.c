@@ -1174,6 +1174,16 @@ int test_copy(void)
   msg_destroy(msg1);
   msg_destroy(msg);
 
+  {
+    char dst[8];
+    const char *src = "1234567";
+
+    char *start = &dst;
+    char *end = start+sizeof(dst);
+    MSG_STRING_E(start, end, src);
+    TEST_S(dst, src);
+  }
+
   END();
 }
 

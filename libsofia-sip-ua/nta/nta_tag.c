@@ -1974,6 +1974,7 @@ tag_typedef_t ntatag_s_tout_response =    USIZETAG_TYPEDEF(s_tout_response);
 /* Internal */
 tag_typedef_t ntatag_delay_sending = BOOLTAG_TYPEDEF(delay_sending);
 tag_typedef_t ntatag_incomplete = BOOLTAG_TYPEDEF(incomplete);
+tag_typedef_t ntatag_intercept_query_results = PTRTAG_TYPEDEF(intercept_query_results);
 
 
 tag_typedef_t ntatag_q_in_completed =    SIZETAG_TYPEDEF(q_in_completed);

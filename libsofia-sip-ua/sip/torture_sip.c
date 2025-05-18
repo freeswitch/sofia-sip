@@ -743,7 +743,7 @@ int test_basic(void)
     TEST_1(ex = sip_expires_make(home, "4294967297")); /* XXX */
     su_free(home, ex);
 
-    TEST_1(ex = sip_expires_make(home, "Wed, 25 Mar 2004 14:49:29 GMT"));
+    TEST_1(ex = sip_expires_make(home, "Thu, 25 Mar 2004 14:49:29 GMT"));
     su_free(home, ex);
 
     TEST_1(ex = sip_expires_create(home, 3600));
@@ -1034,7 +1034,7 @@ static int test_encoding(void)
     "Extension-Header: extended, more\r\n"
     "Reason: Q.850;cause=16;text=\"Terminated\"\r\n"
     "Contact: <sip:bar@pc.foo:5060>\r\n"
-    "Date: Wed, 25 Mar 2004 14:49:29 GMT\r\n"
+    "Date: Thu, 25 Mar 2004 14:49:29 GMT\r\n"
     "Max-Forwards: 80\r\n"
     "Min-Expires: 30\r\n"
     "Retry-After: 48 (this is a comment) ;duration=321\r\n"
@@ -1109,10 +1109,10 @@ static int test_encoding(void)
     "Extension-Header: extended, more\r\n"
     "Reason: SIP;cause=400;text=\"Bad Message\"\r\n"
     "Contact: <sip:bar@pc.foo:5060>;audio\r\n"
-    "Date: Wed, 25 Mar 2004 14:49:29 GMT\r\n"
+    "Date: Thu, 25 Mar 2004 14:49:29 GMT\r\n"
     "Max-Forwards: 80\r\n"
     "Min-Expires: 30\r\n"
-    "Expires: Wed, 25 Mar 2004 15:49:29 GMT\r\n"
+    "Expires: Thu, 25 Mar 2004 15:49:29 GMT\r\n"
     "Retry-After: 48;duration=321\r\n"
     "Record-Route: <sip:record-route@proxy.bar;maddr=172.21.40.40>\r\n"
     "Event: presence;id=1\r\n"
