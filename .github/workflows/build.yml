@@ -8,6 +8,12 @@ on:
     paths:
       - "**"
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish build data'
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.head_ref || github.ref }}
@@ -43,7 +49,11 @@ jobs:
       META_FILE_PATH_PREFIX: /var/www/sofia-sip/public/unstable/${{ github.ref_name }}/${{ github.run_id }}-${{ github.run_number }}
       PLATFORM: ${{ matrix.platform.name }}
       TARGET_ARTIFACT_NAME: ${{ matrix.os }}-${{ matrix.version }}-${{ matrix.platform.name }}-public-unstable-artifact
-      UPLOAD_BUILD_ARTIFACTS: ${{ github.event_name != 'pull_request' }}
+      UPLOAD_BUILD_ARTIFACTS: >-
+        ${{
+          (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) &&
+          (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
+        }}
     secrets:
       GH_BOT_DEPLOY_TOKEN: ${{ secrets.PAT }}
       HOSTNAME: ${{ secrets.HOSTNAME }}
@@ -53,7 +63,11 @@ jobs:
 
   deb-mirror:
     name: 'DEB-MIRROR'
-    if: ${{ github.event_name != 'pull_request' }}
+    if: >-
+      ${{
+        (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) &&
+        (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
+      }}
     needs:
       - deb
     runs-on: ubuntu-latest
@@ -115,7 +129,11 @@ jobs:
 
   meta:
     name: 'Publish build data to meta-repo'
-    if: ${{ github.event_name != 'pull_request' }}
+    if: >-
+      ${{
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish)
+      }}
     needs:
       - deb
       - deb-mirror
