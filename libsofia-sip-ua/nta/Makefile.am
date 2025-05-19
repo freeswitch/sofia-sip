@@ -23,14 +23,14 @@ AM_CPPFLAGS = 		-I$(srcdir)/../ipt -I../ipt \
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LTLIBRARIES = 	libnta.la
+noinst_LTLIBRARIES = 	libnta.la libcombined.la
 
 check_PROGRAMS = 	check_nta test_nta_api test_nta portbind
 dist_noinst_SCRIPTS =	run_test_nta_api run_test_nta
 
 TESTS =			run_check_nta run_test_nta_api run_test_nta
 
-TESTS_ENVIRONMENT =	$(SHELL)
+#TESTS_ENVIRONMENT =	$(SHELL)
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -49,7 +49,8 @@ libnta_la_SOURCES = 	nta.c nta_check.c nta_tag.c nta_tag_ref.c \
 
 COVERAGE_INPUT = 	$(libnta_la_SOURCES) $(include_sofia_HEADERS)
 
-LDADD = 		libnta.la \
+libcombined_la_SOURCES =
+libcombined_la_LIBADD = libnta.la \
 			../ipt/libipt.la \
 			../sip/libsip.la \
 			../features/libfeatures.la \
@@ -61,7 +62,13 @@ LDADD = 		libnta.la \
 			../msg/libmsg.la \
 			../bnf/libbnf.la \
 			../su/libsu.la \
-			${top_builddir}/s2check/libs2.a -lz
+			../nua/libnua.la \
+			../iptsec/libiptsec.la \
+			../nea/libnea.la \
+			../soa/libsoa.la \
+			../sdp/libsdp.la
+
+LDADD = 		libcombined.la ${top_builddir}/s2check/libs2.a -lz
 
 test_nta_LDFLAGS = 	-static
 
