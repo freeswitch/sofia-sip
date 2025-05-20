@@ -2492,6 +2492,9 @@ int nua_invite_server_is_100rel(nua_server_request_t *sr, tagi_t const *tags)
     return 0;
   if (sr->sr_status == 183)
     return 1;
+  /*Also include 180 when 100rel is required */
+  if (sr->sr_status == 180)
+    return 1;
 
   if (NH_PGET(nh, early_media) && !NH_PGET(nh, only183_100rel))
     return 1;
