@@ -399,6 +399,7 @@ struct nta_leg_s
 
   url_t const      *leg_url;	/**< Match incoming requests. */
   char const       *leg_method;	/**< Match incoming requests. */
+  char const       *leg_branch_id; /**< Match incoming INVITE to identify forked calls */
 
   uint32_t	    leg_seq;    /**< Sequence number for next transaction */
   uint32_t	    leg_rseq;   /**< Remote sequence number */
@@ -696,7 +697,8 @@ static nta_leg_t *leg_find(nta_agent_t const *sa,
 			   url_t const *request_uri,
 			   sip_call_id_t const *i,
 			   char const *from_tag,
-			   char const *to_tag);
+			   char const *to_tag,
+			   char const *branch_id);
 static nta_leg_t *dst_find(nta_agent_t const *sa, url_t const *u0,
 			   char const *method);
 static void leg_recv(nta_leg_t *, msg_t *, sip_t *, tport_t *);
@@ -3145,7 +3147,8 @@ void agent_recv_request(nta_agent_t *agent,
 		      method_name, url,
 		      sip->sip_call_id,
 		      sip->sip_from->a_tag,
-		      sip->sip_to->a_tag))) {
+		      sip->sip_to->a_tag,
+		      sip->sip_via ? sip->sip_via->v_branch : NULL))) {
     /* Try existing dialog */
     SU_DEBUG_5(("nta: %s (%u) %s\n",
 		method_name, cseq, "going to existing leg"));
@@ -4327,6 +4330,7 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
   su_home_t *home;
   url_t *url;
   char const *what = NULL;
+  const sip_via_t *via = NULL;
 
   if (agent == NULL)
     return su_seterrno(EINVAL), NULL;
@@ -4344,6 +4348,7 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
 	  SIPTAG_TO_REF(to),
 	  SIPTAG_TO_STR_REF(to_str),
 	  SIPTAG_ROUTE_REF(route),
+	  SIPTAG_VIA_REF(via),
 	  NTATAG_TARGET_REF(contact),
 	  NTATAG_REMOTE_CSEQ_REF(rseq),
 	  SIPTAG_CSEQ_REF(cs),
@@ -4363,6 +4368,13 @@ nta_leg_t *nta_leg_tcreate(nta_agent_t *agent,
   if (!(leg = su_home_clone(NULL, sizeof(*leg))))
     return NULL;
   home = leg->leg_home;
+
+  if (via) {
+    SU_DEBUG_9(("nta_leg_tcreate(): setting branch ID to: %s\n", via->v_branch));
+    leg->leg_branch_id = su_strdup(home, via->v_branch);
+  } else {
+    leg->leg_branch_id = NULL;
+  }
 
   leg->leg_agent = agent;
   nta_leg_bind(leg, callback, magic);
@@ -4832,12 +4844,12 @@ nta_leg_by_replaces(nta_agent_t *sa, sip_replaces_t const *rp)
 
     id->i_hash = msg_hash_string(id->i_id = rp->rp_call_id);
 
-    leg = leg_find(sa, NULL, NULL, id, from_tag, to_tag);
+    leg = leg_find(sa, NULL, NULL, id, from_tag, to_tag, NULL);
 
     if (leg == NULL && strcmp(from_tag, "0") == 0)
-      leg = leg_find(sa, NULL, NULL, id, NULL, to_tag);
+      leg = leg_find(sa, NULL, NULL, id, NULL, to_tag, NULL);
     if (leg == NULL && strcmp(to_tag, "0") == 0)
-      leg = leg_find(sa, NULL, NULL, id, from_tag, NULL);
+      leg = leg_find(sa, NULL, NULL, id, from_tag, NULL, NULL);
   }
 
   return leg;
@@ -5065,7 +5077,8 @@ nta_leg_t *nta_leg_by_dialog(nta_agent_t const *agent,
 		 NULL, url,
 		 call_id,
 		 remote_tag,
-		 local_tag);
+		 local_tag,
+		 NULL);
 
   if (to_be_freed) su_free(NULL, to_be_freed);
 
@@ -5084,7 +5097,8 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
 		    url_t const *request_uri,
 		    sip_call_id_t const *i,
 		    char const *from_tag,
-		    char const *to_tag)
+		    char const *to_tag,
+		    char const *branch_id)
 {
   hash_value_t hash = i->i_hash;
   leg_htable_t const *lht = sa->sa_dialogs;
@@ -5132,6 +5146,13 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
     if (leg_url && request_uri && url_cmp(leg_url, request_uri))
       continue;
     if (leg_method && method_name && !su_casematch(method_name, leg_method))
+      continue;
+
+    /* Do not match if incoming INVITE To header has no tag AND the topmost Via
+     * Header branch ID in the incoming is different from the existing leg
+     * (this means it's a call being forked)
+     */
+    if (!to_tag && su_casematch(method_name, "INVITE") && branch_id && leg->leg_branch_id && !su_casematch(branch_id, leg->leg_branch_id))
       continue;
 
     /* Perfect match if both local and To have tag
@@ -6249,10 +6270,16 @@ static nta_incoming_t *incoming_find(nta_agent_t const *agent,
 
     /* RFC3261 - section 8.2.2.2 Merged Requests */
     if (return_merge) {
-      if (irq->irq_cseq->cs_method == cseq->cs_method &&
-	  strcmp(irq->irq_cseq->cs_method_name,
-		 cseq->cs_method_name) == 0)
-	*return_merge = irq, return_merge = NULL;
+      /* RFC3261 - section 17.2.3 Matching Requests to Server Transactions */
+      if (irq->irq_via->v_branch &&
+	  su_casematch(irq->irq_via->v_branch, v->v_branch) &&
+	  su_casematch(irq->irq_via->v_host, v->v_host) &&
+	  su_strmatch(irq->irq_via->v_port, v->v_port)) {
+        if (irq->irq_cseq->cs_method == cseq->cs_method &&
+	    strcmp(irq->irq_cseq->cs_method_name,
+		   cseq->cs_method_name) == 0)
+	  *return_merge = irq, return_merge = NULL;
+      }
     }
   }
 
