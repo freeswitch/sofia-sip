@@ -34,6 +34,7 @@ jobs:
         version:
           - bookworm
           - bullseye
+          - trixie
         platform:
           - name: amd64
             runner: ubuntu-latest
@@ -83,6 +84,7 @@ jobs:
         version:
           - bookworm
           - bullseye
+          - trixie
         platform:
           - name: amd64
             runner: ubuntu-latest
