@@ -44,6 +44,7 @@
 
 #include <openssl/lhash.h>
 #include <openssl/bn.h>
+#include <openssl/dh.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>
@@ -95,8 +96,10 @@ static int tls_ex_data_idx = -1; /* see SSL_get_ex_new_index(3ssl) */
 static void
 tls_init_once(void)
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
   SSL_library_init();
   SSL_load_error_strings();
+#endif
   tls_ex_data_idx = SSL_get_ex_new_index(0, "sofia-sip private data", NULL, NULL, NULL);
 }
 
