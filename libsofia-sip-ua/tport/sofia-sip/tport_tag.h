@@ -148,6 +148,14 @@ TPORT_DLL extern tag_typedef_t tptag_socket_keepalive;
 TPORT_DLL extern tag_typedef_t tptag_socket_keepalive_ref;
 #define TPTAG_SOCKET_KEEPALIVE_REF(x) tptag_socket_keepalive_ref, tag_uint_vr(&(x))
 
+#if defined (__linux__)
+TPORT_DLL extern tag_typedef_t tptag_socket_bind_ifc;
+#define TPTAG_SOCKET_BIND_IFC(x) tptag_socket_bind_ifc, tag_bool_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_socket_bind_ifc_ref;
+#define TPTAG_SOCKET_BIND_IFC_REF(x) tptag_socket_bind_ifc_ref, tag_bool_vr(&(x))
+#endif
+
 TPORT_DLL extern tag_typedef_t tptag_keepalive;
 #define TPTAG_KEEPALIVE(x) tptag_keepalive, tag_uint_v((x))
 

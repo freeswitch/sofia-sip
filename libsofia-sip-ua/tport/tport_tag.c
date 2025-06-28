@@ -247,6 +247,21 @@ tag_typedef_t tptag_pingpong = UINTTAG_TYPEDEF(pingpong);
  */
 tag_typedef_t tptag_pong2ping = BOOLTAG_TYPEDEF(pong2ping);
 
+#if defined (__linux__)
+/**@def TPTAG_SOCKET_BIND_IFC(x)
+ *
+ * Explicit socket binding to network interface (Linux only).
+ *
+ * If true, perform a setsockopt() SO_BINDTODEVICE.
+ *
+ * This is to get around an issue in certain Linux kernel whereas in a
+ * multi-homed environment, a socket might bind to the wrong (primary)
+ * network interface rather than the intended ifc.
+ *
+ */
+tag_typedef_t tptag_socket_bind_ifc = BOOLTAG_TYPEDEF(socket_bind_ifc);
+#endif
+
 /**@def TPTAG_SIGCOMP_LIFETIME(x)
  *
  * Default SigComp lifetime in seconds.
