@@ -70,3 +70,7 @@ test-driver
 utils/sip-date
 utils/sip-dig
 utils/sip-options
+
+#cmake
+.idea
+*build*

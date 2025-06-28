@@ -1,0 +1,23 @@
+if (__SIZE_COMPAT_INCLUDED)
+    return()
+endif (__SIZE_COMPAT_INCLUDED)
+set(__SIZE_COMPAT_INCLUDED TRUE)
+
+option(ENABLE_SIZE_COMPAT "use compatibility size_t types" OFF)
+
+# define sofia_size_t
+if (ENABLE_SIZE_COMPAT)
+    set(SOFIA_ISIZE_T  size_t)
+    set(ISIZE_MAX      SIZE_MAX)
+    set(SOFIA_ISSIZE_T ssize_t)
+    set(ISSIZE_MAX     SSIZE_MAX)
+    set(SOFIA_USIZE_T  size_t)
+    set(USIZE_MAX      SIZE_MAX)
+else ()
+    set(SOFIA_ISIZE_T  int)
+    set(ISIZE_MAX      INT_MAX)
+    set(SOFIA_ISSIZE_T int)
+    set(ISSIZE_MAX     INT_MAX)
+    set(SOFIA_USIZE_T  unsigned)
+    set(USIZE_MAX      UINT_MAX)
+endif (ENABLE_SIZE_COMPAT)
