@@ -39,6 +39,7 @@
 
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_header.h>
+#include <sofia-sip/nta_tag.h>
 #include <sofia-sip/soa.h>
 #include <sofia-sip/su_tagarg.h>
 #include <sofia-sip/su_string.h>
@@ -1570,6 +1571,250 @@ START_TEST(call_2_4_5)
 }
 END_TEST
 
+/* NUA sends INVITE, receives 183 with 100rel, sends PRACK,
+   receives 200 for it */
+static struct message *
+invite_with_100rel_sent_by_nua(nua_handle_t *nh)
+{
+  struct message *invite, *prack;
+  int with_sdp;
+
+  invite = invite_sent_by_nua(
+    nh,
+    NUTAG_MEDIA_ENABLE(0),
+    SIPTAG_CONTENT_TYPE_STR("application/sdp"),
+    SIPTAG_PAYLOAD_STR(
+      "v=0" CRLF
+      "o=- 6805647540234172778 5821668777690722690 IN IP4 127.0.0.1" CRLF
+      "s=-" CRLF
+      "c=IN IP4 127.0.0.1" CRLF
+      "m=audio 5004 RTP/AVP 0 8" CRLF),
+    TAG_END());
+
+  prack = respond_with_100rel(invite, dialog, with_sdp = 0,
+			      SIP_183_SESSION_PROGRESS,
+			      TAG_END());
+  s2_sip_respond_to(prack, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(prack);
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless_event(nua_r_prack, 200);
+
+  return invite;
+}
+
+/* Let timer D fire, there should be no events */
+static void
+fast_forward_over_timer_d(void)
+{
+  int i;
+
+  for (i = 0; i < 34; i++) {
+    s2_nua_fast_forward(1, s2base->root);
+  }
+
+  fail_if(s2->events != NULL);
+}
+
+START_TEST(call_2_4_6)
+{
+  nua_handle_t *nh;
+  struct message *invite;
+
+  S2_CASE("2.4.6", "Cancel call with 100rel",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "sends CANCEL, receives 487, sends ACK.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  cancel_by_nua(nh, invite, dialog, TAG_END());
+  s2_sip_free_message(invite);
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
+
+  fast_forward_over_timer_d();
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+START_TEST(call_2_4_7)
+{
+  nua_handle_t *nh;
+  struct message *invite, *cancel;
+
+  S2_CASE("2.4.7", "Destroy proceeding call with 100rel",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "handle is destroyed, NUA sends CANCEL, "
+	  "receives 487 from the same branch, sends ACK.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  nua_handle_destroy(nh);
+
+  cancel = s2_sip_wait_for_request(SIP_METHOD_CANCEL);
+  fail_if(!cancel);
+  s2_sip_respond_to(cancel, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(cancel);
+
+  s2_sip_respond_to(invite, dialog, SIP_487_REQUEST_CANCELLED, TAG_END());
+  s2_sip_free_message(invite);
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+
+  fast_forward_over_timer_d();
+}
+END_TEST
+
+START_TEST(call_2_4_8)
+{
+  nua_handle_t *nh;
+  struct message *invite;
+
+  S2_CASE("2.4.8", "Call with 100rel is rejected",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 486, sends ACK, "
+	  "receives 486 again, sends ACK again.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  s2_sip_respond_to(invite, dialog, SIP_486_BUSY_HERE, TAG_END());
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+  fail_unless_event(nua_r_invite, 486);
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
+
+  /* Retransmission */
+  s2_sip_respond_to(invite, dialog, SIP_486_BUSY_HERE, TAG_END());
+  s2_sip_free_message(invite);
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+
+  fast_forward_over_timer_d();
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+START_TEST(call_2_4_9)
+{
+  nua_handle_t *nh;
+  struct message *invite;
+
+  S2_CASE("2.4.9", "Call with 100rel, 200 OK is retransmitted",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 200, sends ACK, "
+	  "receives 200 again, sends ACK again.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  s2_sip_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  fail_unless_event(nua_r_invite, 200);
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+
+  /* Retransmission */
+  s2_sip_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(invite);
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+  fail_if(s2_sip_check_request_timeout(SIP_METHOD_BYE, 10));
+
+  fast_forward_over_timer_d();
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+START_TEST(call_2_4_10)
+{
+  nua_handle_t *nh;
+  struct message *invite;
+  int i;
+
+  S2_CASE("2.4.10", "Call with 100rel, 200 OK is retransmitted late",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 200, sends ACK, "
+	  "receives 200 again after the ACK transaction has terminated "
+	  "but before timer D of the INVITE transaction, "
+	  "call stays up.");
+
+  nua_set_params(nua, NTATAG_SIP_T1X64(8000), TAG_END());
+  fail_unless_event(nua_r_set_params, 200);
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  s2_sip_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  fail_unless_event(nua_r_invite, 200);
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+
+  /* Let the ACK transaction terminate */
+  for (i = 0; i < 10; i++) {
+    s2_nua_fast_forward(1, s2base->root);
+  }
+
+  /* Retransmission */
+  s2_sip_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(invite);
+  fail_if(s2_sip_check_request_timeout(SIP_METHOD_BYE, 100));
+
+  fast_forward_over_timer_d();
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+START_TEST(call_2_4_11)
+{
+  nua_handle_t *nh;
+  struct message *invite, *cancel, *bye;
+
+  S2_CASE("2.4.11", "Destroyed call with 100rel is answered",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "handle is destroyed, NUA sends CANCEL, "
+	  "receives 200 from the same branch, sends ACK and BYE.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  nua_handle_destroy(nh);
+
+  cancel = s2_sip_wait_for_request(SIP_METHOD_CANCEL);
+  fail_if(!cancel);
+  s2_sip_respond_to(cancel, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(cancel);
+
+  s2_sip_respond_to(invite, dialog, SIP_200_OK,
+		    SIPTAG_CONTACT(s2sip->contact),
+		    TAG_END());
+  s2_sip_free_message(invite);
+
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+  bye = s2_sip_wait_for_request(SIP_METHOD_BYE);
+  fail_if(!bye);
+  s2_sip_respond_to(bye, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(bye);
+
+  fast_forward_over_timer_d();
+}
+END_TEST
+
 TCase *invite_100rel_tcase(int threading)
 {
   TCase *tc = tcase_create("2.4 - INVITE with 100rel");
@@ -1580,6 +1825,12 @@ TCase *invite_100rel_tcase(int threading)
     tcase_add_test(tc, call_2_4_3);
     tcase_add_test(tc, call_2_4_4);
     tcase_add_test(tc, call_2_4_5);
+    tcase_add_test(tc, call_2_4_6);
+    tcase_add_test(tc, call_2_4_7);
+    tcase_add_test(tc, call_2_4_8);
+    tcase_add_test(tc, call_2_4_9);
+    tcase_add_test(tc, call_2_4_10);
+    tcase_add_test(tc, call_2_4_11);
   }
   return tc;
 }
