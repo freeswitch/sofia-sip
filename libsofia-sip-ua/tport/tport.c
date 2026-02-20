@@ -62,6 +62,14 @@ typedef struct tport_nat_s tport_nat_t;
 #include <errno.h>
 #include <limits.h>
 
+#if HAVE_WIN32
+#include <io.h>
+#define access(_filename, _mode) _access(_filename, _mode)
+#define R_OK (04)
+#else
+#include <unistd.h>
+#endif
+
 #ifndef IPPROTO_SCTP
 #define IPPROTO_SCTP (132)
 #endif
@@ -71,6 +79,8 @@ typedef struct tport_nat_s tport_nat_t;
 #include <sofia-sip/rbtree.h>
 
 #include "tport_internal.h"
+#include "tport_tls.h"
+#include "tport_ws.h"
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -278,6 +288,59 @@ int tport_has_tls(tport_t const *self)
 int tport_is_verified(tport_t const *self)
 {
   return tport_has_tls(self) && self->tp_is_connected && self->tp_verified;
+}
+
+/** Reload TLS certificates on all TLS primary transports. */
+int tport_reload_tls(tport_t *self, char const *cert_dir)
+{
+  su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
+  tls_issues_t ti = {0};
+  tport_t *tp;
+  int reloaded = 0;
+
+  if (!self || !cert_dir)
+    return -1;
+
+  su_home_auto(autohome, sizeof autohome);
+
+  ti.key = su_sprintf(autohome, "%s/%s", cert_dir, "agent.pem");
+  if (access(ti.key, R_OK) != 0)
+    ti.key = su_sprintf(autohome, "%s/%s", cert_dir, "tls.pem");
+  ti.cert = ti.key;
+  ti.CAfile = su_sprintf(autohome, "%s/%s", cert_dir, "cafile.pem");
+  if (access(ti.CAfile, R_OK) != 0)
+    ti.CAfile = su_sprintf(autohome, "%s/%s", cert_dir, "tls.pem");
+  ti.CApath = su_strdup(autohome, cert_dir);
+  ti.randFile = su_sprintf(autohome, "%s/%s", cert_dir, "tls_seed.dat");
+  ti.configured = 1;
+
+  for (tp = tport_primaries(self); tp; tp = tport_next(tp)) {
+    /* Reload WSS transport certificates */
+    if (tp->tp_protoname && strcasecmp(tp->tp_protoname, "wss") == 0) {
+      tport_ws_primary_t *wspri = (tport_ws_primary_t *)tp->tp_pri;
+      if (wspri->ssl_ctx) {
+        SSL_CTX *new_ctx = tport_wss_create_ssl_ctx(cert_dir);
+        if (new_ctx) {
+          SSL_CTX_free(wspri->ssl_ctx);
+          wspri->ssl_ctx = new_ctx;
+          reloaded++;
+          SU_DEBUG_3(("tport_reload_tls: WSS certificates reloaded successfully\n" VA_NONE));
+        } else {
+          SU_DEBUG_1(("tport_reload_tls: WSS certificate reload failed\n" VA_NONE));
+        }
+      }
+    } else if (tport_has_tls(tp)) {
+      tport_tls_primary_t *tlspri = (tport_tls_primary_t *)tp->tp_pri;
+      if (tlspri->tlspri_master) {
+        if (tls_reload_cert(tlspri->tlspri_master, &ti) == 0)
+          reloaded++;
+      }
+    }
+  }
+
+  su_home_deinit(autohome);
+
+  return reloaded;
 }
 
 /** Return true if transport is being updated. */

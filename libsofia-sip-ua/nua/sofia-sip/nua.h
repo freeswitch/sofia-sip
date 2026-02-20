@@ -161,7 +161,8 @@ typedef enum nua_event_e {
   nua_i_register,		/**< Incoming REGISTER. @NEW_1_12_4. */
   nua_r_unref,			/** Calls nua_unref() from dispatcher @NEW_1_13_3 */
   nua_r_handle_unref,	/** Calls nua_handle_unref() from dispatcher @NEW_1_13_3 */
-  nua_r_nta_agent_resolver_clean_dns_cache /** Calls nua_resolver_clean_dns_cache() from dispatcher @NEW_1_13_12 */
+  nua_r_nta_agent_resolver_clean_dns_cache, /** Calls nua_resolver_clean_dns_cache() from dispatcher @NEW_1_13_12 */
+  nua_r_reload_tls		/** Calls nta_agent_reload_tls() from dispatcher @NEW_1_13_18 */
 } nua_event_t;
 
 typedef struct event_s {
@@ -404,6 +405,7 @@ SOFIAPUBFUN void nua_unref_user(nua_t *nua);
 SOFIAPUBFUN void nua_handle_unref_user(nua_handle_t *nh);
 SOFIAPUBFUN su_home_t *nua_get_home(nua_t *nua);
 SOFIAPUBFUN nta_agent_t *nua_get_agent(nua_t *nua);
+SOFIAPUBFUN int nua_reload_tls(nua_t *nua, char const *cert_dir);
 SOFIAPUBFUN void nua_handle_set_has_invite(nua_handle_t *nh, unsigned val);
 SOFIAPUBFUN unsigned nua_handle_is_destroyed(nua_handle_t *nh);
 SOFIAPUBFUN void nua_handle_dialog_usage_set_refresh_range(nua_handle_t *nh,

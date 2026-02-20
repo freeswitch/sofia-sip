@@ -378,6 +378,7 @@ char const *nua_event_name(nua_event_t event)
   case nua_r_ack: return "nua_r_ack";
   case nua_r_handle_unref: return "nua_r_handle_unref";
   case nua_r_unref: return "nua_r_unref";
+  case nua_r_reload_tls: return "nua_r_reload_tls";
   default: return "NUA_UNKNOWN";
   }
 }

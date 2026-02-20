@@ -136,6 +136,7 @@ nta_agent_t *nta_agent_create(su_root_t *root,
 
 SOFIAPUBFUN void nta_agent_destroy(nta_agent_t *agent);
 SOFIAPUBFUN void nta_agent_resolver_clean_cache(nta_agent_t *agent);
+SOFIAPUBFUN int nta_agent_reload_tls(nta_agent_t *agent, char const *cert_dir);
 
 SOFIAPUBFUN char const *nta_agent_version(nta_agent_t const *a);
 SOFIAPUBFUN nta_agent_magic_t *nta_agent_magic(nta_agent_t const *a);

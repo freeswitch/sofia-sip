@@ -47,6 +47,7 @@
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_header.h>
 #include <sofia-sip/nta.h>
+#include <sofia-sip/tport_tag.h>
 
 #include "sofia-sip/nua.h"
 #include "sofia-sip/nua_tag.h"
@@ -89,7 +90,7 @@ su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
  * @param root            Pointer to a root object
  * @param callback        Pointer to event callback function
  * @param magic           Pointer to callback context
- * @param tag, value, ... List of tagged parameters
+ * @param tag,Â value, ... List of tagged parameters
  *
  * @retval !=NULL a pointer to a @nua stack object
  * @retval NULL upon an error
@@ -1129,6 +1130,21 @@ nta_agent_t *nua_get_agent(nua_t *nua)
 		return nua->nua_nta;
 	else
 		return NULL;
+}
+
+/** Reload TLS certificates for all TLS transports in this nua instance.
+ * Sends a signal to the nua event loop so the reload happens on the
+ * internal thread that handles signals.
+ */
+int nua_reload_tls(nua_t *nua, char const *cert_dir)
+{
+	if (!nua || !cert_dir)
+		return -1;
+
+	enter;
+
+	return nua_signal(nua, NULL, NULL, nua_r_reload_tls, 0, NULL,
+			  TPTAG_CERTIFICATE(cert_dir), TAG_NULL());
 }
 
 /** Set has invite of a nua handle */

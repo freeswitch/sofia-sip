@@ -699,6 +699,14 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
   case nua_r_nta_agent_resolver_clean_dns_cache:
     nta_agent_resolver_clean_cache(nua->nua_nta);
     break;
+  case nua_r_reload_tls:
+  {
+    char const *cert_dir = NULL;
+
+    tl_gets(tags, TPTAG_CERTIFICATE_REF(cert_dir), TAG_END());
+    nta_agent_reload_tls(nua->nua_nta, cert_dir);
+    break;
+  }
   default:
     break;
   }

@@ -94,6 +94,8 @@ int tport_ws_next_timer(tport_t *self, su_time_t *, char const **);
 void tport_ws_timer(tport_t *self, su_time_t);
 static void tport_ws_deinit_secondary(tport_t *self);
 
+SSL_CTX *tport_wss_create_ssl_ctx(char const *cert_dir);
+
 SOFIA_END_DECLS
 
 #endif

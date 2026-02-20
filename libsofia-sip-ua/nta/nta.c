@@ -1120,6 +1120,13 @@ void nta_agent_resolver_clean_cache(nta_agent_t *agent)
 #endif
 }
 
+int nta_agent_reload_tls(nta_agent_t *agent, char const *cert_dir)
+{
+  if (!agent || !agent->sa_tports)
+    return -1;
+  return tport_reload_tls(agent->sa_tports, cert_dir);
+}
+
 /** Return agent context. */
 nta_agent_magic_t *nta_agent_magic(nta_agent_t const *agent)
 {

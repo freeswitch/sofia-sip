@@ -128,6 +128,11 @@ struct tls_s {
 
   /* Host names */
   su_strlst_t *subjects;
+
+  /* tls_issues_t scalars needed to recreate SSL_CTX on cert reload */
+  int version;
+  unsigned timeout;
+  unsigned verify_depth;
 };
 
 enum { tls_buffer_size = 16384 };
@@ -268,7 +273,7 @@ void tls_init(void) {
 
 #ifndef OPENSSL_NO_EC
 static
-int tls_init_ecdh_curve(tls_t *tls)
+int tls_init_ecdh_curve(SSL_CTX *ctx)
 {
 #if OPENSSL_VERSION_NUMBER < 0x10002000
   EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
@@ -277,15 +282,15 @@ int tls_init_ecdh_curve(tls_t *tls)
     errno = EIO;
     return -1;
   }
-  SSL_CTX_set_options(tls->ctx, SSL_OP_SINGLE_ECDH_USE);
-  SSL_CTX_set_tmp_ecdh(tls->ctx, ecdh);
+  SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
+  SSL_CTX_set_tmp_ecdh(ctx, ecdh);
   EC_KEY_free(ecdh);
   return 0;
 #elif OPENSSL_VERSION_NUMBER < 0x10100000
-  if (!SSL_CTX_set_ecdh_auto(tls->ctx, 1)) {
+  if (!SSL_CTX_set_ecdh_auto(ctx, 1)) {
     return -1;
   }
-  SSL_CTX_set_options(tls->ctx, SSL_OP_SINGLE_ECDH_USE);
+  SSL_CTX_set_options(ctx, SSL_OP_SINGLE_ECDH_USE);
   return 0;
 #else
   return 0;
@@ -294,9 +299,9 @@ int tls_init_ecdh_curve(tls_t *tls)
 #endif
 
 static
-int tls_init_context(tls_t *tls, tls_issues_t const *ti)
+SSL_CTX *tls_create_ctx(tls_issues_t const *ti)
 {
-  int verify;
+  SSL_CTX *ctx;
   static int random_loaded;
 
   ONCE_INIT(tls_init_once);
@@ -308,11 +313,9 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 	!RAND_load_file(ti->randFile, 1024 * 1024)) {
       if (ti->configured > 1) {
 	SU_DEBUG_3(("%s: cannot open randFile %s\n",
-		   "tls_init_context", ti->randFile));
-	tls_log_errors(3, "tls_init_context", 0);
+		   "tls_create_ctx", ti->randFile));
+	tls_log_errors(3, "tls_create_ctx", 0);
       }
-      /* errno = EIO; */
-      /* return -1; */
     }
   }
 
@@ -321,69 +324,69 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   signal(SIGPIPE, SIG_IGN);
 #endif
 
-  if (tls->ctx == NULL)
-    if (!(tls->ctx = SSL_CTX_new((SSL_METHOD*)SSLv23_method()))) {
-      tls_log_errors(1, "SSL_CTX_new() failed", 0);
-      errno = EIO;
-      return -1;
-    }
+  if (!(ctx = SSL_CTX_new((SSL_METHOD*)SSLv23_method()))) {
+    tls_log_errors(1, "SSL_CTX_new() failed", 0);
+    errno = EIO;
+    return NULL;
+  }
+
   if (!(ti->version & TPTLS_VERSION_SSLv2))
-    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_SSLv2);
+    SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
   if (!(ti->version & TPTLS_VERSION_SSLv3))
-    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_SSLv3);
+    SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv3);
   if (!(ti->version & TPTLS_VERSION_TLSv1))
-    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_TLSv1);
+    SSL_CTX_set_options(ctx, SSL_OP_NO_TLSv1);
   if (!(ti->version & TPTLS_VERSION_TLSv1_1))
-    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_TLSv1_1);
+    SSL_CTX_set_options(ctx, SSL_OP_NO_TLSv1_1);
   if (!(ti->version & TPTLS_VERSION_TLSv1_2))
-    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_TLSv1_2);
-  SSL_CTX_sess_set_remove_cb(tls->ctx, NULL);
-  SSL_CTX_set_timeout(tls->ctx, ti->timeout);
+    SSL_CTX_set_options(ctx, SSL_OP_NO_TLSv1_2);
+  SSL_CTX_sess_set_remove_cb(ctx, NULL);
+  SSL_CTX_set_timeout(ctx, ti->timeout);
   /* CRIME (CVE-2012-4929) mitigation */
-  SSL_CTX_set_options(tls->ctx, SSL_OP_NO_COMPRESSION);
+  SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION);
 
   /* Set callback if we have a passphrase */
   if (ti->passphrase != NULL) {
-    SSL_CTX_set_default_passwd_cb(tls->ctx, passwd_cb);
-    SSL_CTX_set_default_passwd_cb_userdata(tls->ctx, (void *)ti);
+    SSL_CTX_set_default_passwd_cb(ctx, passwd_cb);
+    SSL_CTX_set_default_passwd_cb_userdata(ctx, (void *)ti);
   }
 
-  if (!SSL_CTX_use_certificate_file(tls->ctx,
+  if (!SSL_CTX_use_certificate_file(ctx,
 				    ti->cert,
 				    SSL_FILETYPE_PEM)) {
     if (ti->configured > 0) {
       SU_DEBUG_1(("%s: invalid local certificate: %s\n",
-		 "tls_init_context", ti->cert));
-      tls_log_errors(3, "tls_init_context", 0);
+		 "tls_create_ctx", ti->cert));
+      tls_log_errors(3, "tls_create_ctx", 0);
 #if require_client_certificate
       errno = EIO;
-      return -1;
+      goto fail;
 #endif
     }
   }
 
-  if (!SSL_CTX_use_PrivateKey_file(tls->ctx,
+  if (!SSL_CTX_use_PrivateKey_file(ctx,
                                    ti->key,
                                    SSL_FILETYPE_PEM)) {
     if (ti->configured > 0) {
       SU_DEBUG_1(("%s: invalid private key: %s\n",
-		 "tls_init_context", ti->key));
-      tls_log_errors(3, "tls_init_context(key)", 0);
+		 "tls_create_ctx", ti->key));
+      tls_log_errors(3, "tls_create_ctx(key)", 0);
 #if require_client_certificate
       errno = EIO;
-      return -1;
+      goto fail;
 #endif
     }
   }
 
-  if (!SSL_CTX_check_private_key(tls->ctx)) {
+  if (!SSL_CTX_check_private_key(ctx)) {
     if (ti->configured > 0) {
       SU_DEBUG_1(("%s: private key does not match the certificate public key\n",
-		  "tls_init_context"));
+		  "tls_create_ctx"));
     }
 #if require_client_certificate
     errno = EIO;
-    return -1;
+    goto fail;
 #endif
 #ifndef OPENSSL_NO_DH
   } else {
@@ -391,14 +394,14 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
     if (bio != NULL) {
       DH *dh = PEM_read_bio_DHparams(bio, NULL, NULL, NULL);
       if (dh != NULL) {
-        if (!SSL_CTX_set_tmp_dh(tls->ctx, dh)) {
+        if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
           SU_DEBUG_1(("%s: invalid DH parameters (PFS) because %s: %s\n",
-                      "tls_init_context",
+                      "tls_create_ctx",
                       ERR_reason_error_string(ERR_get_error()),
                       ti->key));
         } else {
           long options = SSL_OP_CIPHER_SERVER_PREFERENCE | SSL_OP_SINGLE_DH_USE;
-          SSL_CTX_set_options(tls->ctx, options);
+          SSL_CTX_set_options(ctx, options);
           SU_DEBUG_3(("%s\n", "tls: initialized DHE"));
         }
         DH_free(dh);
@@ -408,16 +411,73 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 #endif
   }
 
-  if (!SSL_CTX_load_verify_locations(tls->ctx,
+  if (!SSL_CTX_load_verify_locations(ctx,
                                      ti->CAfile,
                                      ti->CApath)) {
     SU_DEBUG_1(("%s: error loading CA list: %s\n",
-		 "tls_init_context", ti->CAfile));
+		 "tls_create_ctx", ti->CAfile));
     if (ti->configured > 0)
-      tls_log_errors(3, "tls_init_context(CA)", 0);
+      tls_log_errors(3, "tls_create_ctx(CA)", 0);
     errno = EIO;
-    return -1;
+    goto fail;
   }
+
+#ifndef OPENSSL_NO_EC
+  if (tls_init_ecdh_curve(ctx) == 0) {
+    SU_DEBUG_3(("%s\n", "tls: initialized ECDH"));
+  } else {
+    SU_DEBUG_3(("%s\n", "tls: failed to initialize ECDH"));
+  }
+#endif
+
+  if (!SSL_CTX_set_cipher_list(ctx, ti->ciphers)) {
+    SU_DEBUG_1(("%s: error setting cipher list\n", "tls_create_ctx"));
+    tls_log_errors(3, "tls_create_ctx", 0);
+    errno = EIO;
+    goto fail;
+  }
+
+  {
+    int verify;
+    if (ti->policy & 0x1)
+      verify = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+    else
+      verify = SSL_VERIFY_NONE;
+    SSL_CTX_set_verify_depth(ctx, ti->verify_depth);
+    SSL_CTX_set_verify(ctx, verify, tls_verify_cb);
+  }
+
+  {
+    unsigned char sessionId[32] = "sofia/tls";
+    RAND_bytes(sessionId, sizeof(sessionId));
+    if (!SSL_CTX_set_session_id_context(ctx, (void *)sessionId, sizeof(sessionId))) {
+      tls_log_errors(3, "tls_create_ctx", 0);
+    }
+  }
+
+  if (ti->CAfile != NULL) {
+    SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(ti->CAfile));
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+    if (SSL_CTX_get_client_CA_list(ctx) == NULL)
+#else
+    if (ctx->client_CA == NULL)
+#endif
+      tls_log_errors(3, "tls_create_ctx", 0);
+  }
+
+  return ctx;
+
+ fail:
+  SSL_CTX_free(ctx);
+  return NULL;
+}
+
+static
+int tls_init_context(tls_t *tls, tls_issues_t const *ti)
+{
+  tls->ctx = tls_create_ctx(ti);
+  if (!tls->ctx)
+    return -1;
 
   /* corresponds to (enum tport_tls_verify_policy) */
   tls->verify_incoming = (ti->policy & 0x1) ? 1 : 0;
@@ -426,36 +486,9 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   tls->verify_subj_out = (ti->policy & 0x8) ? tls->verify_outgoing : 0;
   tls->verify_date     = (ti->verify_date)  ? 1 : 0;
 
-  if (tls->verify_incoming)
-    verify = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-  else
-    verify = SSL_VERIFY_NONE;
-
-  SSL_CTX_set_verify_depth(tls->ctx, ti->verify_depth);
-  SSL_CTX_set_verify(tls->ctx, verify, tls_verify_cb);
-#ifndef OPENSSL_NO_EC
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-  if (tls_init_ecdh_curve(tls) == 0) {
-    SU_DEBUG_3(("%s\n", "tls: initialized ECDH"));
-  } else {
-    SU_DEBUG_3(("%s\n", "tls: failed to initialize ECDH"));
-  }
-#else
-  if (tls->accept == 0) {
-    SU_DEBUG_3(("%s\n", "tls: initialized ECDH"));
-  } else if (tls_init_ecdh_curve(tls) == 0) {
-    SU_DEBUG_3(("%s\n", "tls: initialized ECDH"));
-  } else {
-    SU_DEBUG_3(("%s\n", "tls: failed to initialize ECDH"));
-  }
-#endif
-#endif
-  if (!SSL_CTX_set_cipher_list(tls->ctx, ti->ciphers)) {
-    SU_DEBUG_1(("%s: error setting cipher list\n", "tls_init_context"));
-    tls_log_errors(3, "tls_init_context", 0);
-    errno = EIO;
-    return -1;
-  }
+  tls->version      = ti->version;
+  tls->timeout      = ti->timeout;
+  tls->verify_depth = ti->verify_depth;
 
   return 0;
 }
@@ -499,13 +532,7 @@ int tls_get_socket(tls_t *tls)
 
 tls_t *tls_init_master(tls_issues_t *ti)
 {
-  /* Default id in case RAND fails */
-  unsigned char sessionId[32] = "sofia/tls";
   tls_t *tls;
-
-#if HAVE_SIGPIPE
-  signal(SIGPIPE, SIG_IGN);  /* Ignore spurios SIGPIPE from OpenSSL */
-#endif
 
   tls_set_default(ti);
 
@@ -517,25 +544,6 @@ tls_t *tls_init_master(tls_issues_t *ti)
     tport_tls_free(tls);
     errno = err;
     return NULL;
-  }
-
-  RAND_bytes(sessionId, sizeof(sessionId));
-
-  if (!SSL_CTX_set_session_id_context(tls->ctx,
-                                 (void*) sessionId,
-				 sizeof(sessionId))) {
-    tls_log_errors(3, "tls_init_master", 0);
-  }
-
-  if (ti->CAfile != NULL) {
-    SSL_CTX_set_client_CA_list(tls->ctx,
-                               SSL_load_client_CA_file(ti->CAfile));
-#if OPENSSL_VERSION_NUMBER >= 0x10100000
-	if (SSL_CTX_get_client_CA_list(tls->ctx) == NULL)
-#else
-	if (tls->ctx->client_CA == NULL)
-#endif
-      tls_log_errors(3, "tls_init_master", 0);
   }
 
 #if 0
@@ -552,6 +560,43 @@ tls_t *tls_init_master(tls_issues_t *ti)
 #endif
 
   return tls;
+}
+
+int tls_reload_cert(tls_t *tls, tls_issues_t *ti)
+{
+  SSL_CTX *new_ctx, *old_ctx;
+
+  if (!tls || tls->type != tls_master || !tls->ctx) {
+    SU_DEBUG_1(("tls_reload_cert: invalid master context\n" VA_NONE));
+    return -1;
+  }
+
+  /* These settings don't change without profile restart,
+   * caller provides only file paths, fill in the rest from master */
+  ti->version      = tls->version;
+  ti->timeout      = tls->timeout;
+  ti->verify_depth = tls->verify_depth;
+  ti->policy       = (tls->verify_incoming ? 0x1 : 0)
+                   | (tls->verify_outgoing ? 0x2 : 0)
+                   | (tls->verify_subj_in  ? 0x4 : 0)
+                   | (tls->verify_subj_out ? 0x8 : 0);
+  ti->verify_date  = tls->verify_date;
+
+  tls_set_default(ti);
+
+  new_ctx = tls_create_ctx(ti);
+  if (!new_ctx) {
+    SU_DEBUG_1(("tls_reload_cert: failed to create new context\n" VA_NONE));
+    return -1;
+  }
+
+  /* Swap - existing SSL connections hold refs to old ctx */
+  old_ctx = tls->ctx;
+  tls->ctx = new_ctx;
+  SSL_CTX_free(old_ctx);
+
+  SU_DEBUG_3(("tls_reload_cert: certificates reloaded successfully\n" VA_NONE));
+  return 0;
 }
 
 tls_t *tls_init_secondary(tls_t *master, int sock, int accept)

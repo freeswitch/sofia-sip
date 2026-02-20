@@ -81,6 +81,7 @@ typedef struct tport_tls_primary_s {
 
 tls_t *tls_init_master(tls_issues_t *tls_issues);
 tls_t *tls_init_secondary(tls_t *tls_master, int sock, int accept);
+int tls_reload_cert(tls_t *tls, tls_issues_t *ti);
 void tport_tls_free(tls_t *tls);
 int tls_get_socket(tls_t *tls);
 void tls_log_errors(unsigned level, char const *s, unsigned long e);
