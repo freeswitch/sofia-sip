@@ -1003,6 +1003,89 @@ int test_digest_client(void)
     TEST(as->as_status, 0);
     auth_mod_destroy(am); aucs = NULL;
 
+    /* Test nc reset on new nonce without stale=true.
+     *
+     * When a server issues a fresh 401 with a new nonce but without
+     * stale=true, the nc counter must reset to 00000001 for the new nonce.
+     * See RFC 2617 section 3.2.2.
+     */
+	{
+
+		TEST_1(am = auth_mod_create(root,
+					AUTHTAG_METHOD("Digest"),
+					AUTHTAG_REALM("ims3.so.noklab.net"),
+					AUTHTAG_DB(testpasswd),
+					AUTHTAG_QOP("auth"),
+					AUTHTAG_MAX_NCOUNT(5),
+					AUTHTAG_ALGORITHM("MD5"),
+					TAG_END()));
+
+		/* Get initial 401 challenge (nonce A) */
+		reinit_as(as);
+		auth_mod_check_client(am, as, NULL, ach);
+		TEST(as->as_status, 401);
+		TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response,
+				   sip_authorization_class), 1);
+		TEST(auc_all_credentials(&aucs, "Digest", "\"ims3.so.noklab.net\"",
+					 "user1", "secret"), 1);
+
+		/* Authorize with nonce A — nc must be 00000001 */
+		msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
+		TEST(auc_authorization(&aucs, m2, (msg_pub_t*)sip, rq->rq_method_name,
+				   (url_t *)"sip:surf3@ims3.so.noklab.net",
+				   sip->sip_payload), 1);
+		TEST_1(sip->sip_authorization);
+		TEST_S(msg_header_find_param(sip->sip_authorization->au_common, "nc="),
+		   "00000001");
+
+		/* Server accepts auth with nonce A */
+		reinit_as(as);
+		auth_mod_check_client(am, as, sip->sip_authorization, ach);
+		TEST(as->as_status, 0);
+
+		/* Advance time so the new auth_mod generates a different nonce.
+		 * Nonce includes the timestamp, so a 1-second shift is enough. */
+		offset += 1;
+
+		/* Destroy auth_mod to get a different nonce on next challenge */
+		auth_mod_destroy(am);
+		TEST_1(am = auth_mod_create(root,
+					AUTHTAG_METHOD("Digest"),
+					AUTHTAG_REALM("ims3.so.noklab.net"),
+					AUTHTAG_DB(testpasswd),
+					AUTHTAG_QOP("auth"),
+					AUTHTAG_MAX_NCOUNT(5),
+					AUTHTAG_ALGORITHM("MD5"),
+					TAG_END()));
+
+		/* Get new 401 challenge (nonce B, stale=false).
+		 * auc_challenge returns 0 here because the new nonce without
+		 * stale=true is not recognized as an update at the auc_challenge
+		 * level. The nc reset still happens internally in
+		 * auc_digest_challenge via the cnonce regeneration path. */
+		reinit_as(as);
+		auth_mod_check_client(am, as, NULL, ach);
+		TEST(as->as_status, 401);
+		TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response,
+				   sip_authorization_class), 0);
+
+		/* Authorize with nonce B — nc MUST reset to 00000001, not 00000002 */
+		msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
+		TEST(auc_authorization(&aucs, m2, (msg_pub_t*)sip, rq->rq_method_name,
+				   (url_t *)"sip:surf3@ims3.so.noklab.net",
+				   sip->sip_payload), 1);
+		TEST_1(sip->sip_authorization);
+		TEST_S(msg_header_find_param(sip->sip_authorization->au_common, "nc="),
+		   "00000001");
+
+		/* Server accepts auth with nonce B */
+		reinit_as(as);
+		auth_mod_check_client(am, as, sip->sip_authorization, ach);
+		TEST(as->as_status, 0);
+
+		auth_mod_destroy(am); aucs = NULL;
+	}
+
     /* Test empty realm */
     TEST_1(am = auth_mod_create(root,
 				AUTHTAG_METHOD("Digest"),
