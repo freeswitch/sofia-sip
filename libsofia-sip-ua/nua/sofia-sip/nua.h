@@ -405,6 +405,7 @@ SOFIAPUBFUN void nua_unref_user(nua_t *nua);
 SOFIAPUBFUN void nua_handle_unref_user(nua_handle_t *nh);
 SOFIAPUBFUN su_home_t *nua_get_home(nua_t *nua);
 SOFIAPUBFUN nta_agent_t *nua_get_agent(nua_t *nua);
+#define HAVE_NUA_RELOAD_TLS 1
 SOFIAPUBFUN int nua_reload_tls(nua_t *nua, char const *cert_dir);
 SOFIAPUBFUN void nua_handle_set_has_invite(nua_handle_t *nh, unsigned val);
 SOFIAPUBFUN unsigned nua_handle_is_destroyed(nua_handle_t *nh);
