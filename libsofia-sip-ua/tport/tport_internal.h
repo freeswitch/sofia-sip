@@ -212,6 +212,7 @@ struct tport_s {
 
   msg_t   	     *tp_msg;		/**< Message being received */
   msg_t const        *tp_rlogged;       /**< Last logged when receiving */
+  msg_t const        *tp_rcaptured;     /**< Last HEP-captured when receiving */
   su_time_t           tp_rtime;	        /**< Last time received data */
   unsigned short      tp_ping;	        /**< Whitespace ping being received */
 
