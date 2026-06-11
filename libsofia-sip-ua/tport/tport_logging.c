@@ -47,6 +47,10 @@
 
 #define TPORT_STAMP_SIZE 144
 
+/** Default per-message HEP capture buffer cap in bytes,
+ * used when no bufsize= parameter is given in TPORT_CAPT. */
+#define TPORT_CAPT_BUFSIZE_DEFAULT 16000
+
 /**@var TPORT_LOG
  *
  * Environment variable determining if parsed message contents are logged.
@@ -201,13 +205,14 @@ int tport_open_log(tport_master_t *mr, tagi_t *tags)
         
         snprintf(port, sizeof(port), "%d", iport);
 
-        /* default values for capture protocol and agent id */
+        /* default values for capture protocol, agent id, and per-message buffer cap */
         mr->mr_prot_ver = 3;
-        mr->mr_agent_id = 200;                         
-        
-        /* get all params */      
-        while(p) 
-        {        
+        mr->mr_agent_id = 200;
+        mr->mr_capt_bufsize = TPORT_CAPT_BUFSIZE_DEFAULT;
+
+        /* get all params */
+        while(p)
+        {
                 /* check ; in the URL */
                 if( (p = strchr(p+1, ';')) == 0 ) {                        
                         break;
@@ -238,8 +243,20 @@ int tport_open_log(tport_master_t *mr, tagi_t *tags)
                                 return n;
                         }
                 }
+                else if(strncmp(p, "bufsize=", 8) == 0) {
+                        unsigned bs;
+
+                        p += 8;
+                        bs = (unsigned)atoi(p);
+                        /* HEP envelope length is u16; cap accordingly with headroom for chunks */
+                        if (bs < 2048 || bs > 65000) {
+                                su_log("invalid bufsize; must be in [2048, 65000]\n");
+                                return n;
+                        }
+                        mr->mr_capt_bufsize = bs;
+                }
                 else {
-                       su_log("unsupported capture param\n"); 
+                       su_log("unsupported capture param\n");
                        return n;
                 }
         }  
@@ -480,8 +497,8 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
 #endif
 #if SU_HAVE_IN6
    struct hep_ip6hdr hep_ip6header = {{{{0}}}};
-#endif   
-   int eth_frame_len = 16000;
+#endif
+   unsigned capt_bufsize;
    size_t i, dst = 1;
    tport_master_t *mr;
 
@@ -491,6 +508,7 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
    su_self = self->tp_pri->pri_primary->tp_addr;
 
    mr = self->tp_master;
+   capt_bufsize = mr->mr_capt_bufsize;
    if (mr->mr_capt_src_addr) {
      /* override SRC address with configuration */
      su_self_ext = (void *)mr->mr_capt_src_addr->ai_addr;
@@ -506,7 +524,7 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
    }
 
    /*buffer for ethernet frame*/
-   *buffer = (void*)malloc(eth_frame_len);
+   *buffer = (void*)malloc(capt_bufsize);
 
    /* VOIP Header */   
    hep_header.hp_v =  mr->mr_prot_ver;
@@ -548,7 +566,7 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
    }
       
    /* Copy hepheader */
-   memset(*buffer, '\0', eth_frame_len);
+   memset(*buffer, '\0', capt_bufsize);
    memcpy(*buffer, &hep_header, sizeof(struct hep_hdr));
    buflen = sizeof(struct hep_hdr);
    
@@ -589,7 +607,7 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
        if (len > n)
             len = n;   
        /* if the packet too big for us */
-       if((buflen + len) > eth_frame_len) 
+       if((buflen + len) > capt_bufsize) 
               break;
 
       memcpy(*buffer + buflen , (void*)iov[i].mv_base, len);
@@ -626,7 +644,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
    hep_chunk_ip6_t src_ip6 = {{0}}, dst_ip6 = {{0}};
 #endif   
 
-   int eth_frame_len = 16000;
+   unsigned capt_bufsize;
    size_t i, dst = 1;
    tport_master_t *mr;
 
@@ -636,6 +654,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
    su_self = self->tp_pri->pri_primary->tp_addr;
 
    mr = self->tp_master;
+   capt_bufsize = mr->mr_capt_bufsize;
    if (mr->mr_capt_src_addr) {
      /* override SRC address with configuration */
      su_self_ext = (void *)mr->mr_capt_src_addr->ai_addr;
@@ -770,7 +789,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
     for (i = 0; i < iovused && n > 0; i++) {
        	size_t len = iov[i].mv_len;
 	if (len > n) len = n;   
-	if((payload_len + len) > eth_frame_len) break;
+	if((payload_len + len) > capt_bufsize) break;
         payload_len +=len;
     	n -= len;
     }
@@ -827,7 +846,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
        size_t len = iov[i].mv_len;
        if (len > n) len = n;   
        /* if the packet too big for us */
-       if((buflen + len) > eth_frame_len) 
+       if((buflen + len) > capt_bufsize) 
               break;
 
       memcpy(*buffer + buflen , (void*)iov[i].mv_base, len);

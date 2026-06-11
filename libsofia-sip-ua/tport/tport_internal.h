@@ -310,6 +310,7 @@ struct tport_master {
   tport_primary_t    *mr_primaries;        /**< List of primary contacts */
   unsigned	      mr_prot_ver;	/* hep version */
   unsigned	      mr_agent_id;      /* agent version */
+  unsigned	      mr_capt_bufsize;  /* per-message HEP capture buffer cap (bytes). */
 
   tport_params_t      mr_params[1];
 
