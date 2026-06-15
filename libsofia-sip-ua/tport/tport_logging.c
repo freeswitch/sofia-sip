@@ -602,17 +602,19 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
         buflen += sizeof(struct hep_timehdr);
    }                    
    
-   for (i = 0; i < iovused && n > 0; i++) {
+   for (i = 0; i < iovused && n > 0 && buflen < capt_bufsize; i++) {
        size_t len = iov[i].mv_len;
-       if (len > n)
-            len = n;   
-       /* if the packet too big for us */
-       if((buflen + len) > capt_bufsize) 
-              break;
+       size_t room = capt_bufsize - buflen;
 
-      memcpy(*buffer + buflen , (void*)iov[i].mv_base, len);
-      buflen +=len;
-      n -= len;
+       if (len > n)
+            len = n;
+       /* clamp to remaining capture buffer */
+       if (len > room)
+            len = room;
+
+       memcpy(*buffer + buflen, (void*)iov[i].mv_base, len);
+       buflen += len;
+       n -= len;
    }
    
    return buflen;
@@ -638,8 +640,7 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
    su_time_t now;
    hep_chunk_ip4_t src_ip4 = {{0}}, dst_ip4 = {{0}};
    hep_chunk_t payload_chunk;
-   int orig_n = 0;
-      
+
 #if SU_HAVE_IN6
    hep_chunk_ip6_t src_ip6 = {{0}}, dst_ip6 = {{0}};
 #endif   
@@ -785,16 +786,19 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
 
 
     /* Payload caclulation */
-    orig_n = n;
-    for (i = 0; i < iovused && n > 0; i++) {
-       	size_t len = iov[i].mv_len;
-	if (len > n) len = n;   
-	if((payload_len + len) > capt_bufsize) break;
-        payload_len +=len;
-    	n -= len;
+    for (i = 0; i < iovused && n > 0 && payload_len < capt_bufsize; i++) {
+        size_t len = iov[i].mv_len;
+        size_t room = capt_bufsize - payload_len;
+
+        if (len > n)
+            len = n;
+        /* clamp to remaining capture buffer instead of dropping the chunk */
+        if (len > room)
+            len = room;
+
+        payload_len += len;
+        n -= len;
     }
-    /* restore n */
-    n = orig_n;
 
     /* Payload */
     payload_chunk.vendor_id = htons(0x0000);
@@ -841,17 +845,17 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
     memcpy((char*) *buffer+buflen, &payload_chunk,  sizeof(struct hep_chunk));
     buflen +=  sizeof(struct hep_chunk);
 
-   /* PAYLOAD */
-   for (i = 0; i < iovused && n > 0; i++) {
+   /* PAYLOAD: copy the payload_len bytes counted above (keeps buflen == tlen).
+    * payload_len is already folded into tlen/header.length, so consume it. */
+   for (i = 0; i < iovused && payload_len > 0; i++) {
        size_t len = iov[i].mv_len;
-       if (len > n) len = n;   
-       /* if the packet too big for us */
-       if((buflen + len) > capt_bufsize) 
-              break;
 
-      memcpy(*buffer + buflen , (void*)iov[i].mv_base, len);
-      buflen +=len;
-      n -= len;
+       if (len > payload_len)
+           len = payload_len;
+
+       memcpy(*buffer + buflen, (void*)iov[i].mv_base, len);
+       buflen += len;
+       payload_len -= len;
    }
 
    free(hg);
