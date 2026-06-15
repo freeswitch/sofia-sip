@@ -66,6 +66,7 @@ jobs:
     name: 'DEB-MIRROR'
     if: >-
       ${{
+        github.repository == 'freeswitch/sofia-sip' &&
         (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) &&
         (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
       }}
@@ -133,8 +134,9 @@ jobs:
     name: 'Publish build data to meta-repo'
     if: >-
       ${{
-        github.event_name == 'push' ||
-        (github.event_name == 'workflow_dispatch' && inputs.publish)
+        github.repository == 'freeswitch/sofia-sip' &&
+        (github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish))
       }}
     needs:
       - deb
