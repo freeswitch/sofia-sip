@@ -102,6 +102,11 @@ static char const __func__[] = "tport";
 
 #define TP_STACK   tp_master->mr_stack
 
+/* Upper bound on how much of a received message is reassembled for HEP
+ * capture. Large or heavily fragmented messages may be captured truncated;
+ * raise this if that happens. */
+#define TPORT_CAPT_IOVMAX 80
+
 /* Define macros for rbtree implementation */
 #define TP_LEFT(tp) ((tp)->tp_left)
 #define TP_RIGHT(tp) ((tp)->tp_right)
@@ -2743,8 +2748,17 @@ msg_t *tport_msg_alloc(tport_t const *self, usize_t size)
 {
   if (self) {
     tport_master_t *mr = self->tp_master;
-    msg_t *msg = mr->mr_tpac->tpac_alloc(mr->mr_stack, mr->mr_log,
-					 NULL, size, self, NULL);
+    int flags = mr->mr_log;
+    msg_t *msg;
+
+    /* Capture rebuilds the payload via msg_iovec(), which needs the
+     * header wire image that only MSG_DO_EXTRACT_COPY preserves. */
+    if (mr->mr_capt_sock) {
+      flags |= MSG_DO_EXTRACT_COPY;
+    }
+
+    msg = mr->mr_tpac->tpac_alloc(mr->mr_stack, flags,
+              NULL, size, self, NULL);
     if (msg) {
       su_addrinfo_t *mai = msg_addrinfo(msg);
       su_addrinfo_t const *tai = self->tp_addrinfo;
@@ -3056,6 +3070,8 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
 
   if (self->tp_rlogged != msg)
     self->tp_rlogged = NULL;
+  if (self->tp_rcaptured != msg)
+    self->tp_rcaptured = NULL;
 
   self->tp_msg = msg;
 }
@@ -3113,6 +3129,26 @@ void tport_deliver(tport_t *self,
     char const *via = "recv";
     tport_log_msg(self, msg, via, "from", now);
     self->tp_rlogged = msg;
+  }
+
+  /* Capture needs the wire image MSG_FLG_EXTRACT_COPY preserves; messages
+   * allocated before capture was enabled lack it, so skip them. */
+  if (!error && self->tp_master->mr_capt_sock && msg != self->tp_rcaptured
+      && msg_get_flags(msg, MSG_FLG_EXTRACT_COPY)) {
+    msg_iovec_t iov[TPORT_CAPT_IOVMAX];
+    size_t i, iovlen = msg_iovec(msg, iov, TPORT_CAPT_IOVMAX);
+    size_t bytes = 0;
+
+    for (i = 0; i < iovlen && i < TPORT_CAPT_IOVMAX; i++) {
+      bytes += iov[i].mv_len;
+    }
+
+    if (bytes > 0) {
+      tport_capt_msg(self, msg, bytes, iov,
+                     iovlen < TPORT_CAPT_IOVMAX ? iovlen : TPORT_CAPT_IOVMAX,
+                     "recv");
+    }
+    self->tp_rcaptured = msg;
   }
 
   SU_DEBUG_7(("%s(%p): %smsg %p ("MOD_ZU" bytes)"
