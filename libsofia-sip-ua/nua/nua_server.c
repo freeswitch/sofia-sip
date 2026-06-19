@@ -415,6 +415,7 @@ nua_stack_respond(nua_t *nua, nua_handle_t *nh,
   nua_server_request_t *sr;
   tagi_t const *t;
   msg_t const *request = NULL;
+  int prack_pending = 0;
 
   t = tl_find_last(tags, nutag_with);
 
@@ -425,8 +426,16 @@ nua_stack_respond(nua_t *nua, nua_handle_t *nh,
     if (request && sr->sr_request.msg == request)
       break;
     /* nua_respond() to INVITE can be used without NUTAG_WITH() */
-    if (!t && sr->sr_method == sip_method_invite)
+    if (!t && sr->sr_method == sip_method_invite) {
+      if (prack_pending) {
+	nua_stack_event(nua, nh, NULL, nua_i_error,
+			500, "Server Internal Error", NULL);
+	return;
+      }
       break;
+    }
+    else if (!t && sr->sr_method == sip_method_prack)
+      prack_pending = 1;
   }
 
   if (sr == NULL) {
