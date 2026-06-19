@@ -252,7 +252,10 @@ typedef enum
   sdp_proto_extended_srtp = 261, /** WEBRTC SAVPF */
   sdp_proto_extended_rtp = 262, /** WEBRTC AVPF */
   sdp_proto_tls = 511,			/**< TLS over TCP */
-  sdp_proto_any = 512		        /**< * wildcard */
+  sdp_proto_any = 512,		        /**< * wildcard */
+  sdp_proto_tcp_bfcp = 513,     /* TCP/BFCP */
+  sdp_proto_tcp_tls_bfcp = 514, /* TCP/TLS/BFCP */
+  sdp_proto_udp_bfcp = 515      /* UDP/BFCP */
 } sdp_proto_e;
 
 /** Session mode. @note Identical to rtp_mode_t. */
@@ -433,6 +436,9 @@ SOFIAPUBFUN sdp_connection_t *sdp_media_connections(sdp_media_t const *m);
 
 /** Check if media uses RTP as its transport protocol  */
 SOFIAPUBFUN int sdp_media_has_rtp(sdp_media_t const *m);
+
+/** Check if media uses BFCP as its transport protocol.  */
+SOFIAPUBFUN int sdp_media_has_bfcp(sdp_media_t const *m);
 
 /** Set media type */
 SOFIAPUBFUN void sdp_media_type(sdp_media_t *m, char const *s);
