@@ -103,11 +103,13 @@ static void pthreads_thread_id(CRYPTO_THREADID *id)
 
 
 void init_ssl(void) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	SSL_library_init();
 
 
 	OpenSSL_add_all_algorithms();   /* load & register cryptos */
 	SSL_load_error_strings();     /* load all error messages */
+#endif
 	ws_globals.ssl_method = SSLv23_server_method();   /* create server instance */
 	ws_globals.ssl_ctx = SSL_CTX_new(ws_globals.ssl_method);         /* create context */
 	assert(ws_globals.ssl_ctx);
