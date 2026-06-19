@@ -345,6 +345,9 @@ NTA_DLL extern tag_typedef_t ntatag_cancel_487_ref;
 NTA_DLL extern tag_typedef_t ntatag_rel100;
 #define NTATAG_REL100(x)     ntatag_rel100, tag_bool_v((x))
 
+NTA_DLL extern tag_typedef_t ntatag_retry_other_tp;
+#define NTATAG_RETRY_OTHER_TP(x)     ntatag_retry_other_tp, tag_bool_v((x))
+
 NTA_DLL extern tag_typedef_t ntatag_rel100_ref;
 #define NTATAG_REL100_REF(x) ntatag_rel100_ref, tag_bool_vr(&(x))
 

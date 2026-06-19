@@ -1244,6 +1244,16 @@ tag_typedef_t ntatag_tag_3261 = BOOLTAG_TYPEDEF(tag_3261);
  */
 tag_typedef_t ntatag_rel100 = BOOLTAG_TYPEDEF(rel100);
 
+/**@def NTATAG_RETRY_OTHER_TP(x) 
+ * 
+ * Enable or disable retry on other transports
+ *
+ * @par x Boolean (0 to disable, 1 to allow retry)
+ * @default 1 (retry is enabled)
+ * 
+ */
+tag_typedef_t ntatag_retry_other_tp = BOOLTAG_TYPEDEF(retry_other_tp);
+
 /**@def NTATAG_NO_DIALOG(x)
  *
  * Create a leg without dialog. */
