@@ -1723,6 +1723,313 @@ int test_media_reject(struct context *ctx)
   END();
 }
 
+int test_media_reject_savp(struct context *ctx)
+{
+  BEGIN();
+  int n;
+
+  soa_session_t *ss;
+
+  char const *local = NONE;
+  isize_t locallen = (isize_t)-1;
+
+  sdp_session_t const *local_sdp;
+  sdp_media_t *local_sdp_media;
+
+  char const offer[] =
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5008 RTP/SAVP 0 8 97\r\n"
+    "a=rtpmap:0 PCMU/8000\r\n"
+    "a=rtpmap:8 PCMA/8000\r\n"
+    "a=rtpmap:97 GSM/8000\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:4Kc4qJNVWAJRh9gS1MSEtmlUkIWgIzSE4DuG6KU+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=audio 5008 RTP/AVP 0 8 97\r\n"
+    "a=rtpmap:0 PCMU/8000\r\n"
+    "a=rtpmap:8 PCMA/8000\r\n"
+    "a=rtpmap:97 GSM/8000\r\n"
+    "a=sendrecv\r\n"
+    "m=video 6008 RTP/SAVP 96\r\n"
+    "a=rtpmap:96 VP8/90000\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:4Kc4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=video 6008 RTP/AVP 96\r\n"
+    "a=rtpmap:96 VP8/90000\r\n"
+    "a=sendrecv\r\n"
+    "m=text 7008 RTP/SAVP 99\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:5Yn4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=text 7008 RTP/AVP 99\r\n"
+    "a=sendrecv\r\n"
+    ;
+
+  char const answer[] =
+    "v=0\r\n"
+    "o=right 219498672 2 IN IP4 127.0.0.3\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 8008 RTP/AVP 8\r\n"
+    "a=rtpmap:8 PCMU/8000\r\n"
+    "a=sendrecv\r\n"
+    "m=video 9008 RTP/AVP 98\r\n"
+    "a=rtpmap:98 VP8/90000\r\n"
+    "a=sendrecv\r\n"
+    "m=text 10008 RTP/AVP 103\r\n"
+    "a=sendrecv\r\n"
+    ;
+
+  TEST_1(ss = soa_create("static", ctx->root, ctx));
+
+  TEST(soa_set_user_sdp(ss, 0, offer, strlen(offer)), 1);
+
+  n = soa_generate_offer(ss, 1, test_completed); TEST(n, 0);
+  n = soa_set_remote_sdp(ss, NULL, answer, strlen(answer)); TEST(n, 1);
+  n = soa_process_answer(ss, test_completed); TEST(n, 0);
+
+  TEST_1(soa_is_complete(ss));
+  TEST(soa_activate(ss, NULL), 0);
+
+  TEST(soa_is_audio_active(ss), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(ss), SOA_ACTIVE_SENDRECV);
+
+  TEST(soa_is_video_active(ss), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_video_active(ss), SOA_ACTIVE_SENDRECV);
+
+  n = soa_get_local_sdp(ss, &local_sdp, &local, &locallen); TEST(n, 1);
+
+  for (local_sdp_media = local_sdp->sdp_media; local_sdp_media; local_sdp_media = local_sdp_media->m_next) {
+    printf("test_media_reject_savp(): LOCAL Media type: [%d] Port: [%ld], Proto name: [%s] Rejected: [%d]\r\n", local_sdp_media->m_type, local_sdp_media->m_port, local_sdp_media->m_proto_name, local_sdp_media->m_rejected);
+    if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/SAVP")) {
+      TEST_1(local_sdp_media->m_rejected && !local_sdp_media->m_port);
+    }
+
+    if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/AVP")) {
+      TEST_1(!local_sdp_media->m_rejected && local_sdp_media->m_port > 0);
+    }
+  }
+
+  TEST_VOID(soa_terminate(ss, NULL));
+
+  TEST_VOID(soa_destroy(ss));
+
+  END();
+}
+
+int test_media_reject_avp(struct context *ctx)
+{
+  BEGIN();
+  int n;
+
+  soa_session_t *ss;
+
+  char const *local = NONE;
+  isize_t locallen = (isize_t)-1;
+
+  sdp_session_t const *local_sdp;
+  sdp_media_t *local_sdp_media;
+
+  char const offer[] =
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5008 RTP/SAVP 0 8 97\r\n"
+    "a=rtpmap:0 PCMU/8000\r\n"
+    "a=rtpmap:8 PCMA/8000\r\n"
+    "a=rtpmap:97 GSM/8000\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:4Kc4qJNVWAJRh9gS1MSEtmlUkIWgIzSE4DuG6KU+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=audio 5008 RTP/AVP 0 8 97\r\n"
+    "a=rtpmap:0 PCMU/8000\r\n"
+    "a=rtpmap:8 PCMA/8000\r\n"
+    "a=rtpmap:97 GSM/8000\r\n"
+    "a=sendrecv\r\n"
+    "m=video 6008 RTP/SAVP 96\r\n"
+    "a=rtpmap:96 VP8/90000\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:4Kc4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=video 6008 RTP/AVP 96\r\n"
+    "a=rtpmap:96 VP8/90000\r\n"
+    "a=sendrecv\r\n"
+    "m=text 7008 RTP/SAVP 99\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:5Yn4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=text 7008 RTP/AVP 99\r\n"
+    "a=sendrecv\r\n"
+    ;
+
+  char const answer[] =
+    "v=0\r\n"
+    "o=right 219498672 2 IN IP4 127.0.0.3\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 8008 RTP/SAVP 8\r\n"
+    "a=rtpmap:8 PCMU/8000\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:5Yn4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=video 9008 RTP/SAVP 98\r\n"
+    "a=rtpmap:98 VP8/90000\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:5Yn4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=text 10008 RTP/SAVP 103\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:5Yn4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    ;
+
+  TEST_1(ss = soa_create("static", ctx->root, ctx));
+
+  TEST(soa_set_user_sdp(ss, 0, offer, strlen(offer)), 1);
+
+  n = soa_generate_offer(ss, 1, test_completed); TEST(n, 0);
+  n = soa_set_remote_sdp(ss, NULL, answer, strlen(answer)); TEST(n, 1);
+  n = soa_process_answer(ss, test_completed); TEST(n, 0);
+
+  TEST_1(soa_is_complete(ss));
+  TEST(soa_activate(ss, NULL), 0);
+
+  TEST(soa_is_audio_active(ss), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(ss), SOA_ACTIVE_SENDRECV);
+
+  TEST(soa_is_video_active(ss), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_video_active(ss), SOA_ACTIVE_SENDRECV);
+
+  n = soa_get_local_sdp(ss, &local_sdp, &local, &locallen); TEST(n, 1);
+
+  for (local_sdp_media = local_sdp->sdp_media; local_sdp_media; local_sdp_media = local_sdp_media->m_next) {
+    printf("test_media_reject_avp(): LOCAL Media type: [%d] Port: [%ld], Proto name: [%s] Rejected: [%d]\r\n", local_sdp_media->m_type, local_sdp_media->m_port, local_sdp_media->m_proto_name, local_sdp_media->m_rejected);
+    if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/AVP")) {
+      TEST_1(local_sdp_media->m_rejected && !local_sdp_media->m_port);
+    }
+
+    if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/SAVP")) {
+      TEST_1(!local_sdp_media->m_rejected && local_sdp_media->m_port > 0);
+    }
+  }
+
+  TEST_VOID(soa_terminate(ss, NULL));
+
+  TEST_VOID(soa_destroy(ss));
+
+  END();
+}
+
+int test_media_reject_savp_avp_mix(struct context *ctx)
+{
+  BEGIN();
+  int n;
+
+  soa_session_t *ss;
+
+  char const *local = NONE;
+  isize_t locallen = (isize_t)-1;
+
+  sdp_session_t const *local_sdp;
+  sdp_media_t *local_sdp_media;
+
+  char const offer[] =
+    "v=0\r\n"
+    "o=left 219498671 2 IN IP4 127.0.0.2\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 5008 RTP/SAVP 0 8 97\r\n"
+    "a=rtpmap:0 PCMU/8000\r\n"
+    "a=rtpmap:8 PCMA/8000\r\n"
+    "a=rtpmap:97 GSM/8000\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:4Kc4qJNVWAJRh9gS1MSEtmlUkIWgIzSE4DuG6KU+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=audio 5008 RTP/AVP 0 8 97\r\n"
+    "a=rtpmap:0 PCMU/8000\r\n"
+    "a=rtpmap:8 PCMA/8000\r\n"
+    "a=rtpmap:97 GSM/8000\r\n"
+    "a=sendrecv\r\n"
+    "m=video 6008 RTP/SAVP 96\r\n"
+    "a=rtpmap:96 VP8/90000\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:4Kc4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=video 6008 RTP/AVP 96\r\n"
+    "a=rtpmap:96 VP8/90000\r\n"
+    "a=sendrecv\r\n"
+    "m=text 7008 RTP/SAVP 99\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:5Yn4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=text 7008 RTP/AVP 99\r\n"
+    "a=sendrecv\r\n"
+    ;
+
+  char const answer[] =
+    "v=0\r\n"
+    "o=right 219498672 2 IN IP4 127.0.0.3\r\n"
+    "c=IN IP4 127.0.0.2\r\n"
+    "m=audio 8008 RTP/AVP 8\r\n"
+    "a=rtpmap:8 PCMU/8000\r\n"
+    "a=sendrecv\r\n"
+    "m=video 9008 RTP/SAVP 98\r\n"
+    "a=rtpmap:98 VP8/90000\r\n"
+    "a=crypto:1 AEAD_AES_256_GCM_8 inline:5Yn4qJNVWAJRh9gD1NDEtmlUkIWgIzSE4DuG5TO+QUOAW6XRqinW92SGqPY=\r\n"
+    "a=sendrecv\r\n"
+    "m=text 10008 RTP/AVP 103\r\n"
+    "a=sendrecv\r\n"
+    ;
+
+  TEST_1(ss = soa_create("static", ctx->root, ctx));
+
+  TEST(soa_set_user_sdp(ss, 0, offer, strlen(offer)), 1);
+
+  n = soa_generate_offer(ss, 1, test_completed); TEST(n, 0);
+  n = soa_set_remote_sdp(ss, NULL, answer, strlen(answer)); TEST(n, 1);
+  n = soa_process_answer(ss, test_completed); TEST(n, 0);
+
+  TEST_1(soa_is_complete(ss));
+  TEST(soa_activate(ss, NULL), 0);
+
+  TEST(soa_is_audio_active(ss), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_audio_active(ss), SOA_ACTIVE_SENDRECV);
+
+  TEST(soa_is_video_active(ss), SOA_ACTIVE_SENDRECV);
+  TEST(soa_is_remote_video_active(ss), SOA_ACTIVE_SENDRECV);
+
+  n = soa_get_local_sdp(ss, &local_sdp, &local, &locallen); TEST(n, 1);
+
+  for (local_sdp_media = local_sdp->sdp_media; local_sdp_media; local_sdp_media = local_sdp_media->m_next) {
+    printf("test_media_reject_savp_avp_mix(): LOCAL Media type: [%d] Port: [%ld], Proto name: [%s] Rejected: [%d]\r\n", local_sdp_media->m_type, local_sdp_media->m_port, local_sdp_media->m_proto_name, local_sdp_media->m_rejected);
+    /* Check audio */
+    if (local_sdp_media->m_type == 2) {
+      if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/SAVP")) {
+        TEST_1(local_sdp_media->m_rejected && !local_sdp_media->m_port);
+      }
+
+      if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/AVP")) {
+        TEST_1(!local_sdp_media->m_rejected && local_sdp_media->m_port > 0);
+      }
+    }
+
+    /* Check video */
+    if (local_sdp_media->m_type == 3) {
+      if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/AVP")) {
+        TEST_1(local_sdp_media->m_rejected && !local_sdp_media->m_port);
+      }
+
+      if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/SAVP")) {
+        TEST_1(!local_sdp_media->m_rejected && local_sdp_media->m_port > 0);
+      }
+    }
+
+    /* Check text */
+    if (local_sdp_media->m_type == 10) {
+      if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/SAVP")) {
+        TEST_1(local_sdp_media->m_rejected && !local_sdp_media->m_port);
+      }
+
+      if (!strcasecmp(local_sdp_media->m_proto_name, "RTP/AVP")) {
+        TEST_1(!local_sdp_media->m_rejected && local_sdp_media->m_port > 0);
+      }
+    }
+  }
+
+  TEST_VOID(soa_terminate(ss, NULL));
+
+  TEST_VOID(soa_destroy(ss));
+
+  END();
+}
 
 int test_media_replace2(struct context *ctx)
 {
@@ -2712,6 +3019,9 @@ int main(int argc, char *argv[])
     retval |= test_media_replace(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_media_removal(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_media_reject(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_media_reject_savp(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_media_reject_avp(ctx); SINGLE_FAILURE_CHECK();
+    retval |= test_media_reject_savp_avp_mix(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_media_replace2(ctx); SINGLE_FAILURE_CHECK();
     retval |= test_media_mode(ctx); SINGLE_FAILURE_CHECK();
 
