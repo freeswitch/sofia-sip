@@ -690,6 +690,11 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
 		  su_msg_destroy(nua->nua_signal);
 	  }
     return;
+  case nua_r_destroy_user:
+    if (nh) {
+      nua_stack_event(nh->nh_nua, nh, NULL, nua_r_destroy_user, 0, NULL, NULL);
+    }
+    break;
   case nua_r_unref:
     nua_unref(nua);
     break;
