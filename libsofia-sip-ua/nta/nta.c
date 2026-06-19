@@ -8895,11 +8895,6 @@ outgoing_cut_off(nta_outgoing_t *orq)
   if (outgoing_is_queued(orq))
     outgoing_remove(orq);
 
-#if 0
-  if (orq->orq_forked)
-    outgoing_remove_fork(orq);
-#endif
-
   outgoing_reset_timer(orq);
 
   if (orq->orq_pending) {
@@ -8990,11 +8985,21 @@ void outgoing_destroy(nta_outgoing_t *orq)
 	   && !orq->orq_canceled
 	   /* or it has been forked */
 	   && !orq->orq_forking && !orq->orq_forks) {
+    /* This transaction is not a fork */
     orq->orq_destroyed = 1;
     outgoing_terminate(orq);
     return;
   }
 
+  if (orq->orq_forked) {
+    /* This transaction is a fork */
+    outgoing_remove_fork(orq);
+    orq->orq_destroyed = 1;
+    outgoing_terminate(orq);
+    return;
+  }
+
+  /* This transaction is not a fork */
   orq->orq_destroyed = 1;
   orq->orq_callback = outgoing_default_cb;
   orq->orq_magic = NULL;
@@ -9347,10 +9352,11 @@ outgoing_remove_fork(nta_outgoing_t *orq)
       orq->orq_forks = NULL;
       orq->orq_forking = NULL;
       orq->orq_forked = 0;
+      return;
     }
   }
 
-  assert(orq == NULL);
+  assert(orq->orq_forking == NULL);
 }
 
 /** Terminate a client transaction. */
