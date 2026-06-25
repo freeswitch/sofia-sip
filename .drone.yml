@@ -1,0 +1,115 @@
+---
+kind: pipeline
+name: unit-tests
+
+steps:
+    - name: bootstrap
+      image: signalwire/freeswitch-public-base
+      pull: always
+      commands:
+      - ./autogen.sh
+
+    - name: configure
+      image: signalwire/freeswitch-public-base
+      pull: always
+      commands:
+      - apt-get -y install check
+      - ./configure --with-pic --without-doxygen --disable-stun
+
+    - name: build
+      image: signalwire/freeswitch-public-base
+      pull: always
+      commands:
+      - apt-get -y install check
+      - echo '#!/bin/bash\nmake -j`nproc --all` |& tee ./unit-tests-build-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./build-status.txt\n' > build.sh
+      - chmod +x build.sh
+      - ./build.sh
+
+    - name: run-tests
+      image: signalwire/freeswitch-public-base
+      pull: always
+      commands:
+      - apt-get -y install check
+      - make install
+      - echo '#!/bin/bash\n./tests.sh |& tee ./tests/unit/unit-tests-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./unit-tests-status.txt\n' > run-tests.sh
+      - chmod +x run-tests.sh
+      - make check && exit 0 || echo 'make check failed'
+      - ./run-tests.sh
+      - cd tests/unit
+      - mkdir -p logs && (mv log_run-tests_*.html logs || true) && (mv backtrace_*.txt logs || true)
+      - ls -la ./logs
+      - echo 0 > run-tests-status.txt
+      - ./collect-test-logs.sh && exit 0 || echo 'Some tests failed'
+      - ls -la
+      - echo 1 > run-tests-status.txt
+      - cd logs && ls -la
+
+    - name: notify
+      image: signalwire/drone-notify
+      pull: always
+      environment:
+        SLACK_WEBHOOK_URL:
+          from_secret: slack_webhook_url
+        ENV_FILE:
+          from_secret: notify_env
+      commands:
+      - /root/unit-tests-notify.sh
+      
+trigger:
+  branch:
+  - master
+  event:
+  - pull_request
+  - push
+
+---
+kind: pipeline
+name: scan-build
+
+steps:
+    - name: bootstrap
+      image: signalwire/freeswitch-public-base:bullseye
+      pull: always
+      commands:
+      - ./autogen.sh
+
+    - name: configure
+      image: signalwire/freeswitch-public-base:bullseye
+      pull: always
+      commands:
+      - ./configure --with-pic --without-doxygen --disable-stun
+
+    - name: scan-build
+      image: signalwire/freeswitch-public-base:bullseye
+      pull: always
+      commands:
+      - mkdir -p scan-build
+      - echo '#!/bin/bash\nscan-build-11 -o ./scan-build/ make -j`nproc --all` |& tee ./scan-build-result.txt\nexitstatus=$${PIPESTATUS[0]}\necho $$exitstatus > ./scan-build-status.txt\n' > scan.sh
+      - chmod +x scan.sh
+      - ./scan.sh
+      - exitstatus=`cat ./scan-build-status.txt`
+      - echo "*** Exit status is $exitstatus"
+
+    - name: notify
+      image: signalwire/drone-notify
+      pull: always
+      environment:
+        SLACK_WEBHOOK_URL:
+          from_secret: slack_webhook_url
+        ENV_FILE:
+          from_secret: notify_env
+      commands:
+      - /root/scan-build-notify.sh
+      
+trigger:
+  branch:
+  - master
+  event:
+  - pull_request
+  - push
+
+---
+kind: signature
+hmac: 5d5329338612d55fff2bf6250f5b16ac56760b238b390df7974b8b42ce4b8071
+
+...
