@@ -1368,7 +1368,7 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
     /* openssl initiation */
     SSLeay_add_ssl_algorithms();
     SSL_load_error_strings();
-    ctx = SSL_CTX_new(TLSv1_client_method());
+    ctx = SSL_CTX_new(TLS_client_method());
     self->sh_ctx = ctx;
 
     if (ctx == NULL) {
