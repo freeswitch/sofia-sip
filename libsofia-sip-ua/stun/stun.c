@@ -1247,8 +1247,12 @@ int stun_test_nattype(stun_handle_t *sh,
     memmove(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
   }
   else {
+    /* stun_atoaddr() writes the resolved address through sd->sd_pri_info.ai_addr,
+     * which stun_discovery_create() aimed at sd->sd_pri_addr, so the server address
+     * is already in place here. The former copy took &sd->sd_pri_info.ai_addr - the
+     * address of the pointer field inside the addrinfo, overlapping sd_pri_addr and
+     * copying struct-tail bytes over the just-resolved address - so it is dropped. */
     err = stun_atoaddr(sh->sh_home, AF_INET, &sd->sd_pri_info, server);
-    memmove(sd->sd_pri_addr, &sd->sd_pri_info.ai_addr, sizeof(su_sockaddr_t));
   }
   destination = (su_sockaddr_t *) sd->sd_pri_addr;
 
@@ -2736,8 +2740,12 @@ int stun_test_lifetime(stun_handle_t *sh,
     memcpy(sd->sd_pri_addr, sh->sh_pri_addr, sizeof(su_sockaddr_t));
   }
   else {
+    /* stun_atoaddr() writes the resolved address through sd->sd_pri_info.ai_addr,
+     * which stun_discovery_create() aimed at sd->sd_pri_addr, so the server address
+     * is already in place here. The former copy took &sd->sd_pri_info.ai_addr - the
+     * address of the pointer field inside the addrinfo, overlapping sd_pri_addr and
+     * copying struct-tail bytes over the just-resolved address - so it is dropped. */
     err = stun_atoaddr(sh->sh_home, AF_INET, &sd->sd_pri_info, server);
-    memcpy(sd->sd_pri_addr, &sd->sd_pri_info.ai_addr, sizeof(su_sockaddr_t));
   }
   destination = (su_sockaddr_t *) sd->sd_pri_addr;
 
