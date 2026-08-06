@@ -102,7 +102,28 @@ typedef struct {
  *
  * @hideinitializer
  */
-#if SU_HAVE_TAGSTACK
+
+/* AddressSanitizer instruments the stack so the SU_HAVE_TAGSTACK fast path -
+ * which reads the variable arguments directly off the caller's stack via
+ * TAG_NEXT(&(v) + 1) - is walked below the ta stack object when the tag list is
+ * traversed (t_next -> t_next_next follows the raw stack pointer), which ASan
+ * correctly reports as a stack-buffer-underflow. Fall back to the portable
+ * va_list copy path (tl_vlist) under ASan. */
+#if defined(__SANITIZE_ADDRESS__)
+# define SU_TAGARG_ASAN 1
+#elif defined(__has_feature)
+# if __has_feature(address_sanitizer)
+#  define SU_TAGARG_ASAN 1
+# endif
+#endif
+
+#if SU_HAVE_TAGSTACK && !defined(SU_TAGARG_ASAN)
+# define SU_TAGARG_USE_TAGSTACK 1
+#else
+# define SU_TAGARG_USE_TAGSTACK 0
+#endif
+
+#if SU_TAGARG_USE_TAGSTACK
 /* All arguments are saved into stack (left-to-right) */
 #define ta_start(ta, t, v)						\
    do {									\
@@ -188,7 +209,7 @@ typedef struct {
  *
  * @hideinitializer
  */
-#if SU_HAVE_TAGSTACK
+#if SU_TAGARG_USE_TAGSTACK
 #define ta_end(ta) (va_end((ta).ap), (ta).tl->t_tag = NULL)
 #else
 #define ta_end(ta)					   \
