@@ -247,12 +247,7 @@ static void sha1_digest(char *digest, unsigned char *in)
 
 static void sha1_digest(unsigned char *digest, char *in)
 {
-	SHA_CTX sha;
-
-	SHA1_Init(&sha);
-	SHA1_Update(&sha, in, strlen(in));
-	SHA1_Final(digest, &sha);
-
+	EVP_Digest(in, strlen(in), digest, NULL, EVP_sha1(), NULL);
 }
 
 #endif
@@ -458,7 +453,11 @@ void wss_log_errors(unsigned level, char const *s, unsigned long e)
 	for (; e != 0; e = ERR_get_error()) {
 		if (level <= tport_log->log_level) {
 			const char *error = ERR_lib_error_string(e);
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 			const char *func = ERR_func_error_string(e);
+#else
+			const char *func = "";	/* function name dropped from OpenSSL 3.0 error records */
+#endif
 			const char *reason = ERR_reason_error_string(e);
 
 			su_llog(tport_log, level, "%s: %08lx:%s:%s:%s\n",

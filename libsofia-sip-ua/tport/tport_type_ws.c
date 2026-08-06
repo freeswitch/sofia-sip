@@ -80,6 +80,7 @@ static int tport_ws_init_primary_secure(tport_primary_t *pri,
 
 static int tport_ws_setsndbuf(int socket, int atleast);
 static void tport_ws_deinit_primary(tport_primary_t *pri);
+static void tport_ws_deinit_secondary(tport_t *self);
 
 tport_vtable_t const tport_ws_vtable =
 {

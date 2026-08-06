@@ -155,7 +155,11 @@ void tls_log_errors(unsigned level, char const *s, unsigned long e)
   for (; e != 0; e = ERR_get_error()) {
     if (level <= tport_log->log_level) {
       const char *error = ERR_lib_error_string(e);
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
       const char *func = ERR_func_error_string(e);
+#else
+      const char *func = "";	/* function name dropped from OpenSSL 3.0 error records */
+#endif
       const char *reason = ERR_reason_error_string(e);
 
       su_llog(tport_log, level, "%s: %08lx:%s:%s:%s\n",
@@ -392,6 +396,7 @@ SSL_CTX *tls_create_ctx(tls_issues_t const *ti)
   } else {
     BIO *bio = BIO_new_file(ti->key, "r");
     if (bio != NULL) {
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
       DH *dh = PEM_read_bio_DHparams(bio, NULL, NULL, NULL);
       if (dh != NULL) {
         if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
@@ -406,6 +411,31 @@ SSL_CTX *tls_create_ctx(tls_issues_t const *ti)
         }
         DH_free(dh);
       }
+#else
+      /* OpenSSL 3.0 deprecated the DH API: read the parameters as a generic
+       * EVP_PKEY and install them with SSL_CTX_set0_tmp_dh_pkey(), which takes
+       * ownership on success (free only on failure). PEM_read_bio_Parameters()
+       * accepts any parameter type, so verify it really is DH before installing. */
+      EVP_PKEY *dh = PEM_read_bio_Parameters(bio, NULL);
+      if (dh != NULL) {
+        if (!EVP_PKEY_is_a(dh, "DH")) {
+          SU_DEBUG_1(("%s: %s does not contain DH parameters (PFS)\n",
+                      "tls_create_ctx", ti->key));
+          EVP_PKEY_free(dh);
+        } else if (!SSL_CTX_set0_tmp_dh_pkey(ctx, dh)) {
+          SU_DEBUG_1(("%s: invalid DH parameters (PFS) because %s: %s\n",
+                      "tls_create_ctx",
+                      ERR_reason_error_string(ERR_get_error()),
+                      ti->key));
+          EVP_PKEY_free(dh);	/* set0 failed: ownership stays with us */
+        } else {
+          long options = SSL_OP_CIPHER_SERVER_PREFERENCE | SSL_OP_SINGLE_DH_USE;
+          SSL_CTX_set_options(ctx, options);
+          SU_DEBUG_3(("%s\n", "tls: initialized DHE"));
+          /* set0 succeeded: the SSL_CTX now owns dh, do not free it */
+        }
+      }
+#endif
       BIO_free(bio);
     }
 #endif

@@ -1168,7 +1168,7 @@ err:
 #include <ifaddrs.h>
 
 static
-int bsd_localinfo(su_localinfo_t const hints[1],
+int bsd_localinfo(su_localinfo_t const *hints,
 		  su_localinfo_t **return_result)
 {
   struct ifaddrs *ifa, *results;

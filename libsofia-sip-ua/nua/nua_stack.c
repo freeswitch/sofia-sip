@@ -737,7 +737,7 @@ nua_event_data_t const *nua_event_data(nua_saved_event_t const saved[1])
  *
  * @sa #nua_event_e, nua_event_save(), nua_event_data(), nua_saved_event_request().
  */
-void nua_destroy_event(nua_saved_event_t saved[1])
+void nua_destroy_event(nua_saved_event_t *saved)
 {
   if (saved && saved[0]) su_msg_destroy(saved);
 }

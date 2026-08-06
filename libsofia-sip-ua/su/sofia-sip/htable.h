@@ -127,7 +127,7 @@ HTABLE_SCOPE int prefix##_remove(prefix##_t *, entry_t const *e)
 /** Reallocate new hash table */ \
 HTABLE_SCOPE \
 int prefix##_resize(su_home_t *home, \
-                    prefix##_t pr[], \
+                    prefix##_t pr[1], \
 		    size_t new_size) \
 { \
   entry_t **new_hash; \

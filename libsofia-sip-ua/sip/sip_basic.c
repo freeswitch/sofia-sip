@@ -2853,7 +2853,7 @@ SIP_HEADER_CLASS(identity, "Identity", "", id_common, non_compact_append, identi
 issize_t sip_identity_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
 {
   sip_identity_t *id = (sip_identity_t *)h;
-  char const *p = NULL, *pp = NULL, *ppp = NULL, *ie = NULL;
+  char *p = NULL, *pp = NULL, *ppp = NULL, *ie = NULL;
   char *sid = NULL, *uri = NULL, *alg = NULL, *ppt = NULL, *ext = NULL;
   size_t len = 0;
 

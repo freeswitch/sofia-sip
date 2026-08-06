@@ -27,6 +27,7 @@
 //#include "sha1.h"
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/evp.h>
 
 #if defined(_MSC_VER) || defined(__APPLE__) || defined(__FreeBSD__) || (defined(__SVR4) && defined(__sun)) 
 #define __bswap_64(x) \

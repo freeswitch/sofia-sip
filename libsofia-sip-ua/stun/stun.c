@@ -1368,7 +1368,10 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
     /* openssl initiation */
     SSLeay_add_ssl_algorithms();
     SSL_load_error_strings();
-    ctx = SSL_CTX_new(TLSv1_client_method());
+    /* TLSv1_client_method() was deprecated in OpenSSL 1.1.0; it pinned exactly
+     * TLS 1.0, so preserve that behavior with the version-flexible method plus a
+     * TLS 1.0-only protocol range. */
+    ctx = SSL_CTX_new(TLS_client_method());
     self->sh_ctx = ctx;
 
     if (ctx == NULL) {
@@ -1376,6 +1379,9 @@ int stun_tls_callback(su_root_magic_t *m, su_wait_t *w, su_wakeup_arg_t *arg)
       stun_free_buffer(&msg_req->enc_buf);
       return -1;
     }
+
+    SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION);
+    SSL_CTX_set_max_proto_version(ctx, TLS1_VERSION);
 
     if (SSL_CTX_set_cipher_list(ctx, "AES128-SHA") == 0) {
       STUN_ERROR(errno, SSL_CTX_set_cipher_list);

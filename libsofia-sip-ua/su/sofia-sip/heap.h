@@ -109,8 +109,8 @@
  * @showinitializer
  */
 #define HEAP_DECLARE(scope, heaptype, prefix, type) \
-scope int prefix##resize(void *, heaptype *, size_t); \
-scope int prefix##free(void *, heaptype *); \
+scope int prefix##resize(void *, heaptype[1], size_t); \
+scope int prefix##free(void *, heaptype[1]); \
 scope int prefix##is_full(heaptype const); \
 scope size_t prefix##size(heaptype const); \
 scope size_t prefix##used(heaptype const); \

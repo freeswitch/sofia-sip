@@ -1890,7 +1890,7 @@ void su_home_stats_free(su_block_t *sub, void *preload,
   hs->hs_blocks.hsb_rbytes -= rsize;
 }
 
-void su_home_stat_add(su_home_stat_t total[1], su_home_stat_t const hs[1])
+void su_home_stat_add(su_home_stat_t *total, su_home_stat_t const *hs)
 {
   total->hs_clones               += hs->hs_clones;
   total->hs_rehash               += hs->hs_rehash;
