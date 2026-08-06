@@ -668,8 +668,9 @@ int sip_complete_message(msg_t *msg)
   if (sip == NULL)
     return -1;
 
-  if (!sip->sip_separator)
-    sip->sip_separator = sip_separator_create(msg_home(msg));
+  if (!sip->sip_separator &&
+      !(sip->sip_separator = sip_separator_create(msg_home(msg))))
+    return -1;
 
   if (sip->sip_multipart) {
     sip_content_type_t *c = sip->sip_content_type;
