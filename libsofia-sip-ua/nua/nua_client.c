@@ -251,6 +251,17 @@ nua_client_request_t *nua_client_request_ref(nua_client_request_t *cr)
 
 int nua_client_request_unref(nua_client_request_t *cr)
 {
+
+  if(!cr)
+    return -1;
+
+  #if MEMCHECK != 0
+    if (cr->cr_refs == UINT32_C(0xAAAAAAAA)) {
+        SU_DEBUG_0(("Warning! double unref detected for cr=%p\n", cr));
+        return -1;
+    }
+  #endif
+
   if (cr->cr_refs > 1) {
     cr->cr_refs--;
     return 0;
