@@ -301,23 +301,42 @@ sdp_session_t *soa_sdp_expand_media(su_home_t *home,
 				    sdp_session_t const *truncated,
 				    sdp_session_t const *complete)
 {
+  sdp_session_t *tmp_truncated;
   sdp_session_t *expanded;
-  sdp_media_t **m0;
-  sdp_media_t * const *m1;
+  sdp_media_t **mE;
+  sdp_media_t **mT;
+  sdp_media_t * const *mC;
 
+  /* Truncated list that we will be reducing */
+  tmp_truncated = sdp_session_dup(home, truncated);
+  /* New resulting list */
   expanded = sdp_session_dup(home, truncated);
 
   if (expanded) {
-    for (m0 = &expanded->sdp_media, m1 = &complete->sdp_media;
-	 *m1;
-	 m1 = &(*m1)->m_next) {
-      if (!*m0) {
-	*m0 = soa_sdp_make_rejected_media(home, *m1, expanded, 0);
-	if (!*m0)
-	  return NULL;
+      expanded->sdp_media = NULL; /* Empty the list of medias */
+      mE = &expanded->sdp_media;  /* Pointer to the beginning of the new list */
+
+      /* Loop through all items in the complete list to preserve complete list's order */
+      for (mC = &complete->sdp_media; *mC; mC = &(*mC)->m_next) {
+          /* Find the corresponding media in the truncated list */
+          if ((mT = sdp_media_exists(tmp_truncated, *mC))) {
+              /* Copy the corresponding media from the truncated list to the new list */
+              *mE = sdp_media_dup(home, *mT, expanded);
+              if (!*mE)
+                return NULL;
+
+              /* Remove corresponding media from the truncated list */
+              *mT = (*mT)->m_next;
+          } else {
+              /* If the corresponding media was not found in the truncated list, add a rejected media */
+              *mE = soa_sdp_make_rejected_media(home, *mC, expanded, 0);
+              if (!*mE)
+                return NULL;
+          }
+
+          /* Prepare pointer of the new list for a new item */
+          mE = &(*mE)->m_next;
       }
-      m0 = &(*m0)->m_next;
-    }
   }
 
   return expanded;
