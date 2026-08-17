@@ -71,6 +71,8 @@
 
 #include <sofia-sip/auth_digest.h>
 #include <sofia-sip/auth_client.h>
+#include <sofia-sip/auth_client_plugin.h>
+#include <sofia-sip/su_alloc_stat.h>
 #include <sofia-sip/msg_header.h>
 #include <sofia-sip/su_wait.h>
 #include <sofia-sip/su_string.h>
@@ -1299,6 +1301,126 @@ test_auth_client(void)
   END();
 }
 
+/* Test that a nextnonce in Authentication-Info replaces the stored nonce
+   without stranding the one it replaces.
+
+   auc_digest_info() overwrites cda_ac->ac_nonce with the value it parses out of
+   Authentication-Info. Both the old and the new string are allocated from the
+   client's own home, and the old one is released by
+   auth_digest_challenge_free_params() only at the *next* challenge - so without
+   an explicit free there, a server that sends Authentication-Info on every 2xx
+   strands one nonce string per response for as long as the credentials last.
+
+   Nothing leaks in the ordinary sense: the blocks stay reachable through the
+   home and are reclaimed when it is destroyed, so a leak checker sees nothing.
+   The home's own statistics do see it, which is what this test uses. */
+int test_auth_info_nextnonce(void)
+{
+  BEGIN();
+
+  {
+    char challenge[] =
+      PROTOCOL " 401 Unauthorized\r\n"
+      "Call-ID:0e3dc2b2-dcc6-1226-26ac-258b5ce429ab\r\n"
+      "CSeq:32439043 REGISTER\r\n"
+      "From:<sip:surf3@ims3.so.noklab.net>;tag=I8hFdg0H3OK\r\n"
+      "To:<sip:surf3@ims3.so.noklab.net>\r\n"
+      "Via:SIP/2.0/UDP 10.21.36.70:23800;branch=z9hG4bKJjKGu9vIHqf\r\n"
+      "WWW-Authenticate:Digest algorithm=MD5,nonce=\"nonce0\",realm=\"test-realm\"\r\n"
+      "Content-Length:0\r\n"
+      "\r\n";
+
+    char info[] =
+      PROTOCOL " 200 OK\r\n"
+      "Call-ID:0e3dc2b2-dcc6-1226-26ac-258b5ce429ab\r\n"
+      "CSeq:32439044 REGISTER\r\n"
+      "From:<sip:surf3@ims3.so.noklab.net>;tag=I8hFdg0H3OK\r\n"
+      "To:<sip:surf3@ims3.so.noklab.net>;tag=b\r\n"
+      "Via:SIP/2.0/UDP 10.21.36.70:23800;branch=z9hG4bKJjKGu9vIHqf\r\n"
+      "Authentication-Info:nextnonce=\"nonce-from-the-server\"\r\n"
+      "Content-Length:0\r\n"
+      "\r\n";
+
+    su_home_t *home;
+    msg_t *msg;
+    sip_t *sip;
+    auth_client_t *aucs = NULL;
+    su_home_stat_t hs0[1], hs1[1];
+    int i;
+
+    TEST_1(home = su_home_new(sizeof(*home)));
+
+    TEST_1(msg = read_message(MSG_DO_EXTRACT_COPY, challenge));
+    TEST_1(sip = sip_object(msg));
+    TEST_1(sip->sip_www_authenticate);
+    TEST(auc_challenge(&aucs, home, sip->sip_www_authenticate,
+		       sip_authorization_class), 1);
+    TEST_1(aucs != NULL);
+    msg_destroy(msg);
+
+    TEST(auc_credentials(&aucs, home, "Digest:\"test-realm\":user:pass"), 1);
+
+    /* The statistics have to come from the client's own home: auc_challenge()
+       makes the authenticator a *clone* of the home passed to it
+       (su_home_clone() in ca_create()), and su_home_get_stats() reports only
+       the home it is handed - it does not aggregate clones. Reading the parent
+       here would show nothing at all, whether the nonce is freed or not. */
+    su_home_init_stats(aucs->ca_home);
+
+    /* One update first, so that whatever the first one allocates is already
+       accounted for and the comparison below is about repetition alone. */
+    TEST_1(msg = read_message(MSG_DO_EXTRACT_COPY, info));
+    TEST_1(sip = sip_object(msg));
+    TEST_1(sip->sip_authentication_info);
+    TEST(auc_info(&aucs, sip->sip_authentication_info,
+		  sip_authorization_class), 1);
+    msg_destroy(msg);
+
+    su_home_get_stats(aucs->ca_home, 0, hs0, sizeof hs0);
+
+    for (i = 0; i < 100; i++) {
+      TEST_1(msg = read_message(MSG_DO_EXTRACT_COPY, info));
+      TEST_1(sip = sip_object(msg));
+      TEST_1(sip->sip_authentication_info);
+      TEST(auc_info(&aucs, sip->sip_authentication_info,
+		    sip_authorization_class), 1);
+      msg_destroy(msg);
+    }
+
+    su_home_get_stats(aucs->ca_home, 0, hs1, sizeof hs1);
+
+    /* The assertion below compares two numbers that are both zero when the
+       fix is in place, so it would also hold if the statistics were not being
+       collected at all. Check first that the instrument reads something. */
+    TEST_1(hs0->hs_blocks.hsb_bytes > 0);
+
+    /* Each iteration replaces one string with another of the same length, so
+       the number of live blocks in the home must not move. Without the free in
+       auc_digest_info() it grows by exactly one per iteration. */
+    TEST_1(hs1->hs_blocks.hsb_number == hs0->hs_blocks.hsb_number);
+
+    /* And the nonce that survives has to be the one the server sent last: a
+       free of the wrong pointer, or a missing assignment, would satisfy the
+       block count above while losing the value. Taken after the statistics so
+       that building a header cannot disturb them. */
+    {
+      msg_header_t *h = NULL;
+      char const *nonce;
+
+      TEST(auc_authorization_headers(&aucs, home, "REGISTER",
+				     (url_t *)"sip:ims3.so.noklab.net",
+				     NULL, &h), 1);
+      TEST_1(h);
+      TEST_1(nonce = msg_header_find_param(h->sh_common, "nonce="));
+      TEST_S(nonce, "\"nonce-from-the-server\"");
+    }
+
+    su_home_unref(home);
+  }
+
+  END();
+}
+
 #if HAVE_FLOCK
 #include <sys/file.h>
 #endif
@@ -1485,6 +1607,7 @@ int main(int argc, char *argv[])
   retval |= test_digest();
   retval |= test_digest_client();
   retval |= test_auth_client();
+  retval |= test_auth_info_nextnonce();
   retval |= test_module_io();
 
   su_deinit();
