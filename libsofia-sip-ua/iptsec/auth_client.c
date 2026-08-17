@@ -907,6 +907,13 @@ static int auc_digest_info(auth_client_t *ca,
   if (n <= 0)
     return n;
 
+  /* The nonce being replaced is owned by this home - it came either from the
+   * challenge, via auth_digest_challenge_get(), or from an earlier
+   * Authentication-Info through this same assignment. Without this free only
+   * the last one is ever released, by auth_digest_challenge_free_params() at
+   * the next challenge, so a server that sends nextnonce on every response
+   * loses one nonce string per response until then. su_free() ignores NULL. */
+  su_free(home, (void *)cda->cda_ac->ac_nonce);
   cda->cda_ac->ac_nonce = nextnonce;
 
   return 1;
