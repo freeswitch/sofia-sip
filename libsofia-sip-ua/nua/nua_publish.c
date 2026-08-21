@@ -303,6 +303,7 @@ static int nua_publish_client_init(nua_client_request_t *cr,
   nua_handle_t *nh = cr->cr_owner;
   nua_dialog_usage_t *du;
   struct publish_usage *pu;
+  sip_etag_t *etag;
 
   if (cr->cr_event == nua_r_publish) {
     du = nua_dialog_usage_add(nh, nh->nh_ds, nua_publish_usage, NULL);
@@ -311,9 +312,14 @@ static int nua_publish_client_init(nua_client_request_t *cr,
     pu = nua_dialog_usage_private(du);
     pu->pu_published = 0;
     if (sip->sip_if_match) {
-      pu->pu_etag = sip_etag_dup(nh->nh_home, sip->sip_if_match);
-      if (!pu->pu_etag)
+      /* nua_dialog_usage_add() returns the usage that is already there, so on
+	 every refresh after the first pu_etag is set. Duplicate first and free
+	 afterwards, so a failed allocation leaves the old tag in place. */
+      etag = sip_etag_dup(nh->nh_home, sip->sip_if_match);
+      if (!etag)
 	return -1;
+      su_free(nh->nh_home, pu->pu_etag);
+      pu->pu_etag = etag;
       sip_header_remove(msg, sip, (sip_header_t *)sip->sip_if_match);
     }
   }
