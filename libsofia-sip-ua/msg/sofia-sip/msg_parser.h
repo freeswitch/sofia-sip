@@ -228,7 +228,7 @@ SOFIAPUBFUN issize_t msg_parse_next_field(su_home_t *home, msg_header_t *prev,
 
 /** Duplicate string. @HI */
 #define MSG_STRING_DUP(p, d, s) \
-  (void)((s)?((p)=(char*)memccpy((void *)((d)=(char*)p),(s),0,INT_MAX))\
+  (void)((s)?((p)=(char*)stpcpy((void *)((d)=(char*)p),(s)) + 1)\
 	    :((d)=NULL))
 
 /* Solaris has broken memccpy - it considers last argument as signed */
