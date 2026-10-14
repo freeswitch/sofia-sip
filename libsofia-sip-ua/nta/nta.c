@@ -3930,7 +3930,17 @@ int complete_response(msg_t *response,
  * let it terminate the session. As of @VERSION_1_12_7, this function just
  * returns -1.
  */
+static int nta_msg_ackbye_tport(nta_agent_t *agent, msg_t *msg, tport_t *tport);
+
 int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
+{
+  return nta_msg_ackbye_tport(agent, msg, NULL);
+}
+
+/* ACK and BYE over the transport the orphan 2XX arrived on when given:
+ * WebSocket clients (RFC 7118) use an unroutable ".invalid" Contact and
+ * are reachable only over their existing connection. */
+static int nta_msg_ackbye_tport(nta_agent_t *agent, msg_t *msg, tport_t *tport)
 {
   sip_t *sip = sip_object(msg);
   msg_t *amsg = nta_msg_create(agent, 0);
@@ -3992,6 +4002,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   if (!(ack = nta_outgoing_mcreate(agent, NULL, NULL, NULL, amsg,
 				   NTATAG_ACK_BRANCH(sip->sip_via->v_branch),
 				   NTATAG_STATELESS(1),
+				   TAG_IF(tport, NTATAG_TPORT(tport)),
 				   TAG_END())))
     goto err;
   else
@@ -4011,6 +4022,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 
   if (!nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
 				   NTATAG_STATELESS(1),
+				   TAG_IF(tport, NTATAG_TPORT(tport)),
 				   TAG_END()))
     goto err;
 
@@ -9549,7 +9561,7 @@ int outgoing_recv(nta_outgoing_t *_orq,
       if (orq->orq_uas && su_strcasecmp(sip->sip_to->a_tag, orq->orq_tag) != 0) {
         /* Orphan 200 Ok to INVITE. ACK and BYE it */
 		  SU_DEBUG_5(("nta: Orphan 200 Ok send ACK&BYE %p\n", (void *)orq));
-        return nta_msg_ackbye(sa, msg);
+        return nta_msg_ackbye_tport(sa, msg, orq->orq_tport);
       }
       return -1;  /* Proxy statelessly (RFC3261 section 16.11) */
     }
@@ -9611,7 +9623,7 @@ int outgoing_recv(nta_outgoing_t *_orq,
 
           /* Orphan 200 Ok to INVITE. ACK and BYE it */
           SU_DEBUG_5(("nta: Orphan 200 Ok send ACK&BYE" VA_NONE));
-          return nta_msg_ackbye(sa, msg);
+          return nta_msg_ackbye_tport(sa, msg, orq->orq_tport);
 	}
       }
 
