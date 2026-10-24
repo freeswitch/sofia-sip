@@ -33,7 +33,6 @@ jobs:
           - debian
         version:
           - bookworm
-          - bullseye
           - trixie
         platform:
           - name: amd64
@@ -85,7 +84,6 @@ jobs:
           - debian
         version:
           - bookworm
-          - bullseye
           - trixie
         platform:
           - name: amd64
