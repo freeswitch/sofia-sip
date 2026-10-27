@@ -260,6 +260,10 @@ int tport_recv_stream_ws(tport_t *self)
    * flags it, and the reply path answers 413. */
   msg_recv_commit(msg, n, 0);
 
+  /* A TLS record can carry several frames: what OpenSSL holds never wakes the poll, so read it now. */
+  if (wstp->ws.ssl && SSL_pending(wstp->ws.ssl) > 0)
+    return 2;
+
   return 1;
 }
 
