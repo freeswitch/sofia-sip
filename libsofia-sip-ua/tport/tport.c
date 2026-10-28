@@ -402,6 +402,20 @@ int tport_is_clear_to_send(tport_t const *self)
      !self->tp_send_close);
 }
 
+/** A secondary transport we were handed explicitly is usable for THIS send if
+ * it is registered and not (being) closed, regardless of tp_reusable.
+ * tp_reusable only governs whether a connection may be REUSED for other
+ * destinations; it must not stop us from sending on the exact live connection
+ * the caller passed in (e.g. a response on the connection a request arrived on). */
+static int tport_is_live_secondary(tport_t const *self)
+{
+  return
+    tport_is_secondary(self) &&
+    tport_is_registered(self) &&
+    !self->tp_closed &&
+    !self->tp_send_close;
+}
+
 /** Return true if transport has message in send queue. @NEW_1_12_7. */
 int tport_has_queued(tport_t const *self)
 {
@@ -3372,7 +3386,7 @@ tport_t *tport_tsend(tport_t *self,
 {
   ta_list ta;
   tagi_t const *t;
-  int reuse, sdwn_after, close_after, resolved = 0, fresh;
+  int reuse, reuse_tagged = 0, sdwn_after, close_after, resolved = 0, fresh;
   unsigned mtu;
   su_addrinfo_t *ai;
   tport_primary_t *primary;
@@ -3413,8 +3427,10 @@ tport_t *tport_tsend(tport_t *self,
   for (t = ta_args(ta); t; t = tl_next(t)) {
     tag_type_t tt = t->t_tag;
 
-    if (tptag_reuse == tt)
+    if (tptag_reuse == tt) {
       reuse = t->t_value != 0;
+      reuse_tagged = 1;
+    }
     else if (tptag_mtu == tt)
       mtu = t->t_value;
     else if (tptag_sdwn_after == tt)
@@ -3429,7 +3445,13 @@ tport_t *tport_tsend(tport_t *self,
 
   ta_end(ta);
 
-  fresh = fresh || !reuse;
+  /* Inherited reuse=0 (global reuse-connections off) must not force a fresh
+   * connection when the caller handed us an exact live secondary - e.g. a
+   * response on the connection the request arrived on (issue #309). Only an
+   * explicit per-send TPTAG_REUSE(0), or a self that is not a live secondary,
+   * forces fresh; TPTAG_FRESH still applies as parsed above. */
+  if (!reuse && (reuse_tagged || !tport_is_live_secondary(self)))
+    fresh = 1;
 
   ai = msg_addrinfo(msg);
 
@@ -3454,8 +3476,9 @@ tport_t *tport_tsend(tport_t *self,
     /* Select a primary protocol, make a fresh connection */
     self = primary->pri_primary;
   }
-  else if (tport_is_secondary(self) && tport_is_clear_to_send(self)) {
-	/* self = self; */
+  else if (tport_is_live_secondary(self)) {
+	/* Send on the exact live secondary the caller handed us (self = self),
+	 * independent of tp_reusable - see tport_is_live_secondary(). */
 	;
   }
   /*
