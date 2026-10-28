@@ -1178,7 +1178,7 @@ int test_copy(void)
     char dst[8];
     const char *src = "1234567";
 
-    char *start = &dst;
+    char *start = &dst[0];
     char *end = start+sizeof(dst);
     MSG_STRING_E(start, end, src);
     TEST_S(dst, src);
