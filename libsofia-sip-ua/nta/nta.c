@@ -9172,7 +9172,17 @@ size_t outgoing_timer_bf(outgoing_queue_t *q,
     else
       outgoing_terminate(orq);
 
-    assert(q->q_head != orq || (int32_t)(orq->orq_timeout - now) > 0);
+    /* Anti-spin guard: outgoing_timeout() may re-queue orq at the head of the
+     * same queue (retry/resolve-next). Normally the re-queue sets a future
+     * timeout; if the same orq is back at the head with a non-advanced timeout,
+     * continuing would spin on it. Stop this pass and let the next timer turn
+     * retry it (agent_timer reschedules to now+1 for a still-due head) rather
+     * than aborting the process (this was an assert()). */
+    if (q->q_head == orq && (int32_t)(orq->orq_timeout - now) <= 0) {
+      SU_DEBUG_3(("nta: timer %s: %s (%u) re-queued without progress, deferring to next timer turn\n",
+		  timer, orq->orq_method_name, orq->orq_cseq->cs_seq));
+      break;
+    }
   }
 
   return timeout;
