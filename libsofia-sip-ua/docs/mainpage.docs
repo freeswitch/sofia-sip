@@ -338,7 +338,7 @@ write functions that fetch the desired bits from a 32 bit field
 with bit operations; not very handy and error prone.
 
 The same aligment problem also arises if you cast for example char
-buffer to a int32_t. You can only read int32_t from the 32bit boundary
+buffer to an int32_t. You can only read int32_t from the 32bit boundary
 on ARM platform. So be careful.
 
 As a conclusion, when using bit-fields and stucture packing, beware
@@ -423,7 +423,7 @@ header-specific data, like header name.
 
 @subsection oo_derived Inheritance and Derived Objects
 
-Inheritance is a object-oriented practice that has limited use in Sofia.
+Inheritance is an object-oriented practice that has limited use in Sofia.
 Most common example of inheritance is use of #su_home_t. Many objects are
 derived from #su_home_t, which means that they can use the various
 home-based memory management functions from <su_alloc.h>.
