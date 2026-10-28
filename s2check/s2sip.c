@@ -477,9 +477,9 @@ s2_sip_request_to(struct dialog *d,
 
   if (tport == NULL)
     tport = s2sip->udp.tport;
-  else if (tport == NULL)
+  if (tport == NULL)
     tport = s2sip->tcp.tport;
-  else if (tport == NULL)
+  if (tport == NULL)
     tport = s2sip->tls.tport;
 
   assert(tport);
