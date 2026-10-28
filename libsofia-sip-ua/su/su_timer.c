@@ -560,7 +560,17 @@ int su_timer_expire(su_timer_queue_t * const timers,
     timers_remove(timers[0], 1);
 
     f = t->sut_wakeup; t->sut_wakeup = NULL;
-    assert(f);
+    if (!f) {
+      /* A set timer reached expiry with no callback (a stale/racy entry, e.g.
+       * a concurrent su_timer_reset, or an invalidly-set timer). There is
+       * nothing valid to call, so mark it not-running and skip it rather than
+       * aborting the process (this was an assert(f)). */
+      SU_DEBUG_3(("su_timer_expire: timer %p expired with no callback, skipping\n",
+		  (void *)t));
+      t->sut_running = reset;
+      t->sut_arg = NULL;
+      continue;
+    }
 
     if (t->sut_running == run_at_intervals) {
       while (t->sut_running == run_at_intervals &&
