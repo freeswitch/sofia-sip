@@ -260,6 +260,16 @@ int tport_recv_stream_ws(tport_t *self)
    * flags it, and the reply path answers 413. */
   msg_recv_commit(msg, n, 0);
 
+  /* ws_read_frame() reads one frame at a time. Over TLS, OpenSSL has already
+   * pulled the whole TLS record off the socket and decrypted it, so a second
+   * WebSocket frame in the same record sits in OpenSSL's buffer while the
+   * socket itself reads as empty: the event loop is not woken for it and the
+   * frame stays unprocessed until more data arrives on the connection.
+   * Returning 2 makes tport_recv_event() call us again, exactly as the plain
+   * TLS transport does with tls_pending(). */
+  if (wstp->ws.ssl && SSL_pending(wstp->ws.ssl) > 0)
+    return 2;
+
   return 1;
 }
 
