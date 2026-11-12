@@ -552,8 +552,8 @@ int tport_capt_msg_hepv2 (tport_t const *self, msg_t *msg, size_t n,
    }
 #if SU_HAVE_IN6
    else {   
-       memcpy(dst ? &hep_ip6header.hp6_src : &hep_ip6header.hp6_dst, &su->su_sin.sin_addr.s_addr, sizeof(su->su_sin.sin_addr.s_addr));
-       memcpy(dst ? &hep_ip6header.hp6_dst : &hep_ip6header.hp6_src, &su_self_ext->su_sin.sin_addr.s_addr, sizeof(su_self_ext->su_sin.sin_addr.s_addr));
+       memcpy(dst ? &hep_ip6header.hp6_src : &hep_ip6header.hp6_dst, &su->su_sin6.sin6_addr, sizeof(su->su_sin6.sin6_addr));
+       memcpy(dst ? &hep_ip6header.hp6_dst : &hep_ip6header.hp6_src, &su_self_ext->su_sin6.sin6_addr, sizeof(su_self_ext->su_sin6.sin6_addr));
        hep_header.hp_l += sizeof(struct hep_ip6hdr);       
    }
 #endif     
@@ -723,13 +723,13 @@ int tport_capt_msg_hepv3 (tport_t const *self, msg_t *msg, size_t n,
 	/* SRC IPv6 */
         src_ip6.chunk.vendor_id = htons(0x0000);
         src_ip6.chunk.type_id   = htons(0x0005);
-        memcpy(dst ? &src_ip6.data : &dst_ip6.data, &su->su_sin.sin_addr.s_addr, sizeof(su->su_sin.sin_addr.s_addr));
+        memcpy(dst ? &src_ip6.data : &dst_ip6.data, &su->su_sin6.sin6_addr, sizeof(su->su_sin6.sin6_addr));
         src_ip6.chunk.length = htons(sizeof(src_ip6));
 
         /* DST IPv6 */
         dst_ip6.chunk.vendor_id = htons(0x0000);
         dst_ip6.chunk.type_id   = htons(0x0006);
-        memcpy(dst ? &dst_ip6.data : &src_ip6.data, &su_self_ext->su_sin.sin_addr.s_addr, sizeof(su_self_ext->su_sin.sin_addr.s_addr));
+        memcpy(dst ? &dst_ip6.data : &src_ip6.data, &su_self_ext->su_sin6.sin6_addr, sizeof(su_self_ext->su_sin6.sin6_addr));
         dst_ip6.chunk.length = htons(sizeof(dst_ip6));
 
         iplen = sizeof(dst_ip6) + sizeof(src_ip6);
