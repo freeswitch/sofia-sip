@@ -1815,6 +1815,151 @@ START_TEST(call_2_4_11)
 }
 END_TEST
 
+START_TEST(call_2_4_12)
+{
+  nua_handle_t *nh;
+  struct message *invite, *ack;
+
+  S2_CASE("2.4.12", "Call with 100rel is rejected by another branch",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 486 with another To tag, sends ACK.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  /* Another branch */
+  dialog->local = sip_from_dup(dialog->home, invite->sip->sip_to);
+  sip_from_tag(dialog->home, dialog->local, s2_sip_generate_tag(dialog->home));
+
+  s2_sip_respond_to(invite, dialog, SIP_486_BUSY_HERE, TAG_END());
+  s2_sip_free_message(invite);
+
+  ack = s2_sip_wait_for_request(SIP_METHOD_ACK);
+  fail_if(!ack);
+  fail_unless(su_strmatch(ack->sip->sip_to->a_tag, dialog->local->a_tag));
+  s2_sip_free_message(ack);
+
+  fail_unless_event(nua_r_invite, 486);
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
+
+  fast_forward_over_timer_d();
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+START_TEST(call_2_4_13)
+{
+  nua_handle_t *nh;
+  struct message *invite, *bye;
+  int i;
+
+  S2_CASE("2.4.13", "Call with 100rel is answered by another branch",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 200 with another To tag, sends ACK and BYE, "
+	  "call is terminated when timer D fires.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  /* Another branch */
+  dialog->local = sip_from_dup(dialog->home, invite->sip->sip_to);
+  sip_from_tag(dialog->home, dialog->local, s2_sip_generate_tag(dialog->home));
+
+  s2_sip_respond_to(invite, dialog, SIP_200_OK,
+		    SIPTAG_CONTACT(s2sip->contact),
+		    TAG_END());
+  s2_sip_free_message(invite);
+
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+  bye = s2_sip_wait_for_request(SIP_METHOD_BYE);
+  fail_if(!bye);
+  fail_unless(su_strmatch(bye->sip->sip_to->a_tag, dialog->local->a_tag));
+  s2_sip_respond_to(bye, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(bye);
+
+  /* Timer D */
+  for (i = 0; i < 34; i++) {
+    s2_nua_fast_forward(1, s2base->root);
+  }
+
+  fail_unless_event(nua_r_invite, 408);
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+START_TEST(call_2_4_14)
+{
+  nua_handle_t *nh;
+  struct message *invite, *bye;
+  sip_from_t *first;
+  int i;
+
+  S2_CASE("2.4.14", "Call with 100rel is answered by two branches",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 200 with another To tag, sends ACK and BYE, "
+	  "receives 200 from the first branch, sends ACK, "
+	  "receives it again after the ACK transaction has terminated "
+	  "but before timer D of the INVITE transaction, "
+	  "call stays up.");
+
+  nua_set_params(nua, NTATAG_SIP_T1X64(8000), TAG_END());
+  fail_unless_event(nua_r_set_params, 200);
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  first = dialog->local;
+
+  /* Another branch */
+  dialog->local = sip_from_dup(dialog->home, invite->sip->sip_to);
+  sip_from_tag(dialog->home, dialog->local, s2_sip_generate_tag(dialog->home));
+
+  s2_sip_respond_to(invite, dialog, SIP_200_OK,
+		    SIPTAG_CONTACT(s2sip->contact),
+		    TAG_END());
+
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+  bye = s2_sip_wait_for_request(SIP_METHOD_BYE);
+  fail_if(!bye);
+  fail_unless(su_strmatch(bye->sip->sip_to->a_tag, dialog->local->a_tag));
+  s2_sip_respond_to(bye, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(bye);
+
+  /* The first branch */
+  dialog->local = first;
+
+  s2_sip_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  fail_unless_event(nua_r_invite, 200);
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+
+  /* Let the ACK transaction terminate */
+  for (i = 0; i < 10; i++) {
+    s2_nua_fast_forward(1, s2base->root);
+  }
+
+  /* Retransmission */
+  s2_sip_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(invite);
+  fail_if(s2_sip_check_request_timeout(SIP_METHOD_BYE, 100));
+
+  fast_forward_over_timer_d();
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
 START_TEST(call_2_4_15)
 {
   nua_handle_t *nh;
@@ -1915,6 +2060,45 @@ START_TEST(call_2_4_15)
 }
 END_TEST
 
+START_TEST(call_2_4_16)
+{
+  nua_handle_t *nh;
+  struct message *invite, *ack;
+
+  S2_CASE("2.4.16", "Call with 100rel is challenged by another branch",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 407 with another To tag, sends ACK, "
+	  "does not send INVITE again.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_with_100rel_sent_by_nua(nh);
+
+  /* Another branch */
+  dialog->local = sip_from_dup(dialog->home, invite->sip->sip_to);
+  sip_from_tag(dialog->home, dialog->local, s2_sip_generate_tag(dialog->home));
+
+  s2_sip_respond_to(invite, dialog, SIP_407_PROXY_AUTH_REQUIRED,
+		    SIPTAG_PROXY_AUTHENTICATE_STR(s2_auth_digest_str),
+		    TAG_END());
+  s2_sip_free_message(invite);
+
+  ack = s2_sip_wait_for_request(SIP_METHOD_ACK);
+  fail_if(!ack);
+  fail_unless(su_strmatch(ack->sip->sip_to->a_tag, dialog->local->a_tag));
+  s2_sip_free_message(ack);
+
+  /* The call is not waiting for credentials */
+  fail_unless_event(nua_r_invite, 407);
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
+
+  fast_forward_over_timer_d();
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
 TCase *invite_100rel_tcase(int threading)
 {
   TCase *tc = tcase_create("2.4 - INVITE with 100rel");
@@ -1931,7 +2115,11 @@ TCase *invite_100rel_tcase(int threading)
     tcase_add_test(tc, call_2_4_9);
     tcase_add_test(tc, call_2_4_10);
     tcase_add_test(tc, call_2_4_11);
+    tcase_add_test(tc, call_2_4_12);
+    tcase_add_test(tc, call_2_4_13);
+    tcase_add_test(tc, call_2_4_14);
     tcase_add_test(tc, call_2_4_15);
+    tcase_add_test(tc, call_2_4_16);
   }
   return tc;
 }

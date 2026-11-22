@@ -1235,12 +1235,23 @@ int nua_client_check_restart(nua_client_request_t *cr,
 			     sip_t const *sip)
 {
   nua_handle_t *nh;
+  char const *tag;
 
   assert(cr && status >= 200 && phrase && sip);
 
   nh = cr->cr_owner;
 
   if (cr->cr_retry_count > NH_PGET(nh, retry_count))
+    return 0;
+
+  /*
+   * The dialog has the tag and the route of the branch that sent a reliable
+   * provisional response. The initial request is not restarted with them
+   * when the final response comes from another branch.
+   */
+  tag = nh->nh_ds->ds_remote_tag;
+  if (cr->cr_initial && tag && tag[0] &&
+      !su_casematch(tag, sip->sip_to->a_tag))
     return 0;
 
   if (cr->cr_methods->crm_check_restart)
