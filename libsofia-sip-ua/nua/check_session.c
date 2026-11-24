@@ -1815,6 +1815,106 @@ START_TEST(call_2_4_11)
 }
 END_TEST
 
+START_TEST(call_2_4_15)
+{
+  nua_handle_t *nh;
+  struct event *invite;
+  struct message *response;
+  sip_rack_t rack[1];
+
+  S2_CASE("2.4.15", "Incoming call with 100rel, PRACK after ACK",
+	  "NUA receives INVITE, sends 180, receives PRACK, sends 200 for it, "
+	  "sends 183 with SDP, "
+	  "sends 180 and 200 before the 183 is acknowledged, "
+	  "receives PRACK for 183, sends 200 for it, sends 180 and 200, "
+	  "receives ACK, receives PRACK for 180, sends 200 for it.");
+
+  soa_generate_offer(soa, 1, NULL);
+  request_with_sdp(dialog, SIP_METHOD_INVITE, NULL,
+		   SIPTAG_REQUIRE_STR("100rel"),
+		   TAG_END());
+
+  invite = s2_wait_for_event(nua_i_invite, 100); fail_unless(invite != NULL);
+  fail_unless(s2_check_callstate(nua_callstate_received));
+
+  nh = invite->nh; fail_if(!nh);
+
+  s2_free_event(invite);
+
+  response = s2_sip_wait_for_response(100, SIP_METHOD_INVITE);
+  fail_if(!response);
+  s2_sip_free_message(response);
+
+  nua_respond(nh, SIP_180_RINGING, TAG_END());
+  fail_unless(s2_check_callstate(nua_callstate_early));
+
+  response = s2_sip_wait_for_response(180, SIP_METHOD_INVITE);
+  fail_if(!response);
+  fail_if(!response->sip->sip_rseq);
+  s2_sip_update_dialog(dialog, response);
+
+  sip_rack_init(rack);
+  rack->ra_response = response->sip->sip_rseq->rs_response;
+  rack->ra_cseq = response->sip->sip_cseq->cs_seq;
+  rack->ra_method = sip_method_invite;
+  rack->ra_method_name = "INVITE";
+  s2_sip_free_message(response);
+
+  fail_if(s2_sip_request_to(dialog, SIP_METHOD_PRACK, NULL,
+			    SIPTAG_RACK(rack), TAG_END()));
+  fail_unless(s2_sip_check_response(200, SIP_METHOD_PRACK));
+  fail_unless_event(nua_i_prack, 200);
+
+  nua_respond(nh, SIP_183_SESSION_PROGRESS,
+	      SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
+	      TAG_END());
+  fail_unless(s2_check_callstate(nua_callstate_early));
+
+  response = s2_sip_wait_for_response(183, SIP_METHOD_INVITE);
+  fail_if(!response);
+  fail_if(!response->sip->sip_rseq);
+  rack->ra_response = response->sip->sip_rseq->rs_response;
+  process_answer(response);
+  s2_sip_free_message(response);
+
+  /* The 180 and the 200 are sent when the 183 is acknowledged */
+  nua_respond(nh, SIP_180_RINGING, TAG_END());
+  fail_unless(s2_check_callstate(nua_callstate_early));
+  nua_respond(nh, SIP_200_OK, TAG_END());
+  fail_unless(s2_check_callstate(nua_callstate_completed));
+
+  fail_if(s2_sip_request_to(dialog, SIP_METHOD_PRACK, NULL,
+			    SIPTAG_RACK(rack), TAG_END()));
+  fail_unless(s2_sip_check_response(200, SIP_METHOD_PRACK));
+
+  /* The 180 has no SDP, the 200 does not wait until it is acknowledged */
+  response = s2_sip_wait_for_response(180, SIP_METHOD_INVITE);
+  fail_if(!response);
+  fail_if(!response->sip->sip_rseq);
+  fail_if(response->sip->sip_payload);
+  rack->ra_response = response->sip->sip_rseq->rs_response;
+  s2_sip_free_message(response);
+
+  response = s2_sip_wait_for_response(200, SIP_METHOD_INVITE);
+  fail_if(!response);
+  s2_sip_update_dialog(dialog, response);
+  s2_sip_free_message(response);
+
+  fail_if(s2_sip_request_to(dialog, SIP_METHOD_ACK, NULL, TAG_END()));
+  fail_unless_event(nua_i_ack, 200);
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+
+  /* The 180 is acknowledged after the INVITE transaction is destroyed */
+  fail_if(s2_sip_request_to(dialog, SIP_METHOD_PRACK, NULL,
+			    SIPTAG_RACK(rack), TAG_END()));
+  fail_unless(s2_sip_check_response(200, SIP_METHOD_PRACK));
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
 TCase *invite_100rel_tcase(int threading)
 {
   TCase *tc = tcase_create("2.4 - INVITE with 100rel");
@@ -1831,6 +1931,7 @@ TCase *invite_100rel_tcase(int threading)
     tcase_add_test(tc, call_2_4_9);
     tcase_add_test(tc, call_2_4_10);
     tcase_add_test(tc, call_2_4_11);
+    tcase_add_test(tc, call_2_4_15);
   }
   return tc;
 }

@@ -748,6 +748,7 @@ static msg_t *reliable_response(nta_incoming_t *irq);
 static nta_reliable_t *reliable_find(nta_agent_t const *, sip_t const *);
 static int reliable_recv(nta_reliable_t *rel, msg_t *, sip_t *, tport_t *);
 static void reliable_flush(nta_incoming_t *irq);
+static void reliable_detach(nta_incoming_t *irq);
 static void reliable_timeout(nta_incoming_t *irq, int timeout);
 
 HTABLE_PROTOS_WITH(outgoing_htable, oht, nta_outgoing_t, size_t, hash_value_t);
@@ -5668,6 +5669,11 @@ int incoming_callback(nta_leg_t *leg, nta_incoming_t *irq, sip_t *sip)
  * This function does not actually free transaction object, but marks it as
  * disposable. The object is freed after a timeout.
  *
+ * The callbacks of the reliable provisional responses sent with the
+ * transaction are not called after the transaction is destroyed. The stack
+ * responds to their PRACK requests and frees the nta_reliable_t objects,
+ * which must not be used after the transaction is destroyed.
+ *
  * @param irq incoming request object to be destroyed
  */
 void nta_incoming_destroy(nta_incoming_t *irq)
@@ -5676,6 +5682,7 @@ void nta_incoming_destroy(nta_incoming_t *irq)
     irq->irq_callback = NULL;
     irq->irq_magic = NULL;
     irq->irq_destroyed = 1;
+    reliable_detach(irq);
     if (!irq->irq_in_callback) {
       if (irq->irq_terminated || irq->irq_default)
 	incoming_free(irq);
@@ -11523,6 +11530,21 @@ void reliable_flush(nta_incoming_t *irq)
       rel->rel_callback(rel->rel_magic, rel, NULL, NULL);
     }
   } while (rel);
+}
+
+/** Detach reliable responses from the application.
+ *
+ * A reliable response can be unacknowledged when the application destroys
+ * the transaction: a final response was sent before PRACK was received.
+ */
+void reliable_detach(nta_incoming_t *irq)
+{
+  nta_reliable_t *rel;
+
+  for (rel = irq->irq_reliable; rel; rel = rel->rel_next) {
+    rel->rel_callback = nta_reliable_destroyed;
+    rel->rel_magic = NULL;
+  }
 }
 
 void reliable_timeout(nta_incoming_t *irq, int timeout)
