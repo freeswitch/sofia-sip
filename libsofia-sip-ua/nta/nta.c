@@ -8895,11 +8895,6 @@ outgoing_cut_off(nta_outgoing_t *orq)
   if (outgoing_is_queued(orq))
     outgoing_remove(orq);
 
-#if 0
-  if (orq->orq_forked)
-    outgoing_remove_fork(orq);
-#endif
-
   outgoing_reset_timer(orq);
 
   if (orq->orq_pending) {
@@ -8990,11 +8985,21 @@ void outgoing_destroy(nta_outgoing_t *orq)
 	   && !orq->orq_canceled
 	   /* or it has been forked */
 	   && !orq->orq_forking && !orq->orq_forks) {
+    /* This transaction is not a fork */
     orq->orq_destroyed = 1;
     outgoing_terminate(orq);
     return;
   }
 
+  if (orq->orq_forked) {
+    /* This transaction is a fork */
+    outgoing_remove_fork(orq);
+    orq->orq_destroyed = 1;
+    outgoing_terminate(orq);
+    return;
+  }
+
+  /* This transaction is not a fork */
   orq->orq_destroyed = 1;
   orq->orq_callback = outgoing_default_cb;
   orq->orq_magic = NULL;
@@ -9339,18 +9344,19 @@ outgoing_remove_fork(nta_outgoing_t *orq)
 {
   nta_outgoing_t **slot;
 
-  for (slot = &orq->orq_forking->orq_forks;
-       slot && *slot;
-       slot = &(*slot)->orq_forks) {
-    if (orq == *slot) {
-      *slot = orq->orq_forks;
-      orq->orq_forks = NULL;
-      orq->orq_forking = NULL;
-      orq->orq_forked = 0;
-    }
-  }
+  if (orq->orq_forking == NULL)
+    return;
 
-  assert(orq == NULL);
+  slot = &orq->orq_forking->orq_forks;
+  while (*slot && *slot != orq)
+    slot = &(*slot)->orq_forks;
+
+  if (*slot == orq)
+    *slot = orq->orq_forks;
+
+  orq->orq_forks = NULL;
+  orq->orq_forking = NULL;
+  orq->orq_forked = 0;
 }
 
 /** Terminate a client transaction. */
@@ -9589,13 +9595,15 @@ int outgoing_recv(nta_outgoing_t *_orq,
 	if (outgoing_complete(original))
 	  return 0;
 
-	if (orq->orq_uas && sip && orq == original) {
+	if (original->orq_uas && sip) {
 	  /*
 	   * We silently discard duplicate final responses to INVITE below
-	   * with outgoing_duplicate()
+	   * with outgoing_duplicate(). The original transaction keeps the
+	   * tag also when the response belongs to a tagged fork, the fork
+	   * can be destroyed while the response is still retransmitted.
 	   */
-	  su_home_t *home = msg_home(orq->orq_request);
-	  orq->orq_tag = su_strdup(home, sip->sip_to->a_tag);
+	  su_home_t *home = msg_home(original->orq_request);
+	  original->orq_tag = su_strdup(home, sip->sip_to->a_tag);
 	}
       }
       /* Retransmission or response from another fork */
@@ -11679,6 +11687,9 @@ int outgoing_recv_reliable(nta_outgoing_t *orq,
  * request can be used. It will only receive responses from the specified
  * fork. Please note that the tagged transaction should be terminated with
  * the final response from another fork, too.
+ *
+ * When the tagged transaction is destroyed, the responses from its fork
+ * are received by the original transaction again.
  *
  * @param orq
  * @param callback
