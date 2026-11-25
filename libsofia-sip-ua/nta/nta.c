@@ -7388,6 +7388,8 @@ static void outgoing_trying(nta_outgoing_t *orq);
 static void outgoing_timeout(nta_outgoing_t *orq, uint32_t now);
 static int outgoing_complete(nta_outgoing_t *orq);
 static void outgoing_terminate_invite(nta_outgoing_t *);
+static void outgoing_terminate_forks(nta_outgoing_t *original, int status,
+				     msg_t *msg, sip_t *sip);
 static void outgoing_remove_fork(nta_outgoing_t *orq);
 static int outgoing_terminate(nta_outgoing_t *orq);
 static size_t outgoing_mass_destroy(nta_agent_t *sa, outgoing_queue_t *q);
@@ -9346,6 +9348,49 @@ outgoing_terminate_invite(nta_outgoing_t *original)
   }
 }
 
+/** Terminate the tagged forks of an INVITE client transaction with the
+ * non-2XX final response received by the original transaction.
+ *
+ * A fork that already has a final response is left on the fork list.
+ */
+static void
+outgoing_terminate_forks(nta_outgoing_t *original, int status,
+			 msg_t *msg, sip_t *sip)
+{
+  nta_outgoing_t *orq, **slot;
+
+  for (;;) {
+    /* The fork list is searched again after each callback,
+       as the callback can destroy other forks */
+    for (slot = &original->orq_forks; (orq = *slot); slot = &orq->orq_forks)
+      if (orq->orq_status < 200)
+	break;
+
+    if (orq == NULL)
+      break;
+
+    assert(orq->orq_forking == original);
+
+    *slot = orq->orq_forks;
+    orq->orq_forking = NULL, orq->orq_forks = NULL, orq->orq_forked = 0;
+
+    if (outgoing_terminate(orq))
+      continue;
+
+    SU_DEBUG_5(("nta: %03d terminates %s (%u);tag=%s\n", status,
+		orq->orq_method_name, orq->orq_cseq->cs_seq, orq->orq_tag));
+
+    orq->orq_completed = 1;
+    orq->orq_status = status;
+
+    if (orq->orq_response)
+      msg_destroy(orq->orq_response);
+    orq->orq_response = msg_ref_create(msg);
+
+    orq->orq_callback(orq->orq_magic, orq, sip);
+  }
+}
+
 static void
 outgoing_remove_fork(nta_outgoing_t *orq)
 {
@@ -9562,6 +9607,10 @@ int outgoing_recv(nta_outgoing_t *_orq,
       if (orq->orq_uas && su_strcasecmp(sip->sip_to->a_tag, orq->orq_tag) != 0) {
         /* Orphan 200 Ok to INVITE. ACK and BYE it */
 		  SU_DEBUG_5(("nta: Orphan 200 Ok send ACK&BYE %p\n", (void *)orq));
+        /* Complete the original transaction: timer D then terminates
+           its forks (@RFC3261 section 13.2.2.4) */
+        if (orq == original && original->orq_forks && !original->orq_completed)
+          outgoing_complete(original);
         return nta_msg_ackbye(sa, msg);
       }
       return -1;  /* Proxy statelessly (RFC3261 section 16.11) */
@@ -9601,17 +9650,6 @@ int outgoing_recv(nta_outgoing_t *_orq,
       if (!original->orq_completed) {
 	if (outgoing_complete(original))
 	  return 0;
-
-	if (original->orq_uas && sip) {
-	  /*
-	   * We silently discard duplicate final responses to INVITE below
-	   * with outgoing_duplicate(). The original transaction keeps the
-	   * tag also when the response belongs to a tagged fork, the fork
-	   * can be destroyed while the response is still retransmitted.
-	   */
-	  su_home_t *home = msg_home(original->orq_request);
-	  original->orq_tag = su_strdup(home, sip->sip_to->a_tag);
-	}
       }
       /* Retransmission or response from another fork */
       else if (orq->orq_status >= 200) {
@@ -9630,7 +9668,25 @@ int outgoing_recv(nta_outgoing_t *_orq,
 	}
       }
 
+      if (original->orq_uas && sip && !original->orq_tag) {
+	/*
+	 * We silently discard duplicate final responses to INVITE
+	 * with outgoing_duplicate(). The original transaction keeps the
+	 * tag also when the response belongs to a tagged fork, the fork
+	 * can be destroyed while the response is still retransmitted.
+	 * The tag is stored also when the transaction was completed
+	 * before this response, by CANCEL or by a 2XX from another branch.
+	 */
+	su_home_t *home = msg_home(original->orq_request);
+	original->orq_tag = su_strdup(home, sip->sip_to->a_tag);
+      }
+
       orq->orq_status = status;
+
+      /* A non-2XX final response terminates all early dialogs
+	 (@RFC3261 section 13.2.2.3) */
+      if (status >= 300 && orq == original && original->orq_forks)
+	outgoing_terminate_forks(original, status, msg, sip);
     }
   }
   else if (orq->orq_method != sip_method_ack) {
