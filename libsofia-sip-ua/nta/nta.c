@@ -7024,9 +7024,9 @@ void incoming_retransmit_reply(nta_incoming_t *irq, tport_t *tport)
     tport = irq->irq_tport;
 
   /* Answer with existing reply */
-  if (irq->irq_reliable && !irq->irq_reliable->rel_pracked)
+  if (irq->irq_status < 200)
     msg = reliable_response(irq);
-  else
+  if (msg == NULL)
     msg = irq->irq_response;
 
   if (msg && tport) {
@@ -11348,11 +11348,13 @@ nta_reliable_t *reliable_mreply(nta_incoming_t *irq,
 
     /*
      * If there already is a un-pr-acknowledged response, queue this one
-     * until at least one response is pr-acknowledged.
+     * until at least one response is pr-acknowledged. A final response is
+     * always queued, it is sent when PRACK is received.
      */
-    if (irq->irq_reliable &&
-	(irq->irq_reliable->rel_next == NULL ||
-	 irq->irq_reliable->rel_rseq == 0)) {
+    if (rel->rel_status >= 200 ||
+	(irq->irq_reliable &&
+	 (irq->irq_reliable->rel_next == NULL ||
+	  irq->irq_reliable->rel_rseq == 0))) {
       return irq->irq_reliable = rel;
     }
 
@@ -11441,20 +11443,17 @@ int reliable_final(nta_incoming_t *irq, msg_t *msg, sip_t *sip)
   return 1;
 }
 
-/** Get latest reliably sent response */
+/** Get the oldest reliable response that is sent but not acknowledged */
 static
 msg_t *reliable_response(nta_incoming_t *irq)
 {
   nta_reliable_t *r, *rel;
 
-  /* Get last unpracked response from queue */
   for (rel = NULL, r = irq->irq_reliable; r; r = r->rel_next)
-    if (!r->rel_pracked)
+    if (r->rel_unsent && r->rel_rseq != 0)
       rel = r;
 
-  assert(rel);
-
-  return rel->rel_unsent;
+  return rel ? rel->rel_unsent : NULL;
 }
 
 /* Find un-PRACKed responses */
@@ -11503,6 +11502,8 @@ int reliable_recv(nta_reliable_t *rel, msg_t *msg, sip_t *sip, tport_t *tp)
   nta_incoming_t *irq = rel->rel_irq;
   nta_incoming_t *pr_irq;
   int status;
+  /* The response that is being retransmitted is acknowledged */
+  int oldest = rel->rel_unsent && rel->rel_unsent == reliable_response(irq);
 
   rel->rel_pracked = 1;
   msg_ref_destroy(rel->rel_unsent), rel->rel_unsent = NULL;
@@ -11516,9 +11517,17 @@ int reliable_recv(nta_reliable_t *rel, msg_t *msg, sip_t *sip, tport_t *tp)
     return 0;
   }
 
-  if (irq->irq_status < 200) {
+  /* The PRACK timers run until all sent responses are acknowledged */
+  if (irq->irq_status < 200 && !reliable_response(irq)) {
     incoming_queue(irq->irq_agent->sa_in.proceeding, irq); /* Reset P1 */
     incoming_reset_timer(irq);	/* Reset P2 */
+  }
+  else if (irq->irq_status < 200 && oldest) {
+    /* The timers are restarted for the next unacknowledged response */
+    if (irq->irq_queue == irq->irq_agent->sa_in.preliminary)
+      incoming_remove(irq);
+    incoming_queue(irq->irq_agent->sa_in.preliminary, irq);
+    incoming_set_timer(irq, irq->irq_agent->sa_t1);
   }
 
   irq->irq_in_callback = pr_irq->irq_in_callback = 1;
@@ -11556,10 +11565,15 @@ int reliable_recv(nta_reliable_t *rel, msg_t *msg, sip_t *sip, tport_t *tp)
     }
     else {
       /*
-       * XXX
-       * Final response should be delayed until a reliable provisional
-       * response has been pracked
+       * Final response is delayed until the reliable provisional
+       * responses containing a session description are acknowledged
        */
+      for (r = rel->rel_next; r; r = r->rel_next)
+	if (r->rel_unsent && r->rel_precious)
+	  break;
+      if (r)
+	break;
+
       rel->rel_unsent = NULL, rel->rel_rseq = (uint32_t)-1;
       if (incoming_reply(irq, msg, sip) < 0) {
 	assert(!"send delayed final response");
